@@ -5,14 +5,24 @@ app.setName('Scoreboard');
 
 function createWindow() {
   const win = new BrowserWindow({
-    width: 800,
-    height: 600,
+    width: 1280,
+    height: 800,
+    minWidth: 1024,
+    minHeight: 700,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
     },
   });
 
-  win.loadURL('http://localhost:5173');
+  if (app.isPackaged) {
+    win.loadFile(path.join(__dirname, 'dist', 'index.html'));
+  } else {
+    win.loadURL('http://localhost:5173');
+  }
+
+  win.once('ready-to-show', () => {
+    win.show();
+  });
 
   const menu = Menu.buildFromTemplate(menuTemplate);
   Menu.setApplicationMenu(menu);

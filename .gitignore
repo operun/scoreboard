@@ -9,9 +9,6 @@
 *.swo
 *.swp
 *.tsbuildinfo
-assets/icons/*.icns
-assets/icons/*.ico
-assets/icons/*.png
 build/
 dist-electron/
 dist/
