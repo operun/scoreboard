@@ -7,6 +7,7 @@
     "dev": "vite",
     "electron": "electronmon .",
     "dev:all": "concurrently -k -n VITE,ELECTRON -c cyan,magenta \"npm run dev\" \"npm run electron\"",
+    "generate:icons": "electron-icon-builder --input=assets/icons/icon.png --output=assets --flatten",
     "build:renderer": "vite build",
     "build:electron": "electron-builder",
     "build": "npm run build:renderer && npm run build:electron"
@@ -19,6 +20,7 @@
     "concurrently": "^9.1.2",
     "electron": "^35.1.2",
     "electron-builder": "^26.0.12",
+    "electron-icon-builder": "^2.0.1",
     "electronmon": "^2.0.3",
     "sharp": "^0.33.5",
     "vite": "^6.2.3"
