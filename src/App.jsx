@@ -1,15 +1,21 @@
 import { useState } from 'react';
 import Sidebar from './Sidebar';
+import ControllerView from './ControllerView';
+import MediaView from './MediaView';
 import SettingsView from './SettingsView';
-import './App.scss';
+
+import './styles/bootstrap.scss';
 
 function App() {
-  const [view, setView] = useState('settings');
+  const [view, setView] = useState('controller');
 
   return (
-    <div className="d-flex">
+    <div className="d-flex h-100">
       <Sidebar activeView={view} onChangeView={setView} />
-      <div className="main flex-grow-1 p-4">
+
+      <div className="flex-grow-1 p-4">
+        {view === 'controller' && <ControllerView />}
+        {view === 'media' && <MediaView />}
         {view === 'settings' && <SettingsView />}
       </div>
     </div>
