@@ -1,0 +1,31 @@
+{
+  "name": "scoreboard",
+  "version": "1.0.0",
+  "description": "Scoreboard App für den TSV 1880 Wasserburg.",
+  "main": "main.js",
+  "scripts": {
+    "dev": "vite",
+    "electron": "electronmon .",
+    "dev:all": "concurrently -k -n VITE,ELECTRON -c cyan,magenta \"npm run dev\" \"npm run electron\""
+  },
+  "keywords": [],
+  "author": "operun Digital Solutions",
+  "license": "ISC",
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.3.4",
+    "concurrently": "^9.1.2",
+    "electron": "^35.1.2",
+    "electronmon": "^2.0.3",
+    "sharp": "^0.33.5",
+    "vite": "^6.2.3"
+  },
+  "dependencies": {
+    "bootstrap": "^5.3.3",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "sass": "^1.86.0"
+  },
+  "build": {
+    "icon": "assets/icons/icon"
+  }
+}

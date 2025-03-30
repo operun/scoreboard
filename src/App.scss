@@ -1,0 +1,14 @@
+.app-container {
+  display: flex;
+  height: 100vh;
+}
+
+.sidebar {
+  width: 220px;
+  height: 100vh;
+}
+
+.main {
+  flex: 1;
+  height: 100vh;
+}
