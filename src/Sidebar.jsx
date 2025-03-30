@@ -6,11 +6,12 @@ function Sidebar({ activeView, onChangeView }) {
   const mainItems = [
     { id: 'controller', icon: <BsPlayCircle />, label: 'Controller' },
     { id: 'media', icon: <BsFolder />, label: 'Media' },
+    { id: 'settings', icon: <BsGear />, label: 'Settings' },
   ];
 
   return (
-    <div className="d-flex flex-column justify-content-between bg-black text-white" style={{ width: '60px', height: '100vh' }}>
-      <div className="d-flex flex-column align-items-center pt-3 gap-3">
+    <div className="d-flex flex-column justify-content-between bg-black text-white vh-100" style={{ width: '60px' }}>
+      <div className="d-flex flex-column align-items-center pt-5 gap-3">
         {mainItems.map((item) => (
           <div
             key={item.id}
@@ -22,17 +23,6 @@ function Sidebar({ activeView, onChangeView }) {
             {item.icon}
           </div>
         ))}
-      </div>
-
-      <div className="d-flex flex-column align-items-center pb-3">
-        <div
-          onClick={() => onChangeView('settings')}
-          title="Settings"
-          className={`text-center fs-5 ${activeView === 'settings' ? 'text-white' : 'text-white-50'} cursor-pointer`}
-          style={{ width: '100%' }}
-        >
-          <BsGear />
-        </div>
       </div>
     </div>
   );
