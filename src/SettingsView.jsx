@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react';
 import { toast } from 'react-toastify';
+import { BsEye, BsEyeSlash } from 'react-icons/bs';
 
 function SettingsView() {
   const [server, setServer] = useState('');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
 
   useEffect(() => {
     const loadSettings = async () => {
@@ -64,12 +66,22 @@ function SettingsView() {
 
           <div className="mb-3">
             <label className="form-label">Passwort</label>
-            <input
-              type="password"
-              className="form-control"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-            />
+            <div className="input-group">
+              <input
+                type={showPassword ? 'text' : 'password'}
+                className="form-control"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+              />
+              <span
+                className="input-group-text"
+                role="button"
+                style={{ cursor: 'pointer' }}
+                onClick={() => setShowPassword(!showPassword)}
+              >
+                {showPassword ? <BsEye /> : <BsEyeSlash />}
+              </span>
+            </div>
           </div>
 
           <div className="d-flex justify-content-end">
