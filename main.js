@@ -4,9 +4,10 @@ const path = require('path');
 app.setName('Scoreboard');
 
 function createWindow() {
-  const win = new BrowserWindow({
+  const window = new BrowserWindow({
     width: 1280,
     height: 800,
+    show: false,
     minWidth: 1024,
     minHeight: 700,
     webPreferences: {
@@ -15,13 +16,14 @@ function createWindow() {
   });
 
   if (app.isPackaged) {
-    win.loadFile(path.join(__dirname, 'dist', 'index.html'));
+    window.loadFile(path.join(__dirname, 'dist', 'index.html'));
   } else {
-    win.loadURL('http://localhost:5173');
+    window.loadURL('http://localhost:5173');
   }
 
-  win.once('ready-to-show', () => {
-    win.show();
+  window.once('ready-to-show', () => {
+    window.center();
+    window.show();
   });
 
   const menu = Menu.buildFromTemplate(menuTemplate);
