@@ -63,6 +63,19 @@ const menuTemplate = [
       { role: 'close' },
     ],
   },
+  {
+    label: 'Ansicht',
+    submenu: [
+      { role: 'reload' },
+      { role: 'toggledevtools' },
+      { type: 'separator' },
+      { role: 'resetzoom' },
+      { role: 'zoomin' },
+      { role: 'zoomout' },
+      { type: 'separator' },
+      { role: 'togglefullscreen' },
+    ],
+  },
 ];
 
 app.whenReady().then(() => {
