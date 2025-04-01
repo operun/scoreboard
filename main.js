@@ -1,7 +1,16 @@
 const { app, BrowserWindow, Menu, dialog } = require('electron');
 const path = require('path');
+const { ipcMain } = require('electron');
 
 app.setName('Scoreboard');
+
+const { saveEncryptedSettings } = require('./settingsStore');
+
+ipcMain.handle('save-settings', async (event, settings) => {
+  console.log('IPC-HANDLER: save-settings', settings);
+  const filePath = path.join(app.getPath('userData'), 'settings.json');
+  await saveEncryptedSettings(filePath, settings);
+});
 
 function createWindow() {
   const window = new BrowserWindow({
@@ -12,6 +21,8 @@ function createWindow() {
     minHeight: 700,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
+      contextIsolation: true,
+      nodeIntegration: false
     },
   });
 
@@ -79,7 +90,6 @@ const menuTemplate = [
 
 app.whenReady().then(() => {
   createWindow();
-
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
   });
