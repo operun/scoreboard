@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { toast } from 'react-toastify';
 
 function SettingsView() {
   const [server, setServer] = useState('');
@@ -7,6 +8,7 @@ function SettingsView() {
 
   const handleSave = () => {
     window.electronAPI.saveSettings({ server, username, password });
+    toast.success('Gespeichert');
   };
 
   return (
