@@ -1,9 +1,22 @@
 const { app, BrowserWindow, ipcMain, Menu, dialog } = require('electron');
 const { Client } = require('ssh2');
 const { saveEncryptedSettings, loadEncryptedSettings } = require('./settingsStore');
+const fs = require('fs');
 const path = require('path');
+const mediaListPath = path.join(app.getPath('userData'), 'media.json');
 
 app.setName('Scoreboard');
+
+function loadMediaList() {
+  if (fs.existsSync(mediaListPath)) {
+    return JSON.parse(fs.readFileSync(mediaListPath, 'utf-8'));
+  }
+  return [];
+}
+
+function saveMediaList(list) {
+  fs.writeFileSync(mediaListPath, JSON.stringify(list, null, 2), 'utf-8');
+}
 
 ipcMain.handle('load-settings', async () => {
   const filePath = path.join(app.getPath('userData'), 'settings.json');
@@ -45,6 +58,84 @@ ipcMain.handle('test-connection', async () => {
         readyTimeout: 5000
       });
   });
+});
+
+ipcMain.handle('load-media', async () => {
+  return loadMediaList();
+});
+
+ipcMain.handle('add-media', async () => {
+  const result = await dialog.showOpenDialog({
+    title: 'Video auswählen',
+    filters: [{ name: 'Videos', extensions: ['mp4', 'mov', 'avi', 'mkv'] }],
+    properties: ['openFile']
+  });
+
+  if (result.canceled || result.filePaths.length === 0) {
+    return { status: 'cancel' };
+  }
+
+  const originalPath = result.filePaths[0];
+  const userData = app.getPath('userData');
+  const mediaDir = path.join(userData, 'media');
+  const mediaList = loadMediaList();
+
+  if (!fs.existsSync(mediaDir)) {
+    fs.mkdirSync(mediaDir);
+  }
+
+  const fileName = path.basename(originalPath);
+  const targetPath = path.join(mediaDir, fileName);
+
+  const fileExists = fs.existsSync(targetPath);
+  const alreadyListed = mediaList.some((entry) => entry.fileName === fileName);
+
+  if (fileExists && alreadyListed) {
+    return {
+      status: 'duplicate',
+      fileName
+    };
+  }
+
+  try {
+    if (!fileExists) {
+      fs.copyFileSync(originalPath, targetPath);
+    }
+
+    const newEntry = {
+      fileName,
+      originalPath,
+      addedAt: new Date().toISOString()
+    };
+
+    mediaList.push(newEntry);
+    saveMediaList(mediaList);
+
+    return { status: 'ok', ...newEntry };
+  } catch (err) {
+    console.error('[Media] Fehler beim Hinzufügen:', err);
+    return { status: 'error', message: err.message };
+  }
+});
+
+ipcMain.handle('delete-media', async (event, fileName) => {
+  const userData = app.getPath('userData');
+  const mediaDir = path.join(userData, 'media');
+  const filePath = path.join(mediaDir, fileName);
+
+  try {
+    if (fs.existsSync(filePath)) {
+      fs.unlinkSync(filePath);
+    }
+
+    const mediaList = loadMediaList().filter((item) => item.fileName !== fileName);
+    saveMediaList(mediaList);
+
+    return { status: 'ok' };
+  } catch (err) {
+    console.error('[Media] Fehler beim Löschen:', err);
+    return { status: 'error', message: err.message };
+  }
 });
 
 function createWindow() {
