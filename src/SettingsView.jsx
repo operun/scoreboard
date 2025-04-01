@@ -34,11 +34,12 @@ function SettingsView() {
   };
   
   return (
-    <div className="container py-4">
-      <h1 className="mb-4">Settings</h1>
+    <div className="container">
+      <h1>Settings</h1>
+      <p className="lead mb-4">Cras justo odio, dapibus ac facilisis in, egestas eget quam. Aenean eu leo quam. Pellentesque ornare sem lacinia quam venenatis vestibulum. Donec sed odio dui. Lorem ipsum dolor sit amet, consectetur adipiscing elit.</p>
 
       <div className="row">
-        <div className="col-md-8 offset-md-2 col-lg-6 offset-lg-3">
+        <div className="col-md-8 col-lg-6">
           <h2 className="mb-3">Anmeldedaten</h2>
 
           <div className="mb-3">
