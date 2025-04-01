@@ -16,6 +16,14 @@ function getEncryptionKey() {
   }
 }
 
+function decrypt(encryptedData) {
+  const key = getEncryptionKey();
+  const decipher = crypto.createDecipheriv('aes-256-cbc', key, IV);
+  let decrypted = decipher.update(encryptedData, 'hex', 'utf8');
+  decrypted += decipher.final('utf8');
+  return JSON.parse(decrypted);
+}
+
 function encrypt(data) {
   const key = getEncryptionKey();
   const cipher = crypto.createCipheriv('aes-256-cbc', key, IV);
@@ -24,11 +32,20 @@ function encrypt(data) {
   return encrypted;
 }
 
+function loadEncryptedSettings(filePath) {
+  if (fs.existsSync(filePath)) {
+    const encryptedData = fs.readFileSync(filePath, 'utf-8');
+    return decrypt(encryptedData);
+  }
+  return null;
+}
+
 async function saveEncryptedSettings(filePath, settings) {
   const encrypted = encrypt(settings);
   fs.writeFileSync(filePath, encrypted, 'utf-8');
 }
 
 module.exports = {
-  saveEncryptedSettings
+  saveEncryptedSettings,
+  loadEncryptedSettings
 };

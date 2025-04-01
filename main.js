@@ -1,10 +1,14 @@
-const { app, BrowserWindow, Menu, dialog } = require('electron');
+const { app, BrowserWindow, ipcMain, Menu, dialog } = require('electron');
 const path = require('path');
-const { ipcMain } = require('electron');
+const { saveEncryptedSettings, loadEncryptedSettings } = require('./settingsStore');
 
 app.setName('Scoreboard');
 
-const { saveEncryptedSettings } = require('./settingsStore');
+ipcMain.handle('load-settings', async () => {
+  const filePath = path.join(app.getPath('userData'), 'settings.json');
+  const settings = loadEncryptedSettings(filePath);
+  return settings;
+});
 
 ipcMain.handle('save-settings', async (event, settings) => {
   console.log('IPC-HANDLER: save-settings', settings);

@@ -1,10 +1,22 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { toast } from 'react-toastify';
 
 function SettingsView() {
   const [server, setServer] = useState('');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+
+  useEffect(() => {
+    const loadSettings = async () => {
+      const settings = await window.electronAPI.loadSettings();
+      if (settings) {
+        setServer(settings.server || '');
+        setUsername(settings.username || '');
+        setPassword(settings.password || '');
+      }
+    };
+    loadSettings();
+  }, []);
 
   const handleSave = () => {
     window.electronAPI.saveSettings({ server, username, password });
