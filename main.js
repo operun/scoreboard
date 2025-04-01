@@ -1,6 +1,7 @@
 const { app, BrowserWindow, ipcMain, Menu, dialog } = require('electron');
-const path = require('path');
+const { Client } = require('ssh2');
 const { saveEncryptedSettings, loadEncryptedSettings } = require('./settingsStore');
+const path = require('path');
 
 app.setName('Scoreboard');
 
@@ -14,6 +15,36 @@ ipcMain.handle('save-settings', async (event, settings) => {
   console.log('IPC-HANDLER: save-settings', settings);
   const filePath = path.join(app.getPath('userData'), 'settings.json');
   await saveEncryptedSettings(filePath, settings);
+});
+
+ipcMain.handle('test-connection', async () => {
+  const filePath = path.join(app.getPath('userData'), 'settings.json');
+  const settings = loadEncryptedSettings(filePath);
+
+  return new Promise((resolve) => {
+    if (!settings || !settings.server || !settings.username || !settings.password) {
+      return resolve({ status: 'error', message: 'Unvollständige Einstellungen' });
+    }
+
+    const conn = new Client();
+
+    conn
+      .on('ready', () => {
+        conn.end();
+        resolve({ status: 'ok', message: 'Verbindung erfolgreich' });
+      })
+      .on('error', (err) => {
+        console.error('[SSH] Connection error:', err.message);
+        resolve({ status: 'error', message: 'Verbindung fehlgeschlagen' });
+      })
+      .connect({
+        host: settings.server,
+        port: 22,
+        username: settings.username,
+        password: settings.password,
+        readyTimeout: 5000
+      });
+  });
 });
 
 function createWindow() {

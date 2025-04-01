@@ -21,8 +21,18 @@ function SettingsView() {
   const handleSave = () => {
     window.electronAPI.saveSettings({ server, username, password });
     toast.success('Gespeichert');
+    setTimeout(handleTestConnection, 300);
   };
 
+  const handleTestConnection = async () => {
+    const result = await window.electronAPI.testConnection();
+    if (result.status === 'ok') {
+      toast.success(result.message);
+    } else {
+      toast.error(`${result.message}`);
+    }
+  };
+  
   return (
     <div className="container py-4">
       <h1 className="mb-4">Settings</h1>
@@ -66,6 +76,7 @@ function SettingsView() {
               Speichern
             </button>
           </div>
+
         </div>
       </div>
     </div>
