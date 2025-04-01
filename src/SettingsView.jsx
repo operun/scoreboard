@@ -10,9 +10,9 @@ function SettingsView() {
 
   return (
     <div className="container">
-      <h1 className="mb-3">Settings</h1>
+      <h1>Settings</h1>
 
-      <p className='lead mb-5'>
+      <p className="lead">
         Nullam id dolor id nibh ultricies vehicula ut id elit. Fusce dapibus, tellus ac cursus commodo, tortor mauris condimentum nibh, ut fermentum massa justo sit amet risus. Cras justo odio, dapibus ac facilisis in, egestas eget quam. Etiam porta sem malesuada magna mollis euismod.
       </p>
 

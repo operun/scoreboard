@@ -10,14 +10,14 @@ function Sidebar({ activeView, onChangeView }) {
   ];
 
   return (
-    <div className="d-flex flex-column justify-content-between bg-black text-white vh-100" style={{ width: '60px' }}>
-      <div className="d-flex flex-column align-items-center pt-5 gap-3">
+    <div className="justify-content-between">
+      <div className="d-flex flex-column align-items-center gap-3" style={{ marginTop: '52px' }}>
         {mainItems.map((item) => (
           <div
             key={item.id}
             onClick={() => onChangeView(item.id)}
             title={item.label}
-            className={`text-center fs-5 ${activeView === item.id ? 'text-white border-start border-white' : 'text-white-50 border border-0'} cursor-pointer`}
+            className={`text-center fs-5 py-1 ${activeView === item.id ? 'text-white border-start border-white' : 'text-white-50 border-start border-black'} cursor-pointer`}
             style={{ width: '100%' }}
           >
             {item.icon}

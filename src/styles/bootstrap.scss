@@ -1,6 +1,10 @@
 // Stone
 $primary: #336B87;
 
+$body-color-dark: #f8f9fa;
+$body-bg-dark: #111519;
+
 $font-family-base: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 
 @import "bootstrap/scss/bootstrap";
+@import "app";
