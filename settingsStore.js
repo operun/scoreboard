@@ -1,11 +1,24 @@
 const fs = require('fs');
+const path = require('path');
 const crypto = require('crypto');
+const { app } = require('electron');
 
-const ENCRYPTION_KEY = crypto.scryptSync('super-secret-key', 'salt123', 32);
 const IV = Buffer.alloc(16, 0);
 
+function getEncryptionKey() {
+  const keyFile = path.join(app.getPath('userData'), 'encryption-key.bin');
+  if (fs.existsSync(keyFile)) {
+    return fs.readFileSync(keyFile);
+  } else {
+    const newKey = crypto.randomBytes(32);
+    fs.writeFileSync(keyFile, newKey);
+    return newKey;
+  }
+}
+
 function encrypt(data) {
-  const cipher = crypto.createCipheriv('aes-256-cbc', ENCRYPTION_KEY, IV);
+  const key = getEncryptionKey();
+  const cipher = crypto.createCipheriv('aes-256-cbc', key, IV);
   let encrypted = cipher.update(JSON.stringify(data), 'utf8', 'hex');
   encrypted += cipher.final('hex');
   return encrypted;
