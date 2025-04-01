@@ -11,7 +11,7 @@ function Sidebar({ activeView, onChangeView }) {
 
   return (
     <div className="justify-content-between">
-      <div className="d-flex flex-column align-items-center gap-3" style={{ marginTop: '52px' }}>
+      <div className="d-flex flex-column align-items-center gap-3 mt-2">
         {mainItems.map((item) => (
           <div
             key={item.id}

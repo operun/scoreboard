@@ -11,12 +11,11 @@ function App() {
 
   return (
     <div className="app">
-      <TitleBar />
       <div className="d-flex position-relative">
-        <div className="sidebar d-flex flex-column bg-black text-white vh-100">
+        <div className="sidebar d-flex flex-column text-white vh-100">
           <Sidebar activeView={view} onChangeView={setView} />
         </div>
-        <div className="flex-fill mx-5" style={{marginTop: '75px'}}>
+        <div className="main flex-fill p-5">
           {view === 'controller' && <ControllerView />}
           {view === 'media' && <MediaView />}
           {view === 'settings' && <SettingsView />}
