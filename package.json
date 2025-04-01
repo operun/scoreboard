@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "vite",
     "electron": "electronmon .",
-    "dev:all": "concurrently -k -n VITE,ELECTRON -c cyan,magenta \"npm run dev\" \"npm run electron\"",
+    "start": "concurrently -k -n VITE,ELECTRON -c cyan,magenta \"npm run dev\" \"npm run electron\"",
     "generate:icons": "electron-icon-builder --input=assets/icons/icon.png --output=assets --flatten",
     "build:renderer": "vite build",
     "build:electron": "electron-builder",
