@@ -61,7 +61,13 @@ ipcMain.handle('test-connection', async () => {
 });
 
 ipcMain.handle('load-media', async () => {
-  return loadMediaList();
+  const mediaList = loadMediaList();
+  const mediaDir = path.join(app.getPath('userData'), 'media');
+
+  return mediaList.map((item) => ({
+    ...item,
+    path: path.join(mediaDir, item.fileName)
+  }));
 });
 
 ipcMain.handle('add-media', async () => {
@@ -111,7 +117,13 @@ ipcMain.handle('add-media', async () => {
     mediaList.push(newEntry);
     saveMediaList(mediaList);
 
-    return { status: 'ok', ...newEntry };
+    return {
+      status: 'ok',
+      fileName,
+      path: targetPath, // <— wichtig
+      addedAt: new Date().toISOString()
+    };
+
   } catch (err) {
     console.error('[Media] Fehler beim Hinzufügen:', err);
     return { status: 'error', message: err.message };
@@ -148,7 +160,8 @@ function createWindow() {
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
-      nodeIntegration: false
+      nodeIntegration: false,
+      webSecurity: false
     },
   });
 

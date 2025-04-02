@@ -8,7 +8,7 @@ import './styles/bootstrap.scss';
 import 'react-toastify/dist/ReactToastify.css';
 
 function App() {
-  const [view, setView] = useState('controller');
+  const [view, setView] = useState('media');
   const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
   const color_mode = prefersDark ? 'dark' : 'light';
 

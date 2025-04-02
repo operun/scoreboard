@@ -3,6 +3,18 @@ import { toast } from 'react-toastify';
 
 function MediaView() {
   const [mediaFiles, setMediaFiles] = useState([]);
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [offcanvasVisible, setOffcanvasVisible] = useState(false);
+
+  const handleShow = (path) => {
+    setSelectedFile(path);
+    setTimeout(() => setOffcanvasVisible(true), 10);
+  };
+
+  const handleClose = () => {
+    setOffcanvasVisible(false);
+    setTimeout(() => setSelectedFile(null), 300);
+  };
 
   useEffect(() => {
     const loadMedia = async () => {
@@ -10,6 +22,14 @@ function MediaView() {
       setMediaFiles(list);
     };
     loadMedia();
+  }, []);
+
+  useEffect(() => {
+    const handleEsc = (e) => {
+      if (e.key === 'Escape') handleClose();
+    };
+    document.addEventListener('keydown', handleEsc);
+    return () => document.removeEventListener('keydown', handleEsc);
   }, []);
 
   const handleAddMedia = async () => {
@@ -51,23 +71,70 @@ function MediaView() {
 
           <ul className="list-group">
             {mediaFiles.map((file, idx) => (
-              <li key={idx} className="list-group-item d-flex justify-content-between align-items-center">
-                <span>
-                  {file.fileName}
-                  <small className="text-muted ms-2">{new Date(file.addedAt).toLocaleString()}</small>
+              <li key={idx} className="list-group-item d-flex align-items-center">
+
+                <span className="me-auto">
+                  <span className="me-2">{file.fileName}</span>
+                  <small className="text-muted">{new Date(file.addedAt).toLocaleString()}</small>
                 </span>
+
                 <button
-                  className="btn btn-sm btn-outline-danger"
+                  className="btn btn-sm btn-outline-primary ms-2"
+                  onClick={() => handleShow(file.path)}
+                >
+                  Anzeigen
+                </button>
+
+                <button
+                  className="btn btn-sm btn-outline-danger ms-2"
                   onClick={() => handleDeleteMedia(file.fileName)}
                 >
                   Löschen
                 </button>
+
               </li>
             ))}
           </ul>
 
         </div>
       </div>
+
+      {selectedFile && (
+        <>
+          <div
+            className={`offcanvas-backdrop fade ${offcanvasVisible ? 'show' : ''}`}
+            onClick={handleClose}
+          ></div>
+
+          <div
+            className={`offcanvas offcanvas-end fade ${offcanvasVisible ? 'show' : ''}`}
+            tabIndex="-1"
+            style={{
+              visibility: 'visible',
+              zIndex: 1045,
+              width: '600px'
+            }}
+          >
+            <div className="offcanvas-header pt-4">
+              <button
+                type="button"
+                className="btn-close"
+                onClick={handleClose}
+              ></button>
+            </div>
+            <div className="offcanvas-body">
+              <video
+                key={selectedFile}
+                src={`file://${selectedFile}`}
+                controls
+                autoPlay
+                style={{ width: '100%', maxHeight: '80vh' }}
+              />
+            </div>
+          </div>
+        </>
+      )}
+
 
     </div>
   );
