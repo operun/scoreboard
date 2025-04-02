@@ -1,10 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { toast } from 'react-toastify';
 
 function MediaView() {
   const [mediaFiles, setMediaFiles] = useState([]);
   const [selectedFile, setSelectedFile] = useState(null);
   const [offcanvasVisible, setOffcanvasVisible] = useState(false);
+  const videoRef = useRef(null);
 
   const handleShow = (path) => {
     setSelectedFile(path);
@@ -12,6 +13,10 @@ function MediaView() {
   };
 
   const handleClose = () => {
+    if (videoRef.current) {
+      videoRef.current.pause();
+      videoRef.current.currentTime = 0;
+    }
     setOffcanvasVisible(false);
     setTimeout(() => setSelectedFile(null), 300);
   };
@@ -125,6 +130,7 @@ function MediaView() {
             <div className="offcanvas-body">
               <video
                 key={selectedFile}
+                ref={videoRef}
                 src={`file://${selectedFile}`}
                 controls
                 autoPlay
