@@ -52,6 +52,9 @@ function MediaView() {
   };  
 
   const handleDeleteMedia = async (fileName) => {
+    const confirmDelete = window.confirm(`Möchtest du die Datei "${fileName}" wirklich löschen?`);
+    if (!confirmDelete) return;
+
     const result = await window.electronAPI.deleteMedia(fileName);
     if (result.status === 'ok') {
       setMediaFiles((prev) => prev.filter((f) => f.fileName !== fileName));
@@ -60,7 +63,7 @@ function MediaView() {
       toast.error('Fehler beim Löschen');
     }
   };
-  
+
   return (
     <div className="container">
 
