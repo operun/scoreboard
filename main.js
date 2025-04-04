@@ -25,6 +25,13 @@ function calculateFileHash(filePath) {
   return crypto.createHash('sha256').update(buffer).digest('hex');
 }
 
+function getMediaType(fileName) {
+  const ext = path.extname(fileName).toLowerCase();
+  if (['.mp4', '.mov', '.avi', '.mkv'].includes(ext)) return 'video';
+  if (['.jpg', '.jpeg', '.png'].includes(ext)) return 'image';
+  return 'unknown';
+}
+
 ipcMain.handle('load-settings', async () => {
   const filePath = path.join(app.getPath('userData'), 'settings.json');
   const settings = loadEncryptedSettings(filePath);
@@ -72,7 +79,8 @@ ipcMain.handle('load-media', async () => {
 
   return mediaList.map((item) => ({
     ...item,
-    path: path.join(mediaDir, item.fileName)
+    path: path.join(mediaDir, item.fileName),
+    type: getMediaType(item.fileName)
   }));
 });
 
@@ -87,7 +95,9 @@ ipcMain.handle('add-media', async (event, options = {}) => {
   } else {
     const result = await dialog.showOpenDialog({
       title: 'Video auswählen',
-      filters: [{ name: 'Videos', extensions: ['mp4', 'mov', 'avi', 'mkv'] }],
+      filters: [
+        { name: 'Medien', extensions: ['mp4', 'mov', 'avi', 'mkv', 'jpg', 'jpeg', 'png'] }
+      ],
       properties: ['openFile']
     });
 
@@ -133,7 +143,8 @@ ipcMain.handle('add-media', async (event, options = {}) => {
     originalPath,
     path: targetPath,
     hash: fileHash,
-    addedAt: new Date().toISOString()
+    addedAt: new Date().toISOString(),
+    type: getMediaType(fileName)
   };
 
   mediaList.push(newEntry);

@@ -43,38 +43,28 @@ function MediaView() {
         ? await window.electronAPI.addMedia(forceOptions)
         : await window.electronAPI.addMedia();
 
-      console.log('[Renderer] addMedia result:', result);
-
       if (result.status === 'ok') {
         setMediaFiles((prev) => [...prev, result]);
         toast.success(`Die Datei ${result.fileName} wurde hinzugefügt.`);
+      } else if (result.status === 'duplicate-identical') {
+        toast.info(`Die Datei "${result.fileName}" ist bereits vorhanden.`);
       } else if (result.status === 'duplicate-hash') {
         const confirm = window.confirm(
           `Diese Datei scheint identisch zu "${result.existingFileName}" zu sein. Trotzdem hinzufügen?`
         );
         if (confirm) {
-          console.log('[Renderer] Forcing re-upload with:', {
-            force: true,
-            originalPath: result.originalPath,
-            fileName: result.fileName
-          });
-
           const cleanOriginalPath = String(result.originalPath);
           const cleanFileName = String(result.fileName);
-
           await handleAddMedia({
             force: true,
             originalPath: cleanOriginalPath,
             fileName: cleanFileName
           });
-
         } else {
           toast.info('Import abgebrochen.');
         }
       } else if (result.status === 'cancel') {
         // keine Aktion
-      } else if (result.status === 'duplicate-identical') {
-        toast.info(`Die Datei "${result.fileName}" ist bereits vorhanden.`);
       } else {
         toast.error('Fehler beim Hinzufügen.');
       }
@@ -105,7 +95,7 @@ function MediaView() {
           <p className="lead mb-4">Verwalte deine lokalen Mediendateien.</p>
 
           <button className="btn btn-primary mb-3" onClick={handleAddMedia}>
-            Video hinzufügen
+            Datei hinzufügen
           </button>
 
           <ul className="list-group">
@@ -117,7 +107,7 @@ function MediaView() {
                 </span>
                 <button
                   className="btn btn-sm btn-outline-primary ms-2"
-                  onClick={() => handleShow(file.path)}
+                  onClick={() => handleShow(file)}
                 >
                   Anzeigen
                 </button>
@@ -152,15 +142,25 @@ function MediaView() {
             <div className="offcanvas-header pt-4">
               <button type="button" className="btn-close" onClick={handleClose}></button>
             </div>
-            <div className="offcanvas-body">
-              <video
-                key={selectedFile}
-                ref={videoRef}
-                src={`file://${selectedFile}`}
-                controls
-                autoPlay
-                style={{ width: '100%', maxHeight: '80vh' }}
-              />
+            <div className="offcanvas-body text-center">
+              {selectedFile.type === 'video' && (
+                <video
+                  key={selectedFile.path}
+                  ref={videoRef}
+                  src={`file://${selectedFile.path}`}
+                  controls
+                  autoPlay
+                  style={{ width: '100%', maxHeight: '80vh' }}
+                />
+              )}
+              {selectedFile.type === 'image' && (
+                <img
+                  src={`file://${encodeURI(selectedFile.path)}`}
+                  className='img-fluidx'
+                  alt={selectedFile.fileName}
+                  style={{ maxWidth: '100%', maxHeight: '80vh' }}
+                />
+              )}
             </div>
           </div>
         </>
