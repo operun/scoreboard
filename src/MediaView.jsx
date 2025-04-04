@@ -37,19 +37,52 @@ function MediaView() {
     return () => document.removeEventListener('keydown', handleEsc);
   }, []);
 
-  const handleAddMedia = async () => {
-    const result = await window.electronAPI.addMedia();
-    if (result.status === 'ok') {
-      setMediaFiles((prev) => [...prev, result]);
-      toast.success(`Die Datei ${result.fileName} wurde hinzugefügt.`);
-    } else if (result.status === 'duplicate') {
-      toast.info(`Die Datei ${result.fileName} existiert bereits.`);
-    } else if (result.status === 'cancel') {
-      // keine Aktion
-    } else {
-      toast.error('Fehler beim Hinzufügen');
+  const handleAddMedia = async (forceOptions = null) => {
+    try {
+      const result = forceOptions
+        ? await window.electronAPI.addMedia(forceOptions)
+        : await window.electronAPI.addMedia();
+
+      console.log('[Renderer] addMedia result:', result);
+
+      if (result.status === 'ok') {
+        setMediaFiles((prev) => [...prev, result]);
+        toast.success(`Die Datei ${result.fileName} wurde hinzugefügt.`);
+      } else if (result.status === 'duplicate-hash') {
+        const confirm = window.confirm(
+          `Diese Datei scheint identisch zu "${result.existingFileName}" zu sein. Trotzdem hinzufügen?`
+        );
+        if (confirm) {
+          console.log('[Renderer] Forcing re-upload with:', {
+            force: true,
+            originalPath: result.originalPath,
+            fileName: result.fileName
+          });
+
+          const cleanOriginalPath = String(result.originalPath);
+          const cleanFileName = String(result.fileName);
+
+          await handleAddMedia({
+            force: true,
+            originalPath: cleanOriginalPath,
+            fileName: cleanFileName
+          });
+
+        } else {
+          toast.info('Import abgebrochen.');
+        }
+      } else if (result.status === 'cancel') {
+        // keine Aktion
+      } else if (result.status === 'duplicate-identical') {
+        toast.info(`Die Datei "${result.fileName}" ist bereits vorhanden.`);
+      } else {
+        toast.error('Fehler beim Hinzufügen.');
+      }
+    } catch (err) {
+      console.error('[Renderer] Upload failed:', err);
+      toast.error('Upload ist fehlgeschlagen.');
     }
-  };  
+  };
 
   const handleDeleteMedia = async (fileName) => {
     const confirmDelete = window.confirm(`Möchtest du die Datei "${fileName}" wirklich löschen?`);
@@ -66,12 +99,10 @@ function MediaView() {
 
   return (
     <div className="container">
-
       <div className="row">
         <div className="col">
-
           <h1>Medien</h1>
-          <p className="lead mb-4">Cras justo odio, dapibus ac facilisis in, egestas eget quam. Aenean eu leo quam. Pellentesque ornare sem lacinia quam venenatis vestibulum. Donec sed odio dui. Lorem ipsum dolor sit amet, consectetur adipiscing elit.</p>
+          <p className="lead mb-4">Verwalte deine lokalen Mediendateien.</p>
 
           <button className="btn btn-primary mb-3" onClick={handleAddMedia}>
             Video hinzufügen
@@ -80,30 +111,25 @@ function MediaView() {
           <ul className="list-group">
             {mediaFiles.map((file, idx) => (
               <li key={idx} className="list-group-item d-flex align-items-center">
-
                 <span className="me-auto">
                   <span className="me-2">{file.fileName}</span>
                   <small className="text-muted">{new Date(file.addedAt).toLocaleString()}</small>
                 </span>
-
                 <button
                   className="btn btn-sm btn-outline-primary ms-2"
                   onClick={() => handleShow(file.path)}
                 >
                   Anzeigen
                 </button>
-
                 <button
                   className="btn btn-sm btn-outline-danger ms-2"
                   onClick={() => handleDeleteMedia(file.fileName)}
                 >
                   Löschen
                 </button>
-
               </li>
             ))}
           </ul>
-
         </div>
       </div>
 
@@ -124,11 +150,7 @@ function MediaView() {
             }}
           >
             <div className="offcanvas-header pt-4">
-              <button
-                type="button"
-                className="btn-close"
-                onClick={handleClose}
-              ></button>
+              <button type="button" className="btn-close" onClick={handleClose}></button>
             </div>
             <div className="offcanvas-body">
               <video
@@ -143,11 +165,8 @@ function MediaView() {
           </div>
         </>
       )}
-
-
     </div>
   );
-
 }
 
 export default MediaView;

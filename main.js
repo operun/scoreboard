@@ -1,11 +1,13 @@
 const { app, BrowserWindow, ipcMain, Menu, dialog } = require('electron');
 const { Client } = require('ssh2');
 const { saveEncryptedSettings, loadEncryptedSettings } = require('./settingsStore');
+const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
-const mediaListPath = path.join(app.getPath('userData'), 'media.json');
 
 app.setName('Scoreboard');
+
+const mediaListPath = path.join(app.getPath('userData'), 'media.json');
 
 function loadMediaList() {
   if (fs.existsSync(mediaListPath)) {
@@ -18,6 +20,11 @@ function saveMediaList(list) {
   fs.writeFileSync(mediaListPath, JSON.stringify(list, null, 2), 'utf-8');
 }
 
+function calculateFileHash(filePath) {
+  const buffer = fs.readFileSync(filePath);
+  return crypto.createHash('sha256').update(buffer).digest('hex');
+}
+
 ipcMain.handle('load-settings', async () => {
   const filePath = path.join(app.getPath('userData'), 'settings.json');
   const settings = loadEncryptedSettings(filePath);
@@ -25,7 +32,6 @@ ipcMain.handle('load-settings', async () => {
 });
 
 ipcMain.handle('save-settings', async (event, settings) => {
-  console.log('IPC-HANDLER: save-settings', settings);
   const filePath = path.join(app.getPath('userData'), 'settings.json');
   await saveEncryptedSettings(filePath, settings);
 });
@@ -70,64 +76,78 @@ ipcMain.handle('load-media', async () => {
   }));
 });
 
-ipcMain.handle('add-media', async () => {
-  const result = await dialog.showOpenDialog({
-    title: 'Video auswählen',
-    filters: [{ name: 'Videos', extensions: ['mp4', 'mov', 'avi', 'mkv'] }],
-    properties: ['openFile']
-  });
-
-  if (result.canceled || result.filePaths.length === 0) {
-    return { status: 'cancel' };
-  }
-
-  const originalPath = result.filePaths[0];
-  const userData = app.getPath('userData');
-  const mediaDir = path.join(userData, 'media');
+ipcMain.handle('add-media', async (event, options = {}) => {
+  const mediaDir = path.join(app.getPath('userData'), 'media');
   const mediaList = loadMediaList();
 
-  if (!fs.existsSync(mediaDir)) {
-    fs.mkdirSync(mediaDir);
-  }
+  let originalPath;
 
-  const fileName = path.basename(originalPath);
-  const targetPath = path.join(mediaDir, fileName);
+  if (options.force && options.originalPath) {
+    originalPath = String(options.originalPath);
+  } else {
+    const result = await dialog.showOpenDialog({
+      title: 'Video auswählen',
+      filters: [{ name: 'Videos', extensions: ['mp4', 'mov', 'avi', 'mkv'] }],
+      properties: ['openFile']
+    });
 
-  const fileExists = fs.existsSync(targetPath);
-  const alreadyListed = mediaList.some((entry) => entry.fileName === fileName);
-
-  if (fileExists && alreadyListed) {
-    return {
-      status: 'duplicate',
-      fileName
-    };
-  }
-
-  try {
-    if (!fileExists) {
-      fs.copyFileSync(originalPath, targetPath);
+    if (result.canceled || result.filePaths.length === 0) {
+      return { status: 'cancel' };
     }
 
-    const newEntry = {
-      fileName,
-      originalPath,
-      addedAt: new Date().toISOString()
-    };
-
-    mediaList.push(newEntry);
-    saveMediaList(mediaList);
-
-    return {
-      status: 'ok',
-      fileName,
-      path: targetPath, // <— wichtig
-      addedAt: new Date().toISOString()
-    };
-
-  } catch (err) {
-    console.error('[Media] Fehler beim Hinzufügen:', err);
-    return { status: 'error', message: err.message };
+    originalPath = String(result.filePaths[0]);
   }
+
+  const fileName = String(options.fileName || path.basename(originalPath));
+  const targetPath = path.join(mediaDir, fileName);
+  const fileHash = String(calculateFileHash(originalPath));
+
+  if (!fs.existsSync(mediaDir)) {
+    fs.mkdirSync(mediaDir, { recursive: true });
+  }
+
+  if (!options.force) {
+    const duplicate = mediaList.find((entry) => entry.hash === fileHash);
+    if (duplicate) {
+      if (duplicate.fileName === fileName) {
+        return {
+          status: 'duplicate-identical',
+          fileName: String(fileName)
+        };
+      }
+      return {
+        status: 'duplicate-hash',
+        fileName: String(fileName),
+        existingFileName: String(duplicate.fileName),
+        hash: String(fileHash),
+        originalPath: String(originalPath)
+      };
+    }
+  }
+
+  fs.copyFileSync(originalPath, targetPath);
+
+  const newEntry = {
+    id: crypto.randomUUID(),
+    fileName,
+    originalPath,
+    path: targetPath,
+    hash: fileHash,
+    addedAt: new Date().toISOString()
+  };
+
+  mediaList.push(newEntry);
+  saveMediaList(mediaList);
+
+  return {
+    status: 'ok',
+    id: String(newEntry.id),
+    fileName: String(newEntry.fileName),
+    originalPath: String(newEntry.originalPath),
+    path: String(newEntry.path),
+    hash: String(newEntry.hash),
+    addedAt: String(newEntry.addedAt)
+  };
 });
 
 ipcMain.handle('delete-media', async (event, fileName) => {
