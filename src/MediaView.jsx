@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { toast } from 'react-toastify';
 
 function MediaView() {
+  const [activeTab, setActiveTab] = useState('videos');
   const [mediaFiles, setMediaFiles] = useState([]);
   const [selectedFile, setSelectedFile] = useState(null);
   const [offcanvasVisible, setOffcanvasVisible] = useState(false);
@@ -94,32 +95,54 @@ function MediaView() {
           <h1>Medien</h1>
           <p className="lead mb-4">Verwalte deine lokalen Mediendateien.</p>
 
-          <button className="btn btn-primary mb-3" onClick={handleAddMedia}>
+          <ul className="nav nav-underline mb-4">
+            <li className="nav-item">
+              <button
+                className={`nav-link ${activeTab === 'videos' ? 'active' : ''}`}
+                onClick={() => setActiveTab('videos')}
+              >
+                Videos
+              </button>
+            </li>
+            <li className="nav-item">
+              <button
+                className={`nav-link ${activeTab === 'images' ? 'active' : ''}`}
+                onClick={() => setActiveTab('images')}
+              >
+                Bilder
+              </button>
+            </li>
+          </ul>
+
+          <ul className="list-group mb-4">
+            {mediaFiles
+              .filter((file) => file.type === (activeTab === 'videos' ? 'video' : 'image'))
+              .map((file, idx) => (
+                <li key={idx} className="list-group-item d-flex align-items-center">
+                  <span className="me-auto">
+                    <span className="me-2">{file.fileName}</span>
+                    <small className="text-muted">{new Date(file.addedAt).toLocaleString()}</small>
+                  </span>
+                  <button
+                    className="btn btn-sm btn-outline-primary ms-2"
+                    onClick={() => handleShow(file)}
+                  >
+                    Anzeigen
+                  </button>
+                  <button
+                    className="btn btn-sm btn-outline-danger ms-2"
+                    onClick={() => handleDeleteMedia(file.fileName)}
+                  >
+                    Löschen
+                  </button>
+                </li>
+              ))}
+          </ul>
+
+          <button className="btn btn-outline-primary mb-3" onClick={handleAddMedia}>
             Datei hinzufügen
           </button>
 
-          <ul className="list-group">
-            {mediaFiles.map((file, idx) => (
-              <li key={idx} className="list-group-item d-flex align-items-center">
-                <span className="me-auto">
-                  <span className="me-2">{file.fileName}</span>
-                  <small className="text-muted">{new Date(file.addedAt).toLocaleString()}</small>
-                </span>
-                <button
-                  className="btn btn-sm btn-outline-primary ms-2"
-                  onClick={() => handleShow(file)}
-                >
-                  Anzeigen
-                </button>
-                <button
-                  className="btn btn-sm btn-outline-danger ms-2"
-                  onClick={() => handleDeleteMedia(file.fileName)}
-                >
-                  Löschen
-                </button>
-              </li>
-            ))}
-          </ul>
         </div>
       </div>
 
