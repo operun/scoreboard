@@ -1,15 +1,17 @@
 import { useState, useEffect, useRef } from 'react';
 import { toast } from 'react-toastify';
+import { BsXCircle, BsPlayCircle } from "react-icons/bs";
 
 function MediaView() {
-  const [activeTab, setActiveTab] = useState('videos');
+  const fileInputRef = useRef(null);
   const [mediaFiles, setMediaFiles] = useState([]);
   const [selectedFile, setSelectedFile] = useState(null);
   const [offcanvasVisible, setOffcanvasVisible] = useState(false);
+  const [activeTab, setActiveTab] = useState('videos');
   const videoRef = useRef(null);
 
-  const handleShow = (path) => {
-    setSelectedFile(path);
+  const handleShow = (file) => {
+    setSelectedFile(file);
     setTimeout(() => setOffcanvasVisible(true), 10);
   };
 
@@ -38,64 +40,90 @@ function MediaView() {
     return () => document.removeEventListener('keydown', handleEsc);
   }, []);
 
-  const handleAddMedia = async (forceOptions = null) => {
-    try {
-      const result = forceOptions
-        ? await window.electronAPI.addMedia(forceOptions)
-        : await window.electronAPI.addMedia();
+  const refreshMediaList = async () => {
+    const list = await window.electronAPI.loadMedia();
+    setMediaFiles(list);
+  };
 
-      if (result.status === 'ok') {
-        setMediaFiles((prev) => [...prev, result]);
-        toast.success(`Die Datei ${result.fileName} wurde hinzugefügt.`);
-      } else if (result.status === 'duplicate-identical') {
-        toast.info(`Die Datei "${result.fileName}" ist bereits vorhanden.`);
-      } else if (result.status === 'duplicate-hash') {
-        const confirm = window.confirm(
-          `Diese Datei scheint identisch zu "${result.existingFileName}" zu sein. Trotzdem hinzufügen?`
-        );
-        if (confirm) {
-          const cleanOriginalPath = String(result.originalPath);
-          const cleanFileName = String(result.fileName);
-          await handleAddMedia({
-            force: true,
-            originalPath: cleanOriginalPath,
-            fileName: cleanFileName
-          });
-        } else {
-          toast.info('Import abgebrochen.');
-        }
-      } else if (result.status === 'cancel') {
-        // keine Aktion
-      } else {
-        toast.error('Fehler beim Hinzufügen.');
-      }
-    } catch (err) {
-      console.error('[Renderer] Upload failed:', err);
-      toast.error('Upload ist fehlgeschlagen.');
+  const handleAddMedia = async (path) => {
+
+    console.log('[Renderer] Aufruf mit:', path);
+    const result = await window.electronAPI.addMedia(path);
+
+    if (result.status === 'ok') {
+      setMediaFiles((prev) => [...prev, result]);
+      toast.success(`Die Datei "${result.fileName}" wurde hinzugefügt.`);
+    } else if (result.status === 'known-hash') {
+      toast.info(`Die Datei "${result.fileName}" existiert bereits.`);
+    } else {
+      toast.error('Fehler beim Hinzufügen.');
+    }
+
+    if (result.type === 'video') {
+      setActiveTab('videos');
+    } else if (result.type === 'image') {
+      setActiveTab('images');
+    }
+
+    await refreshMediaList();
+
+  };
+
+  const handleDrop = async (e) => {
+    e.preventDefault();
+    const paths = [...e.dataTransfer.files].map((file) => file.path);
+    for (const path of paths) {
+      await handleAddMedia(path);
     }
   };
 
-  const handleDeleteMedia = async (fileName) => {
-    const confirmDelete = window.confirm(`Möchtest du die Datei "${fileName}" wirklich löschen?`);
+  const handleDeleteMedia = async (id) => {
+    const confirmDelete = window.confirm(`Möchtest du die Datei wirklich löschen?`);
     if (!confirmDelete) return;
 
-    const result = await window.electronAPI.deleteMedia(fileName);
+    const result = await window.electronAPI.deleteMedia(id);
     if (result.status === 'ok') {
-      setMediaFiles((prev) => prev.filter((f) => f.fileName !== fileName));
-      toast.success(`Die Datei ${fileName} wurde gelöscht.`);
+      setMediaFiles((prev) => prev.filter((f) => f.id !== id));
+      toast.success(`Die Datei wurde gelöscht.`);
     } else {
       toast.error('Fehler beim Löschen');
     }
   };
 
+  const filteredMedia = mediaFiles.filter((file) =>
+    activeTab === 'videos' ? file.type === 'video' : file.type === 'image'
+  );
+
   return (
-    <div className="container">
+    <div
+      className="container"
+      onDragOver={(e) => e.preventDefault()}
+      onDrop={handleDrop}
+    >
       <div className="row">
         <div className="col">
-          <h1>Medien</h1>
-          <p className="lead mb-4">Verwalte deine lokalen Mediendateien.</p>
 
-          <ul className="nav nav-underline mb-4">
+          <h1>Medien</h1>
+
+          <p className="lead mb-4">Hier kanns du Bilder und Videos verwalten.</p>
+
+          <div className="d-flex mb-3">
+            <button
+              className="btn btn-outline-primary"
+              onClick={async () => {
+                const result = await window.electronAPI.openFileDialog();
+                if (Array.isArray(result)) {
+                  for (const path of result) {
+                    await handleAddMedia(path);
+                  }
+                }
+              }}
+            >
+              Datei hinzufügen
+            </button>
+          </div>
+
+          <ul className="nav nav-underline mb-3">
             <li className="nav-item">
               <button
                 className={`nav-link ${activeTab === 'videos' ? 'active' : ''}`}
@@ -114,34 +142,37 @@ function MediaView() {
             </li>
           </ul>
 
-          <ul className="list-group mb-4">
-            {mediaFiles
-              .filter((file) => file.type === (activeTab === 'videos' ? 'video' : 'image'))
-              .map((file, idx) => (
-                <li key={idx} className="list-group-item d-flex align-items-center">
-                  <span className="me-auto">
-                    <span className="me-2">{file.fileName}</span>
-                    <small className="text-muted">{new Date(file.addedAt).toLocaleString()}</small>
-                  </span>
-                  <button
-                    className="btn btn-sm btn-outline-primary ms-2"
+          <table className="table">
+            <thead>
+              <tr>
+                <th scope="col">Name</th>
+                <th scope="col">Datum</th>
+                <th scope="col"></th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredMedia.map((file, idx) => (
+              <tr>
+                <td className="w-75">{file.fileName}</td>
+                <td>{new Date(file.addedAt).toLocaleString()}</td>
+                <td>
+                  <span
+                    className="me-2 text-success"
                     onClick={() => handleShow(file)}
                   >
-                    Anzeigen
-                  </button>
-                  <button
-                    className="btn btn-sm btn-outline-danger ms-2"
-                    onClick={() => handleDeleteMedia(file.fileName)}
+                    <BsPlayCircle />
+                  </span>
+                  <span
+                    className="me-2 text-danger"
+                    onClick={() => handleDeleteMedia(file.id)}
                   >
-                    Löschen
-                  </button>
-                </li>
+                    <BsXCircle />
+                  </span>
+                </td>
+              </tr>
               ))}
-          </ul>
-
-          <button className="btn btn-outline-primary mb-3" onClick={handleAddMedia}>
-            Datei hinzufügen
-          </button>
+            </tbody>
+          </table>
 
         </div>
       </div>
@@ -156,21 +187,17 @@ function MediaView() {
           <div
             className={`offcanvas offcanvas-end fade ${offcanvasVisible ? 'show' : ''}`}
             tabIndex="-1"
-            style={{
-              visibility: 'visible',
-              zIndex: 1045,
-              width: '600px'
-            }}
+            style={{ visibility: 'visible', zIndex: 1045, width: '600px' }}
           >
             <div className="offcanvas-header pt-4">
               <button type="button" className="btn-close" onClick={handleClose}></button>
             </div>
-            <div className="offcanvas-body text-center">
+            <div className="offcanvas-body">
               {selectedFile.type === 'video' && (
                 <video
-                  key={selectedFile.path}
+                  key={selectedFile.id}
                   ref={videoRef}
-                  src={`file://${selectedFile.path}`}
+                  src={`file://${encodeURI(selectedFile.path)}`}
                   controls
                   autoPlay
                   style={{ width: '100%', maxHeight: '80vh' }}
@@ -179,9 +206,8 @@ function MediaView() {
               {selectedFile.type === 'image' && (
                 <img
                   src={`file://${encodeURI(selectedFile.path)}`}
-                  className='img-fluidx'
                   alt={selectedFile.fileName}
-                  style={{ maxWidth: '100%', maxHeight: '80vh' }}
+                  style={{ width: '100%', maxHeight: '80vh', objectFit: 'contain' }}
                 />
               )}
             </div>

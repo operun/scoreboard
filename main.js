@@ -79,106 +79,94 @@ ipcMain.handle('load-media', async () => {
 
   return mediaList.map((item) => ({
     ...item,
-    path: path.join(mediaDir, item.fileName),
-    type: getMediaType(item.fileName)
+    path: path.join(mediaDir, item.storedName)
   }));
 });
 
-ipcMain.handle('add-media', async (event, options = {}) => {
+ipcMain.handle('add-media', async (event, filePath) => {
   const mediaDir = path.join(app.getPath('userData'), 'media');
   const mediaList = loadMediaList();
 
-  let originalPath;
-
-  if (options.force && options.originalPath) {
-    originalPath = String(options.originalPath);
-  } else {
-    const result = await dialog.showOpenDialog({
-      title: 'Video auswählen',
-      filters: [
-        { name: 'Medien', extensions: ['mp4', 'mov', 'avi', 'mkv', 'jpg', 'jpeg', 'png'] }
-      ],
-      properties: ['openFile']
-    });
-
-    if (result.canceled || result.filePaths.length === 0) {
-      return { status: 'cancel' };
-    }
-
-    originalPath = String(result.filePaths[0]);
+  if (!filePath || !fs.existsSync(filePath)) {
+    return { status: 'error', message: 'Ungültiger Pfad' };
   }
-
-  const fileName = String(options.fileName || path.basename(originalPath));
-  const targetPath = path.join(mediaDir, fileName);
-  const fileHash = String(calculateFileHash(originalPath));
 
   if (!fs.existsSync(mediaDir)) {
     fs.mkdirSync(mediaDir, { recursive: true });
   }
 
-  if (!options.force) {
-    const duplicate = mediaList.find((entry) => entry.hash === fileHash);
-    if (duplicate) {
-      if (duplicate.fileName === fileName) {
-        return {
-          status: 'duplicate-identical',
-          fileName: String(fileName)
-        };
-      }
-      return {
-        status: 'duplicate-hash',
-        fileName: String(fileName),
-        existingFileName: String(duplicate.fileName),
-        hash: String(fileHash),
-        originalPath: String(originalPath)
-      };
-    }
+  const fileName = path.basename(filePath);
+  const fileHash = calculateFileHash(filePath);
+  const mediaType = getMediaType(fileName);
+
+  const knownHash = mediaList.find((entry) => entry.hash === fileHash);
+
+  const id = crypto.randomUUID();
+  const ext = path.extname(fileName);
+  const storedName = `${id}${ext}`;
+  const targetPath = path.join(mediaDir, storedName);
+
+  try {
+    fs.copyFileSync(filePath, targetPath);
+  } catch (err) {
+    return { status: 'error', message: err.message };
   }
 
-  fs.copyFileSync(originalPath, targetPath);
-
   const newEntry = {
-    id: crypto.randomUUID(),
+    id,
     fileName,
-    originalPath,
+    storedName,
     path: targetPath,
     hash: fileHash,
-    addedAt: new Date().toISOString(),
-    type: getMediaType(fileName)
+    type: mediaType,
+    addedAt: new Date().toISOString()
   };
 
   mediaList.push(newEntry);
   saveMediaList(mediaList);
 
   return {
-    status: 'ok',
-    id: String(newEntry.id),
-    fileName: String(newEntry.fileName),
-    originalPath: String(newEntry.originalPath),
-    path: String(newEntry.path),
-    hash: String(newEntry.hash),
-    addedAt: String(newEntry.addedAt)
+    status: knownHash ? 'known-hash' : 'ok',
+    ...newEntry
   };
 });
 
-ipcMain.handle('delete-media', async (event, fileName) => {
-  const userData = app.getPath('userData');
-  const mediaDir = path.join(userData, 'media');
-  const filePath = path.join(mediaDir, fileName);
-
+ipcMain.handle('delete-media', async (event, id) => {
   try {
+    const mediaList = loadMediaList();
+    const entry = mediaList.find((item) => item.id === id);
+
+    if (!entry) {
+      return { status: 'error', message: 'Nicht gefunden' };
+    }
+
+    const filePath = path.join(app.getPath('userData'), 'media', entry.storedName);
     if (fs.existsSync(filePath)) {
       fs.unlinkSync(filePath);
     }
 
-    const mediaList = loadMediaList().filter((item) => item.fileName !== fileName);
-    saveMediaList(mediaList);
+    const updatedList = mediaList.filter((item) => item.id !== id);
+    saveMediaList(updatedList);
 
     return { status: 'ok' };
   } catch (err) {
     console.error('[Media] Fehler beim Löschen:', err);
     return { status: 'error', message: err.message };
   }
+});
+
+ipcMain.handle('open-file-dialog', async () => {
+  const result = await dialog.showOpenDialog({
+    title: 'Dateien auswählen',
+    filters: [
+      { name: 'Medien', extensions: ['mp4', 'mov', 'jpg', 'jpeg', 'png'] }
+    ],
+    properties: ['openFile', 'multiSelections']
+  });
+
+  if (result.canceled) return [];
+
+  return result.filePaths;
 });
 
 function createWindow() {

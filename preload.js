@@ -7,14 +7,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
   loadSettings: () => ipcRenderer.invoke('load-settings'),
   testConnection: () => ipcRenderer.invoke('test-connection'),
   loadMedia: () => ipcRenderer.invoke('load-media'),
-  addMedia: (options = {}) => {
-    const cleanOptions = {
-      force: Boolean(options.force),
-      originalPath: options.originalPath ? String(options.originalPath) : undefined,
-      fileName: options.fileName ? String(options.fileName) : undefined
-    };
-    return ipcRenderer.invoke('add-media', cleanOptions);
-  },
-  deleteMedia: (fileName) => ipcRenderer.invoke('delete-media', fileName),
+  addMedia: (filePath) => ipcRenderer.invoke('add-media', filePath),
+  deleteMedia: (id) => ipcRenderer.invoke('delete-media', id),
   updateMediaMeta: (data) => ipcRenderer.invoke('update-media-meta', data),
+  openFileDialog: () => ipcRenderer.invoke('open-file-dialog'),
 });
