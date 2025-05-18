@@ -1,6 +1,7 @@
 import { ToastContainer } from 'react-toastify';
 import { useState } from 'react';
 import ControllerView from './ControllerView';
+import PlaylistsView from './PlaylistsView';
 import MediaView from './MediaView';
 import SettingsView from './SettingsView';
 import Sidebar from './Sidebar';
@@ -8,7 +9,7 @@ import './styles/bootstrap.scss';
 import 'react-toastify/dist/ReactToastify.css';
 
 function App() {
-  const [view, setView] = useState('media');
+  const [view, setView] = useState('playlists');
   const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
   const color_mode = prefersDark ? 'dark' : 'light';
 
@@ -23,6 +24,7 @@ function App() {
 
         <div className="main flex-fill p-5">
           {view === 'controller' && <ControllerView />}
+          {view === 'playlists' && <PlaylistsView />}
           {view === 'media' && <MediaView />}
           {view === 'settings' && <SettingsView />}
         </div>

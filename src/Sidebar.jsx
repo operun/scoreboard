@@ -1,10 +1,13 @@
 import { BsFolder } from 'react-icons/bs';
 import { BsGear } from 'react-icons/bs';
+import { BsTv } from "react-icons/bs";
 import { BsPlayCircle } from "react-icons/bs";
+import { BsCollectionPlay } from "react-icons/bs";
 
 function Sidebar({ activeView, onChangeView }) {
   const mainItems = [
-    { id: 'controller', icon: <BsPlayCircle />, label: 'Controller' },
+    { id: 'controller', icon: <BsTv />, label: 'Controller' },
+    { id: 'playlists', icon: <BsCollectionPlay />, label: 'Playlists' },
     { id: 'media', icon: <BsFolder />, label: 'Media' },
     { id: 'settings', icon: <BsGear />, label: 'Settings' },
   ];
