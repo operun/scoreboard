@@ -5,7 +5,7 @@ import { BsPlayCircle, BsStopCircle, BsClock, BsSave, BsUpload } from "react-ico
 // Helper Component defined outside to prevent re-mounting on parent re-renders
 const PlaylistSelect = ({ label, value, onChange, playlists }) => (
   <div className="mb-2">
-    <label className="form-label text-muted small fw-bold mb-1">{label}</label>
+    <label className="form-label text-muted small ms-1 mb-1">{label}</label>
     <select
       className="form-select form-select-sm"
       value={value}
@@ -273,21 +273,31 @@ function ControllerView() {
 
         {/* SETUP COLUMN (Scrollable) */}
         <div className="col-md-3 pe-3 border-end overflow-auto h-100 pb-5">
-          <h4 className="mb-3">Playlists Zuordnung</h4>
-          <PlaylistSelect label="Default" value={gameState.plDefault} onChange={v => updateState('plDefault', v)} playlists={playlists} />
-          <PlaylistSelect label="Countdown" value={gameState.plCountdown} onChange={v => updateState('plCountdown', v)} playlists={playlists} />
-          <PlaylistSelect label="Anpfiff (Background)" value={gameState.plKickoff} onChange={v => updateState('plKickoff', v)} playlists={playlists} />
-          <PlaylistSelect label="Halbzeit" value={gameState.plHalfTime} onChange={v => updateState('plHalfTime', v)} playlists={playlists} />
-          <PlaylistSelect label="Abpfiff" value={gameState.plEnd} onChange={v => updateState('plEnd', v)} playlists={playlists} />
-          <hr />
-          <PlaylistSelect label="Tor Heim" value={gameState.plGoalHome} onChange={v => updateState('plGoalHome', v)} playlists={playlists} />
-          <PlaylistSelect label="Tor Gast" value={gameState.plGoalGuest} onChange={v => updateState('plGoalGuest', v)} playlists={playlists} />
-          <hr />
-          <PlaylistSelect label="Wechsel" value={gameState.plSub} onChange={v => updateState('plSub', v)} playlists={playlists} />
-          <PlaylistSelect label="Gelbe Karte" value={gameState.plYellow} onChange={v => updateState('plYellow', v)} playlists={playlists} />
-          <PlaylistSelect label="Rote Karte" value={gameState.plRed} onChange={v => updateState('plRed', v)} playlists={playlists} />
-          <PlaylistSelect label="VAR Check" value={gameState.plVar} onChange={v => updateState('plVar', v)} playlists={playlists} />
-          <PlaylistSelect label="Durchsage" value={gameState.plAnnouncement} onChange={v => updateState('plAnnouncement', v)} playlists={playlists} />
+          <h4 className="mb-3">Zuordnung</h4>
+          <div className="mb-4">
+            <PlaylistSelect label="Default" value={gameState.plDefault} onChange={v => updateState('plDefault', v)} playlists={playlists} />
+          </div>
+          <div className="mb-4">
+            <PlaylistSelect label="Countdown" value={gameState.plCountdown} onChange={v => updateState('plCountdown', v)} playlists={playlists} />
+          </div>
+          <div className="mb-4">
+            <PlaylistSelect label="Anpfiff" value={gameState.plKickoff} onChange={v => updateState('plKickoff', v)} playlists={playlists} />
+            <PlaylistSelect label="Halbzeit" value={gameState.plHalfTime} onChange={v => updateState('plHalfTime', v)} playlists={playlists} />
+            <PlaylistSelect label="Abpfiff" value={gameState.plEnd} onChange={v => updateState('plEnd', v)} playlists={playlists} />
+          </div>
+          <div className="mb-4">
+            <PlaylistSelect label="Tor Heim" value={gameState.plGoalHome} onChange={v => updateState('plGoalHome', v)} playlists={playlists} />
+            <PlaylistSelect label="Tor Gast" value={gameState.plGoalGuest} onChange={v => updateState('plGoalGuest', v)} playlists={playlists} />
+          </div>
+          <div className="mb-4">
+            <PlaylistSelect label="Wechsel" value={gameState.plSub} onChange={v => updateState('plSub', v)} playlists={playlists} />
+            <PlaylistSelect label="Gelbe Karte" value={gameState.plYellow} onChange={v => updateState('plYellow', v)} playlists={playlists} />
+            <PlaylistSelect label="Rote Karte" value={gameState.plRed} onChange={v => updateState('plRed', v)} playlists={playlists} />
+            <PlaylistSelect label="VAR Check" value={gameState.plVar} onChange={v => updateState('plVar', v)} playlists={playlists} />
+          </div>
+          <div className="mb-4">
+            <PlaylistSelect label="Durchsage" value={gameState.plAnnouncement} onChange={v => updateState('plAnnouncement', v)} playlists={playlists} />
+          </div>
         </div>
 
         {/* CENTER COLUMN: LIVE CONTROL */}
@@ -329,22 +339,22 @@ function ControllerView() {
           {/* PHASES */}
           <div className="row g-3">
             <div className="col-6">
-              <button className="btn btn-outline-primary w-100 py-3" onClick={() => startMatchState('FIRST_HALF')}>
+              <button className="btn btn-outline-primary w-100" onClick={() => startMatchState('FIRST_HALF')}>
                 Anpfiff 1. Halbzeit
               </button>
             </div>
             <div className="col-6">
-              <button className="btn btn-outline-primary w-100 py-3" onClick={() => startMatchState('HALF_TIME')}>
+              <button className="btn btn-outline-primary w-100" onClick={() => startMatchState('HALF_TIME')}>
                 Abpfiff 1. Halbzeit
               </button>
             </div>
             <div className="col-6">
-              <button className="btn btn-outline-primary w-100 py-3" onClick={() => startMatchState('SECOND_HALF')}>
+              <button className="btn btn-outline-primary w-100" onClick={() => startMatchState('SECOND_HALF')}>
                 Anpfiff 2. Halbzeit
               </button>
             </div>
             <div className="col-6">
-              <button className="btn btn-outline-primary w-100 py-3" onClick={() => startMatchState('POST_GAME')}>
+              <button className="btn btn-outline-primary w-100" onClick={() => startMatchState('POST_GAME')}>
                 Abpfiff 2. Halbzeit
               </button>
             </div>
@@ -362,12 +372,8 @@ function ControllerView() {
             }}>
               Start
             </button>
-
             <button className="btn btn-outline-primary" onClick={() => triggerScene(gameState.plGoalHome)}>Tor Heim</button>
             <button className="btn btn-outline-primary" onClick={() => triggerScene(gameState.plGoalGuest)}>Tor Gast</button>
-
-            <hr />
-
             <button className="btn btn-outline-primary" onClick={() => triggerScene(gameState.plSub)}>Wechsel</button>
             <button className="btn btn-outline-primary" onClick={() => triggerScene(gameState.plYellow)}>Gelbe Karte</button>
             <button className="btn btn-outline-primary" onClick={() => triggerScene(gameState.plRed)}>Rote Karte</button>
