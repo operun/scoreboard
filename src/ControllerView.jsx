@@ -36,7 +36,7 @@ function ControllerView() {
     timerRunning: false,
 
     // Playlist Mappings (IDs)
-    plSponsors: '',
+    plDefault: '',
     plCountdown: '',
     plKickoff: '', // Anpfiff Hintergrund
     plHalfTime: '',
@@ -80,7 +80,7 @@ function ControllerView() {
       ...prev,
       ...preset,
       // Ensure we keep defaults if preset misses new fields
-      plSponsors: preset.plSponsors || '',
+      plDefault: preset.plDefault || preset.plSponsors || '',
       plCountdown: preset.plCountdown || '',
       plKickoff: preset.plKickoff || '',
       plHalfTime: preset.plHalfTime || '',
@@ -254,7 +254,7 @@ function ControllerView() {
               setGameState(prev => ({
                 homeScore: 0, guestScore: 0,
                 matchState: 'PRE_GAME', timerStart: null, timerOffset: 0, timerRunning: false,
-                plSponsors: '', plCountdown: '', plKickoff: '', plHalfTime: '', plEnd: '',
+                plDefault: '', plCountdown: '', plKickoff: '', plHalfTime: '', plEnd: '',
                 plGoalHome: '', plGoalGuest: '', plSub: '', plYellow: '', plRed: '', plVar: '', plAnnouncement: ''
               }));
             } else {
@@ -274,7 +274,7 @@ function ControllerView() {
         {/* SETUP COLUMN (Scrollable) */}
         <div className="col-md-3 pe-3 border-end overflow-auto h-100 pb-5">
           <h4 className="mb-3">Playlists Zuordnung</h4>
-          <PlaylistSelect label="Sponsoren (Basis)" value={gameState.plSponsors} onChange={v => updateState('plSponsors', v)} playlists={playlists} />
+          <PlaylistSelect label="Default" value={gameState.plDefault} onChange={v => updateState('plDefault', v)} playlists={playlists} />
           <PlaylistSelect label="Countdown" value={gameState.plCountdown} onChange={v => updateState('plCountdown', v)} playlists={playlists} />
           <PlaylistSelect label="Anpfiff (Background)" value={gameState.plKickoff} onChange={v => updateState('plKickoff', v)} playlists={playlists} />
           <PlaylistSelect label="Halbzeit" value={gameState.plHalfTime} onChange={v => updateState('plHalfTime', v)} playlists={playlists} />
@@ -357,10 +357,10 @@ function ControllerView() {
           <h4 className="mb-3">Szenen</h4>
           <div className="d-grid gap-2">
             <button className="btn btn-outline-primary mb-4" onClick={() => {
-              const pl = playlists.find(p => p.id === gameState.plSponsors);
+              const pl = playlists.find(p => p.id === gameState.plDefault);
               if (pl) window.electronAPI.sendControlCommand('PLAY_PLAYLIST', { playlist: pl, mode: 'FULL' });
             }}>
-              Aktivieren (Sponsoren)
+              Start
             </button>
 
             <button className="btn btn-outline-primary" onClick={() => triggerScene(gameState.plGoalHome)}>Tor Heim</button>
