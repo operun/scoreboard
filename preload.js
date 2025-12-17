@@ -11,4 +11,16 @@ contextBridge.exposeInMainWorld('electronAPI', {
   deleteMedia: (id) => ipcRenderer.invoke('delete-media', id),
   updateMediaMeta: (data) => ipcRenderer.invoke('update-media-meta', data),
   openFileDialog: () => ipcRenderer.invoke('open-file-dialog'),
+  loadPlaylists: () => ipcRenderer.invoke('load-playlists'),
+  savePlaylist: (playlist) => ipcRenderer.invoke('save-playlist', playlist),
+
+  // Communication for Output Window
+  onUpdateOutput: (callback) => {
+    const subscription = (event, value) => callback(null, value);
+    ipcRenderer.on('update-output', subscription);
+    return () => ipcRenderer.removeListener('update-output', subscription);
+  },
+
+  // Command from Controller to Main
+  triggerOutput: (media) => ipcRenderer.invoke('trigger-output', media),
 });

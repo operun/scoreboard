@@ -1,17 +1,126 @@
-function PlaylistsView() {
-  return (
-    <div className="container">
+import { useState, useEffect } from 'react';
+import { toast } from 'react-toastify';
+import { BsPencil, BsXCircle } from 'react-icons/bs';
 
+function PlaylistsView({ onEdit }) {
+  const [playlists, setPlaylists] = useState([]);
+  const [showForm, setShowForm] = useState(false);
+  const [title, setTitle] = useState('');
+
+  useEffect(() => {
+    const load = async () => {
+      const data = await window.electronAPI.loadPlaylists();
+      setPlaylists(data);
+    };
+    load();
+  }, []);
+
+  const handleAdd = async () => {
+    if (!title.trim()) {
+      toast.error('Bitte gib einen Titel an.');
+      return;
+    }
+
+    const newPlaylist = {
+      id: crypto.randomUUID(),
+      title: title.trim(),
+      updated: new Date().toISOString(),
+      items: []
+    };
+
+    // Optimistic UI update
+    const updated = [...playlists, newPlaylist];
+    setPlaylists(updated);
+    
+    // Backend call with single item
+    await window.electronAPI.savePlaylist(newPlaylist);
+    
+    toast.success('Playlist gespeichert');
+    setTitle('');
+    setShowForm(false);
+  };
+
+  return (
+
+    <div className="container">
       <div className="row">
         <div className="col">
 
-          <h1>Playlists View</h1>
-          <p className="lead">Cras justo odio, dapibus ac facilisis in, egestas eget quam. Aenean eu leo quam. Pellentesque ornare sem lacinia quam venenatis vestibulum. Donec sed odio dui. Lorem ipsum dolor sit amet, consectetur adipiscing elit.</p>
+          <h1>Playlisten</h1>
+
+          <p className="lead mb-4">Hier kanns du die Playlisten bearbeiten.</p>
+
+          <div className="d-flex mb-3">
+            <button className="btn btn-outline-primary mb-3" onClick={() => setShowForm(true)}>
+              Neue Playlist
+            </button>
+          </div>
+
+          <table className="table">
+            <thead>
+              <tr>
+                <th scope="col">Name</th>
+                <th scope="col">Geändert</th>
+                <th scope="col"></th>
+              </tr>
+            </thead>
+            <tbody>
+              {playlists.map((playlist) => (
+                <tr key={playlist.id}>
+                  <td className="w-75">{playlist.title}</td>
+                  <td>{new Date(playlist.updated).toLocaleString()}</td>
+                  <td>
+                    <span onClick={() => onEdit(playlist.id)}>
+                      <BsPencil />
+                    </span>
+                  </td>
+                </tr>
+              ))}
+              {playlists.length === 0 && (
+                <tr>
+                  <td colSpan="3" className="text-muted">Keine Playlists vorhanden.</td>
+                </tr>
+              )}
+            </tbody>
+          </table>
 
         </div>
       </div>
 
+      {showForm && (
+        <>
+          <div className="offcanvas-backdrop fade show" onClick={() => setShowForm(false)}></div>
+          <div
+            className="offcanvas offcanvas-end fade show"
+            tabIndex="-1"
+            style={{
+              visibility: 'visible',
+              zIndex: 1045,
+              width: '400px'
+            }}
+          >
+            <div className="offcanvas-header">
+              <h5 className="offcanvas-title">Neue Playlist</h5>
+              <button type="button" className="btn-close" onClick={() => setShowForm(false)}></button>
+            </div>
+            <div className="offcanvas-body">
+              <label className="form-label">Titel</label>
+              <input
+                type="text"
+                className="form-control mb-3"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+              />
+              <button className="btn btn-primary" onClick={handleAdd}>
+                Speichern
+              </button>
+            </div>
+          </div>
+        </>
+      )}
+
     </div>
+
   );
 }
 

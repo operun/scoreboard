@@ -8,6 +8,7 @@ const path = require('path');
 app.setName('Scoreboard');
 
 const mediaListPath = path.join(app.getPath('userData'), 'media.json');
+const playlistsPath = path.join(app.getPath('userData'), 'playlists.json');
 
 function loadMediaList() {
   if (fs.existsSync(mediaListPath)) {
@@ -169,6 +170,74 @@ ipcMain.handle('open-file-dialog', async () => {
   return result.filePaths;
 });
 
+function loadPlaylists() {
+  if (fs.existsSync(playlistsPath)) {
+    return JSON.parse(fs.readFileSync(playlistsPath, 'utf-8'));
+  }
+  return [];
+}
+
+function savePlaylists(list) {
+  fs.writeFileSync(playlistsPath, JSON.stringify(list, null, 2), 'utf-8');
+}
+
+ipcMain.handle('load-playlists', () => {
+  return loadPlaylists();
+});
+
+ipcMain.handle('save-playlist', (event, updated) => {
+  const playlists = loadPlaylists();
+  const index = playlists.findIndex((p) => p.id === updated.id);
+
+  if (index !== -1) {
+    playlists[index] = updated;
+  } else {
+    playlists.push(updated);
+  }
+
+  savePlaylists(playlists);
+  return { status: 'ok' };
+});
+
+ipcMain.handle('trigger-output', async (event, media) => {
+  if (outputWindow && !outputWindow.isDestroyed()) {
+    outputWindow.webContents.send('update-output', media);
+    return { status: 'ok' };
+  }
+  return { status: 'error', message: 'Output window not available' };
+});
+
+let outputWindow = null;
+
+function createOutputWindow() {
+  outputWindow = new BrowserWindow({
+    width: 800,
+    height: 600,
+    show: false,
+    frame: false, // Frameless as requested
+    webPreferences: {
+      preload: path.join(__dirname, 'preload.js'),
+      contextIsolation: true,
+      nodeIntegration: false,
+      webSecurity: false
+    },
+  });
+
+  if (app.isPackaged) {
+    outputWindow.loadFile(path.join(__dirname, 'dist', 'index.html'), { hash: 'output' });
+  } else {
+    outputWindow.loadURL('http://localhost:5173/#/output');
+  }
+
+  outputWindow.once('ready-to-show', () => {
+    outputWindow.show();
+  });
+
+  outputWindow.on('closed', () => {
+    outputWindow = null;
+  });
+}
+
 function createWindow() {
   const window = new BrowserWindow({
     width: 1280,
@@ -237,6 +306,14 @@ const menuTemplate = [
       { role: 'reload' },
       { role: 'toggledevtools' },
       { type: 'separator' },
+      {
+        label: 'Ausgabefenster öffnen',
+        click: () => {
+          if (!outputWindow) createOutputWindow();
+          else outputWindow.focus();
+        }
+      },
+      { type: 'separator' },
       { role: 'resetzoom' },
       { role: 'zoomin' },
       { role: 'zoomout' },
@@ -248,6 +325,8 @@ const menuTemplate = [
 
 app.whenReady().then(() => {
   createWindow();
+  createOutputWindow(); // Auto-open output window on start as requested
+
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
   });
@@ -256,3 +335,4 @@ app.whenReady().then(() => {
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') app.quit();
 });
+
