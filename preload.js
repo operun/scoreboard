@@ -14,6 +14,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
   loadPlaylists: () => ipcRenderer.invoke('load-playlists'),
   savePlaylist: (playlist) => ipcRenderer.invoke('save-playlist', playlist),
 
+  // Presets
+  loadPresets: () => ipcRenderer.invoke('load-presets'),
+  savePreset: (preset) => ipcRenderer.invoke('save-preset', preset),
+
   // Communication for Output Window
   onUpdateOutput: (callback) => {
     const subscription = (event, value) => callback(null, value);

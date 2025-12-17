@@ -9,6 +9,7 @@ app.setName('Scoreboard');
 
 const mediaListPath = path.join(app.getPath('userData'), 'media.json');
 const playlistsPath = path.join(app.getPath('userData'), 'playlists.json');
+const presetsPath = path.join(app.getPath('userData'), 'presets.json');
 
 function loadMediaList() {
   if (fs.existsSync(mediaListPath)) {
@@ -253,6 +254,31 @@ ipcMain.handle('save-playlist', (event, updated) => {
   }
 
   savePlaylists(playlists);
+  return { status: 'ok' };
+});
+
+function loadPresetsList() {
+  if (fs.existsSync(presetsPath)) {
+    return JSON.parse(fs.readFileSync(presetsPath, 'utf-8'));
+  }
+  return [];
+}
+
+function savePresetsList(list) {
+  fs.writeFileSync(presetsPath, JSON.stringify(list, null, 2), 'utf-8');
+}
+
+ipcMain.handle('load-presets', () => {
+  return loadPresetsList();
+});
+
+ipcMain.handle('save-preset', (event, updated) => {
+  const list = loadPresetsList();
+  const index = list.findIndex(p => p.id === updated.id);
+  if (index !== -1) list[index] = updated;
+  else list.push(updated);
+
+  savePresetsList(list);
   return { status: 'ok' };
 });
 
