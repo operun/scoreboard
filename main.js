@@ -75,8 +75,44 @@ ipcMain.handle('test-connection', async () => {
 });
 
 ipcMain.handle('load-media', async () => {
-  const mediaList = loadMediaList();
+  let mediaList = loadMediaList();
   const mediaDir = path.join(app.getPath('userData'), 'media');
+  let hasChanges = false;
+
+  // Check for missing durations and enrich (Migration logic)
+  // We process this sequentially to avoid spawning 100 ffmpeg processes at boot
+  const ffmpeg = require('fluent-ffmpeg');
+
+  for (const item of mediaList) {
+    if (item.type === 'video' && !item.duration) {
+      const fullPath = path.join(mediaDir, item.storedName);
+      try {
+        if (fs.existsSync(fullPath)) {
+          const duration = await new Promise((resolve) => {
+            ffmpeg.ffprobe(fullPath, (err, metadata) => {
+              if (!err && metadata && metadata.format && metadata.format.duration) {
+                resolve(Math.ceil(metadata.format.duration));
+              } else {
+                resolve(0);
+              }
+            });
+          });
+
+          if (duration > 0) {
+            item.duration = duration;
+            hasChanges = true;
+            console.log(`[Media] Duration fixed for ${item.fileName}: ${duration}s`);
+          }
+        }
+      } catch (e) {
+        console.warn(`[Media] Failed to probe ${item.fileName}`, e);
+      }
+    }
+  }
+
+  if (hasChanges) {
+    saveMediaList(mediaList);
+  }
 
   return mediaList.map((item) => ({
     ...item,
@@ -120,8 +156,29 @@ ipcMain.handle('add-media', async (event, filePath) => {
     path: targetPath,
     hash: fileHash,
     type: mediaType,
-    addedAt: new Date().toISOString()
+    addedAt: new Date().toISOString(),
+    duration: 0 // Default
   };
+
+  // Extract duration for videos
+  if (mediaType === 'video') {
+    try {
+      const ffmpeg = require('fluent-ffmpeg');
+      // fluent-ffmpeg needs ffmpeg path. On Mac with Brew it's usually in path.
+      // If not, we might need: ffmpeg.setFfmpegPath('/opt/homebrew/bin/ffmpeg');
+
+      await new Promise((resolve) => {
+        ffmpeg.ffprobe(targetPath, (err, metadata) => {
+          if (!err && metadata && metadata.format && metadata.format.duration) {
+            newEntry.duration = Math.ceil(metadata.format.duration);
+          }
+          resolve();
+        });
+      });
+    } catch (e) {
+      console.error('FFprobe error:', e);
+    }
+  }
 
   mediaList.push(newEntry);
   saveMediaList(mediaList);
