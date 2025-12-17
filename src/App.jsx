@@ -1,4 +1,4 @@
-import { ToastContainer } from 'react-toastify';
+import { ToastContainer, toast } from 'react-toastify';
 import { useState } from 'react';
 import ControllerView from './ControllerView';
 import PlaylistsView from './PlaylistsView';
@@ -21,6 +21,23 @@ function App() {
   const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
   const color_mode = prefersDark ? 'dark' : 'light';
 
+  const handleSync = async () => {
+    const toastId = toast.loading("Synchronisiere... (Bitte warten)");
+
+    try {
+      const res = await window.electronAPI.syncToRemote();
+
+      if (res.status === 'ok') {
+        toast.update(toastId, { render: res.message, type: "success", isLoading: false, autoClose: 5000 });
+      } else {
+        toast.update(toastId, { render: "Fehler: " + res.message, type: "error", isLoading: false, autoClose: 8000 });
+      }
+    } catch (e) {
+      toast.update(toastId, { render: "Systemfehler beim Sync.", type: "error", isLoading: false, autoClose: 5000 });
+      console.error(e);
+    }
+  };
+
   if (isOutputWindow) {
     return <OutputView />;
   }
@@ -31,7 +48,13 @@ function App() {
       <div className="d-flex position-relative">
 
         <div className="sidebar d-flex flex-column text-white vh-100">
-          <Sidebar activeView={view} onChangeView={setView} />
+          <Sidebar activeView={view} onChangeView={(newView) => {
+            if (newView === 'sync') {
+              handleSync();
+            } else {
+              setView(newView);
+            }
+          }} />
         </div>
 
         <div className="main flex-fill p-5" style={{ height: '100vh', overflow: 'hidden' }}>

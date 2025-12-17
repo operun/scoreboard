@@ -3,6 +3,7 @@ import { BsGear } from 'react-icons/bs';
 import { BsTv } from "react-icons/bs";
 import { BsPlayCircle } from "react-icons/bs";
 import { BsCollectionPlay } from "react-icons/bs";
+import { BsArrowRepeat } from "react-icons/bs";
 
 function Sidebar({ activeView, onChangeView }) {
   const mainItems = [
@@ -10,6 +11,7 @@ function Sidebar({ activeView, onChangeView }) {
     { id: 'playlists', icon: <BsCollectionPlay />, label: 'Playlists' },
     { id: 'media', icon: <BsFolder />, label: 'Media' },
     { id: 'settings', icon: <BsGear />, label: 'Settings' },
+    { id: 'sync', icon: <BsArrowRepeat />, label: 'Synchronisierung' },
   ];
 
   return (

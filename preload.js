@@ -13,6 +13,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   openFileDialog: () => ipcRenderer.invoke('open-file-dialog'),
   loadPlaylists: () => ipcRenderer.invoke('load-playlists'),
   savePlaylist: (playlist) => ipcRenderer.invoke('save-playlist', playlist),
+  syncToRemote: () => ipcRenderer.invoke('sync-to-remote'),
 
   // Presets
   loadPresets: () => ipcRenderer.invoke('load-presets'),
