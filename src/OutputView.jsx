@@ -1,87 +1,147 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 
 function OutputView() {
-    const [media, setMedia] = useState(null);
+    const [activeMedia, setActiveMedia] = useState(null); // Current displayed media
+    const [playlist, setPlaylist] = useState(null); // Active playlist object
+    const [playlistIndex, setPlaylistIndex] = useState(0); // Current position in playlist
+    const [overlayMedia, setOverlayMedia] = useState(null); // Priority media (Goal etc)
 
+    const [gameState, setGameState] = useState({
+        homeScore: 0,
+        guestScore: 0,
+        half: 1,
+        kickoffTime: ''
+    });
+
+    const timerRef = useRef(null);
+
+    // --- COMMAND HANDLING ---
     useEffect(() => {
-        // Listen for media display events from main process
-        const handleUpdate = (event, data) => {
-            console.log('Output received media:', data);
-            setMedia(data);
-        };
+        // Listen for commands from Controller
+        if (window.electronAPI.onControlCommand) {
+            const removeListener = window.electronAPI.onControlCommand((event, { command, payload }) => {
+                console.log('Output Command:', command, payload);
 
-        // We need to expose this in preload or use the existing electronAPI structure
-        // Since direct ipcRenderer usage is context-isolated, we need a method in preload.
-        // I'll assume we add 'onUpdateOutput' to preload.
-        if (window.electronAPI.onUpdateOutput) {
-            const removeListener = window.electronAPI.onUpdateOutput(handleUpdate);
+                if (command === 'PLAY_PLAYLIST') {
+                    if (!payload || !payload.items || payload.items.length === 0) return;
+                    setPlaylist(payload);
+                    setPlaylistIndex(0);
+                    loadMediaItem(payload.items[0]);
+                }
+
+                if (command === 'SHOW_OVERLAY') {
+                    setOverlayMedia(payload); // Interrupts playlist
+                }
+
+                if (command === 'UPDATE_GAME_STATE') {
+                    setGameState(prev => ({ ...prev, ...payload }));
+                }
+            });
             return () => removeListener();
         }
     }, []);
 
-    if (!media) {
+    // --- PLAYLIST LOGIC ---
+    const loadMediaItem = async (item) => {
+        // Fetch full media details using ID
+        const allMedia = await window.electronAPI.loadMedia(); // Naive implementation, better: cache or pass full object
+        const media = allMedia.find(m => m.id === item.id);
+
+        if (media) {
+            setActiveMedia({ ...media, duration: item.duration });
+        }
+    };
+
+    const nextPlaylistItem = () => {
+        if (!playlist) return;
+
+        let nextIndex = playlistIndex + 1;
+        if (nextIndex >= playlist.items.length) {
+            nextIndex = 0; // Loop
+        }
+
+        setPlaylistIndex(nextIndex);
+        loadMediaItem(playlist.items[nextIndex]);
+    };
+
+    // --- TIMING LOGIC (IMAGES) ---
+    useEffect(() => {
+        // If we are showing an image from playlist (not overlay), set timer for next
+        if (!overlayMedia && activeMedia && activeMedia.type === 'image') {
+            const duration = activeMedia.duration || 5;
+            timerRef.current = setTimeout(() => {
+                nextPlaylistItem();
+            }, duration * 1000);
+
+            return () => clearTimeout(timerRef.current);
+        }
+    }, [activeMedia, overlayMedia, playlistIndex]); // Re-run when media changes
+
+    // --- RENDER ---
+    // Decision: What to show? Overlay > ActiveMedia > Black
+    const mediaToShow = overlayMedia || activeMedia;
+
+    if (!mediaToShow) {
         return (
-            <div style={{
-                backgroundColor: '#1a1a1a',
-                height: '100vh',
-                width: '100vw',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center'
-            }}>
-                <div style={{
-                    width: '80%',
-                    aspectRatio: '16/9',
-                    border: '2px dashed #444',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    color: '#444'
-                }}>
-                    <h1>Scoreboard Output</h1>
-                </div>
+            <div style={{ backgroundColor: '#1a1a1a', height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <h1 style={{ color: '#444' }}>Scoreboard Output</h1>
             </div>
         );
     }
 
     return (
         <div style={{
-            backgroundColor: '#1a1a1a',
+            backgroundColor: 'black',
             height: '100vh',
             width: '100vw',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
+            position: 'relative',
             overflow: 'hidden'
         }}>
-            <div style={{
-                position: 'relative',
-                width: '90%', // Leave some space around as requested
-                height: '90%',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                border: '1px solid #333', // Visual guide
-                boxShadow: '0 0 20px rgba(0,0,0,0.5)',
-                backgroundColor: 'black'
-            }}>
-                {media.type === 'video' ? (
+
+            {/* MEDIA LAYER */}
+            <div style={{ width: '100%', height: '100%' }}>
+                {mediaToShow.type === 'video' ? (
                     <video
-                        src={`file://${media.path}`}
+                        key={mediaToShow.id} // Force re-render on change
+                        src={`file://${mediaToShow.path}`}
                         autoPlay
+                        muted={false}
                         style={{ width: '100%', height: '100%', objectFit: 'contain' }}
                         onEnded={() => {
-                            // Optional: Report back that video ended
+                            if (overlayMedia) {
+                                setOverlayMedia(null); // Finish overlay, return to playlist
+                            } else {
+                                nextPlaylistItem(); // Next in playlist
+                            }
                         }}
                     />
                 ) : (
                     <img
-                        src={`file://${media.path}`}
+                        src={`file://${mediaToShow.path}`}
                         alt="Display"
                         style={{ width: '100%', height: '100%', objectFit: 'contain' }}
                     />
                 )}
             </div>
+
+            {/* SCOREBOARD OVERLAY LAYER (Always on top) */}
+            <div style={{
+                position: 'absolute',
+                top: 20, left: 20,
+                background: 'rgba(0,0,0,0.8)',
+                color: 'white',
+                padding: '10px 20px',
+                borderRadius: 8,
+                fontSize: '2rem',
+                fontWeight: 'bold',
+                display: 'flex',
+                gap: '20px',
+                zIndex: 1000
+            }}>
+                <span>{gameState.homeScore} : {gameState.guestScore}</span>
+                <span style={{ fontSize: '1rem', alignSelf: 'center', color: '#aaa' }}>{gameState.half}. HZ</span>
+            </div>
+
         </div>
     );
 }

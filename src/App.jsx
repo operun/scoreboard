@@ -12,7 +12,7 @@ import 'react-toastify/dist/ReactToastify.css';
 import OutputView from './OutputView';
 
 function App() {
-  const [view, setView] = useState('playlists');
+  const [view, setView] = useState('controller');
   const [editPlaylistId, setEditPlaylistId] = useState(null);
 
   // Check if we are running as the output window

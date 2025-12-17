@@ -282,6 +282,14 @@ ipcMain.handle('save-preset', (event, updated) => {
   return { status: 'ok' };
 });
 
+ipcMain.handle('control-command', async (event, { command, payload }) => {
+  if (outputWindow && !outputWindow.isDestroyed()) {
+    outputWindow.webContents.send('control-command', { command, payload });
+    return { status: 'ok' };
+  }
+  return { status: 'error', message: 'Output window not available' };
+});
+
 ipcMain.handle('trigger-output', async (event, media) => {
   if (outputWindow && !outputWindow.isDestroyed()) {
     outputWindow.webContents.send('update-output', media);
@@ -305,6 +313,7 @@ function createOutputWindow() {
       nodeIntegration: false,
       webSecurity: false
     },
+    title: "Output"
   });
 
   if (app.isPackaged) {

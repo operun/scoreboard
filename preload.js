@@ -25,6 +25,15 @@ contextBridge.exposeInMainWorld('electronAPI', {
     return () => ipcRenderer.removeListener('update-output', subscription);
   },
 
-  // Command from Controller to Main
+  onControlCommand: (callback) => {
+    const subscription = (event, value) => callback(null, value);
+    ipcRenderer.on('control-command', subscription);
+    return () => ipcRenderer.removeListener('control-command', subscription);
+  },
+
+  // Generic control command
+  sendControlCommand: (command, payload) => ipcRenderer.invoke('control-command', { command, payload }),
+
+  // Legacy single trigger (can be deprecated later)
   triggerOutput: (media) => ipcRenderer.invoke('trigger-output', media),
 });

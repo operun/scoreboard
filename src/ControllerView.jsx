@@ -41,39 +41,100 @@ function ControllerView() {
       standardPlaylistId: preset.standardPlaylistId || '',
       half: preset.half || 1
     });
+    // Optional: Auto-Loop trigger on preset load?
+    // For now we keep it manual (User has to click "Start Loop")
   };
 
-  const handleSavePreset = async () => {
+  // Modal State
+  const [showSaveModal, setShowSaveModal] = useState(false);
+  const [presetName, setPresetName] = useState("");
+
+  const handleSaveClick = () => {
+    // Pre-fill name
+    if (currentPresetId !== 'new') {
+      const current = presets.find(p => p.id === currentPresetId);
+      if (current) setPresetName(current.name);
+    } else {
+      setPresetName("Standard Fußball");
+    }
+    setShowSaveModal(true);
+  };
+
+  const confirmSave = async () => {
+    if (!presetName) return;
+
     const id = currentPresetId === 'new' ? crypto.randomUUID() : currentPresetId;
-    const name = prompt("Name für das Preset:", "Standard Fußball");
-    if (!name) return;
 
     const newPreset = {
       id,
-      name,
+      name: presetName,
       ...gameState
     };
 
-    await window.electronAPI.savePreset(newPreset);
-    setPresets(prev => {
-      const idx = prev.findIndex(p => p.id === id);
-      if (idx !== -1) {
-        const copy = [...prev];
-        copy[idx] = newPreset;
-        return copy;
-      }
-      return [...prev, newPreset];
-    });
-    setCurrentPresetId(id);
-    toast.success("Preset gespeichert");
+    try {
+      await window.electronAPI.savePreset(newPreset);
+
+      setPresets(prev => {
+        const idx = prev.findIndex(p => p.id === id);
+        if (idx !== -1) {
+          const copy = [...prev];
+          copy[idx] = newPreset;
+          return copy;
+        }
+        return [...prev, newPreset];
+      });
+      setCurrentPresetId(id);
+      toast.success(`Preset "${presetName}" gespeichert`);
+      setShowSaveModal(false);
+    } catch (e) {
+      console.error(e);
+      toast.error("Fehler beim Speichern");
+    }
   };
 
   const updateState = (field, value) => {
     setGameState(prev => ({ ...prev, [field]: value }));
   };
+  // Send Game State updates whenever it changes
+  useEffect(() => {
+    // Avoid sending on initial load if empty
+    if (currentPresetId !== 'new' || gameState.homeScore > 0 || gameState.guestScore > 0) {
+      window.electronAPI.sendControlCommand('UPDATE_GAME_STATE', gameState);
+    }
+  }, [gameState]);
+
+  const handleStartLoop = async () => {
+    if (!gameState.standardPlaylistId) return;
+    const pl = playlists.find(p => p.id === gameState.standardPlaylistId);
+    if (pl) {
+      window.electronAPI.sendControlCommand('PLAY_PLAYLIST', pl);
+      toast.success(`Loop "${pl.title}" gestartet`);
+    }
+  };
+
+  const handleOverlay = async (type) => {
+    // TODO: In future, allow selecting specific media for events.
+    // For now, we pick a random video from library to demonstrate functionality
+    // or just check if a file with "goal" in name exists.
+
+    const allMedia = await window.electronAPI.loadMedia();
+    let media = null;
+
+    if (type === 'GOAL') {
+      media = allMedia.find(m => m.fileName.toLowerCase().includes('tor') || m.fileName.toLowerCase().includes('goal'));
+    } else if (type === 'VAR') {
+      media = allMedia.find(m => m.fileName.toLowerCase().includes('var'));
+    }
+
+    if (media) {
+      window.electronAPI.sendControlCommand('SHOW_OVERLAY', media);
+    } else {
+      toast.warn(`Kein Medium für "${type}" gefunden (Dateiname muss "${type}" enthalten).`);
+    }
+  };
 
   return (
-    <div className="container-fluid h-100 d-flex flex-column">
+    <div className="container-fluid h-100 d-flex flex-column position-relative">
 
       {/* Main Header */}
       <div className="d-flex justify-content-between align-items-center mb-4 pb-2 border-bottom">
@@ -100,7 +161,7 @@ function ControllerView() {
             <option value="new">Neues Preset...</option>
             {presets.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
           </select>
-          <button className="btn btn-outline-primary" onClick={handleSavePreset} title="Preset speichern">
+          <button className="btn btn-outline-primary" onClick={handleSaveClick} title="Preset speichern">
             <BsSave />
           </button>
         </div>
@@ -124,7 +185,7 @@ function ControllerView() {
                 <option key={p.id} value={p.id}>{p.title}</option>
               ))}
             </select>
-            <button className="btn btn-outline-primary w-100" disabled={!gameState.standardPlaylistId}>
+            <button className="btn btn-outline-primary w-100" disabled={!gameState.standardPlaylistId} onClick={handleStartLoop}>
               <BsPlayCircle className="me-2" /> Loop Starten
             </button>
           </div>
@@ -208,7 +269,7 @@ function ControllerView() {
           <p className="text-muted small mb-4">Aktionen unterbrechen den Standard-Loop kurzzeitig.</p>
 
           <div className="d-grid gap-3">
-            <button className="btn btn-outline-primary fw-bold">
+            <button className="btn btn-outline-primary fw-bold" onClick={() => handleOverlay('GOAL')}>
               TOR-Animation
             </button>
             <div className="row g-2">
@@ -223,13 +284,42 @@ function ControllerView() {
                 </button>
               </div>
             </div>
-            <button className="btn btn-outline-primary">
+            <button className="btn btn-outline-primary" onClick={() => handleOverlay('VAR')}>
               VAR Check
             </button>
           </div>
         </div>
 
       </div>
+
+      {/* SAVE PRESET MODAL */}
+      {showSaveModal && (
+        <div className="modal d-block" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
+          <div className="modal-dialog modal-dialog-centered">
+            <div className="modal-content">
+              <div className="modal-header">
+                <h5 className="modal-title">Preset speichern</h5>
+                <button type="button" className="btn-close" onClick={() => setShowSaveModal(false)}></button>
+              </div>
+              <div className="modal-body">
+                <label className="form-label">Name des Presets</label>
+                <input
+                  type="text"
+                  className="form-control"
+                  value={presetName}
+                  onChange={e => setPresetName(e.target.value)}
+                  autoFocus
+                />
+              </div>
+              <div className="modal-footer">
+                <button type="button" className="btn btn-secondary" onClick={() => setShowSaveModal(false)}>Abbrechen</button>
+                <button type="button" className="btn btn-primary" onClick={confirmSave}>Speichern</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }
