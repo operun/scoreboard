@@ -36,7 +36,7 @@ function ControllerView() {
     timerRunning: false,
 
     // Playlist Mappings (IDs)
-    plDefault: '',
+    plWarmup: '',
     plCountdown: '',
     plKickoff: '', // Anpfiff Hintergrund
     plHalfTime: '',
@@ -80,7 +80,7 @@ function ControllerView() {
       ...prev,
       ...preset,
       // Ensure we keep defaults if preset misses new fields
-      plDefault: preset.plDefault || preset.plSponsors || '',
+      plWarmup: preset.plWarmup || preset.plDefault || preset.plSponsors || '',
       plCountdown: preset.plCountdown || '',
       plKickoff: preset.plKickoff || '',
       plHalfTime: preset.plHalfTime || '',
@@ -243,66 +243,64 @@ function ControllerView() {
   return (
     <div className="container-fluid d-flex flex-column position-relative" style={{ height: '100%', overflow: 'hidden' }}>
 
-      {/* HEADER (Same as before) */}
-      <div className="d-flex justify-content-between align-items-center mb-4 pb-2 border-bottom">
-        <div><h1 className="m-0">Regie</h1><p className="lead m-0 text-muted">Steuerung</p></div>
-        <div className="d-flex gap-2">
-          <select className="form-select" style={{ minWidth: 200 }} value={currentPresetId} onChange={(e) => {
-            if (e.target.value === 'new') {
-              setCurrentPresetId('new');
-              // Reset to defaults
-              setGameState(prev => ({
-                homeScore: 0, guestScore: 0,
-                matchState: 'PRE_GAME', timerStart: null, timerOffset: 0, timerRunning: false,
-                plDefault: '', plCountdown: '', plKickoff: '', plHalfTime: '', plEnd: '',
-                plGoalHome: '', plGoalGuest: '', plSub: '', plYellow: '', plRed: '', plVar: '', plAnnouncement: ''
-              }));
-            } else {
-              const p = presets.find(pr => pr.id === e.target.value);
-              if (p) loadPreset(p);
-            }
-          }}>
-            <option value="new">Neues Preset...</option>
-            {presets.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-          </select>
-          <button className="btn btn-outline-primary" onClick={handleSaveClick}><BsSave /></button>
-        </div>
-      </div>
-
       <div className="row flex-fill overflow-hidden">
 
         {/* SETUP COLUMN (Scrollable) */}
         <div className="col-md-3 pe-3 border-end h-100 pb-5" style={{ overflowY: 'auto', overflowX: 'hidden' }}>
+
           <h4 className="mb-3">Zuordnung</h4>
-          <div className="mb-4">
-            <PlaylistSelect label="Default" value={gameState.plDefault} onChange={v => updateState('plDefault', v)} playlists={playlists} />
+
+          <div className="d-flex gap-2 mb-4">
+            <select className="form-select form-select-sm" value={currentPresetId} onChange={(e) => {
+              if (e.target.value === 'new') {
+                setCurrentPresetId('new');
+                // Reset to defaults
+                setGameState(prev => ({
+                  homeScore: 0, guestScore: 0,
+                  matchState: 'PRE_GAME', timerStart: null, timerOffset: 0, timerRunning: false,
+                  plWarmup: '', plCountdown: '', plKickoff: '', plHalfTime: '', plEnd: '',
+                  plGoalHome: '', plGoalGuest: '', plSub: '', plYellow: '', plRed: '', plVar: '', plAnnouncement: ''
+                }));
+              } else {
+                const p = presets.find(pr => pr.id === e.target.value);
+                if (p) loadPreset(p);
+              }
+            }}>
+              <option value="new">Neues Preset...</option>
+              {presets.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+            </select>
+            <button className="btn btn-outline-secondary btn-sm" onClick={handleSaveClick}><BsSave /></button>
           </div>
+
           <div className="mb-4">
+            <PlaylistSelect label="Warmup" value={gameState.plWarmup} onChange={v => updateState('plWarmup', v)} playlists={playlists} />
             <PlaylistSelect label="Countdown" value={gameState.plCountdown} onChange={v => updateState('plCountdown', v)} playlists={playlists} />
-          </div>
-          <div className="mb-4">
             <PlaylistSelect label="Anpfiff" value={gameState.plKickoff} onChange={v => updateState('plKickoff', v)} playlists={playlists} />
             <PlaylistSelect label="Halbzeit" value={gameState.plHalfTime} onChange={v => updateState('plHalfTime', v)} playlists={playlists} />
             <PlaylistSelect label="Abpfiff" value={gameState.plEnd} onChange={v => updateState('plEnd', v)} playlists={playlists} />
           </div>
+
           <div className="mb-4">
             <PlaylistSelect label="Tor Heim" value={gameState.plGoalHome} onChange={v => updateState('plGoalHome', v)} playlists={playlists} />
             <PlaylistSelect label="Tor Gast" value={gameState.plGoalGuest} onChange={v => updateState('plGoalGuest', v)} playlists={playlists} />
           </div>
+
           <div className="mb-4">
             <PlaylistSelect label="Wechsel" value={gameState.plSub} onChange={v => updateState('plSub', v)} playlists={playlists} />
             <PlaylistSelect label="Gelbe Karte" value={gameState.plYellow} onChange={v => updateState('plYellow', v)} playlists={playlists} />
             <PlaylistSelect label="Rote Karte" value={gameState.plRed} onChange={v => updateState('plRed', v)} playlists={playlists} />
             <PlaylistSelect label="VAR Check" value={gameState.plVar} onChange={v => updateState('plVar', v)} playlists={playlists} />
           </div>
+
           <div className="mb-4">
             <PlaylistSelect label="Durchsage" value={gameState.plAnnouncement} onChange={v => updateState('plAnnouncement', v)} playlists={playlists} />
           </div>
+
         </div>
 
         {/* CENTER COLUMN: LIVE CONTROL */}
         <div className="col-md-6 px-3 border-end h-100" style={{ overflowY: 'auto', overflowX: 'hidden' }}>
-          <h4 className="mb-4 text-center">Match Control</h4>
+          <h4 className="mb-4 text-center">Match</h4>
 
           {/* SCORE & TIME */}
           <div className="d-flex flex-column align-items-center mb-4">
@@ -334,29 +332,37 @@ function ControllerView() {
             </div>
           </div>
 
-          <hr />
-
           {/* PHASES */}
-          <div className="row g-3">
-            <div className="col-6">
-              <button className="btn btn-outline-primary w-100" onClick={() => startMatchState('FIRST_HALF')}>
-                Anpfiff 1. Halbzeit
-              </button>
+
+          <div className="mb-4">
+            <h4 className="mb-4 text-center">1. Halbzeit</h4>
+            <div className="row g-3">
+              <div className="col-6">
+                <button className="btn btn-outline-primary w-100" onClick={() => startMatchState('FIRST_HALF')}>
+                  Anpfiff
+                </button>
+              </div>
+              <div className="col-6">
+                <button className="btn btn-outline-primary w-100" onClick={() => startMatchState('HALF_TIME')}>
+                  Abpfiff
+                </button>
+              </div>
             </div>
-            <div className="col-6">
-              <button className="btn btn-outline-primary w-100" onClick={() => startMatchState('HALF_TIME')}>
-                Abpfiff 1. Halbzeit
-              </button>
-            </div>
-            <div className="col-6">
-              <button className="btn btn-outline-primary w-100" onClick={() => startMatchState('SECOND_HALF')}>
-                Anpfiff 2. Halbzeit
-              </button>
-            </div>
-            <div className="col-6">
-              <button className="btn btn-outline-primary w-100" onClick={() => startMatchState('POST_GAME')}>
-                Abpfiff 2. Halbzeit
-              </button>
+          </div>
+
+          <div className="mb-0">
+            <h4 className="mb-4 text-center">2. Halbzeit</h4>
+            <div className="row g-3">
+              <div className="col-6">
+                <button className="btn btn-outline-primary w-100" onClick={() => startMatchState('SECOND_HALF')}>
+                  Anpfiff
+                </button>
+              </div>
+              <div className="col-6">
+                <button className="btn btn-outline-primary w-100" onClick={() => startMatchState('POST_GAME')}>
+                  Abpfiff
+                </button>
+              </div>
             </div>
           </div>
 
@@ -366,12 +372,13 @@ function ControllerView() {
         <div className="col-md-3 ps-3 h-100" style={{ overflowY: 'auto', overflowX: 'hidden' }}>
           <h4 className="mb-3">Szenen</h4>
           <div className="d-grid gap-2">
-            <button className="btn btn-outline-primary mb-4" onClick={() => {
-              const pl = playlists.find(p => p.id === gameState.plDefault);
+            <button className="btn btn-outline-primary" onClick={() => {
+              const pl = playlists.find(p => p.id === gameState.plWarmup);
               if (pl) window.electronAPI.sendControlCommand('PLAY_PLAYLIST', { playlist: pl, mode: 'FULL' });
             }}>
-              Start
+              Warmup
             </button>
+            <button className="btn btn-outline-primary" onClick={() => triggerScene(gameState.plCountdown)}>Countdown</button>
             <button className="btn btn-outline-primary" onClick={() => triggerScene(gameState.plGoalHome)}>Tor Heim</button>
             <button className="btn btn-outline-primary" onClick={() => triggerScene(gameState.plGoalGuest)}>Tor Gast</button>
             <button className="btn btn-outline-primary" onClick={() => triggerScene(gameState.plSub)}>Wechsel</button>
