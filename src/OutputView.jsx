@@ -58,9 +58,77 @@ function OutputView() {
         }
     }, []);
 
-    // ... (Timer Logic Omitted, unchanged) ...
+    // --- TIMER LOGIC ---
+    useEffect(() => {
+        if (gameState.timerRunning && gameState.timerStart) {
+            timerIntervalRef.current = setInterval(() => {
+                const now = Date.now();
+                const diffSec = Math.floor((now - gameState.timerStart) / 1000);
+                const totalSec = gameState.timerOffset + diffSec;
+                const m = Math.floor(totalSec / 60);
+                const s = totalSec % 60;
+                setTimerDisplay(`${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`);
+            }, 1000);
+        } else {
+            const totalSec = gameState.timerOffset;
+            const m = Math.floor(totalSec / 60);
+            const s = totalSec % 60;
+            setTimerDisplay(`${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`);
+        }
 
-    // ... (Media Playback Logic Omitted, unchanged) ...
+        return () => clearInterval(timerIntervalRef.current);
+    }, [gameState.timerRunning, gameState.timerStart, gameState.timerOffset]);
+
+
+    // --- MEDIA PLAYBACK LOOP ---
+    useEffect(() => {
+        if (!currentPlaylist || !currentPlaylist.items || currentPlaylist.items.length === 0) {
+            setActiveMedia(null);
+            return;
+        }
+        const item = currentPlaylist.items[currentIndex];
+        loadMediaDetails(item);
+    }, [currentPlaylist, currentIndex]);
+
+    const loadMediaDetails = async (item) => {
+        if (!item) return;
+        const allMedia = await window.electronAPI.loadMedia();
+        const found = allMedia.find(m => m.id === item.id);
+        if (found) {
+            setActiveMedia({ ...found, duration: item.duration || 5 });
+        }
+    };
+
+    useEffect(() => {
+        if (activeMedia && activeMedia.type === 'image') {
+            const duration = activeMedia.duration || 5;
+            mediaTimeoutRef.current = setTimeout(() => {
+                handleMediaEnd();
+            }, duration * 1000);
+            return () => clearTimeout(mediaTimeoutRef.current);
+        }
+    }, [activeMedia]);
+
+    const handleMediaEnd = () => {
+        if (!currentPlaylist) return;
+        const nextIndex = currentIndex + 1;
+
+        if (nextIndex >= currentPlaylist.items.length) {
+            if (scenePlaylist) {
+                setScenePlaylist(null);
+                if (standardPlaylist) {
+                    setCurrentPlaylist(standardPlaylist);
+                    setCurrentIndex(0);
+                } else {
+                    setActiveMedia(null);
+                }
+            } else {
+                setCurrentIndex(0);
+            }
+        } else {
+            setCurrentIndex(nextIndex);
+        }
+    };
 
     // --- RENDER ---
     // Overlay is visible ONLY if:
