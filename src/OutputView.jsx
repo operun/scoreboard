@@ -178,7 +178,7 @@ function OutputView() {
 
                 {/* Default Scoreboard Design */}
                 <div style={{
-                    width: '100vw',
+                    width: '40vw',
                     height: '100vh',
                     display: 'flex',
                     flexDirection: 'column',
@@ -191,41 +191,48 @@ function OutputView() {
                         justifyContent: 'space-around',
                         width: '100%',
                         alignItems: 'center',
+                        marginBottom: '15vh'
                     }}>
                         <div style={{ textAlign: 'center', flex: 1 }}>
-                            <h2 style={{ color: '#fff', fontSize: '5vw', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+                            <h1 style={{ color: '#fff', fontSize: '5vw', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '5vh' }}>
                                 Heim
-                            </h2>
-                            <div style={{ fontSize: '50vh', fontWeight: 'bold', lineHeight: 1, color: 'white' }}>
+                            </h1>
+                            <div style={{ fontSize: '30vh', fontWeight: 'bold', lineHeight: 1, color: 'white' }}>
                                 {gameState.homeScore}
                             </div>
                         </div>
 
-                        <div style={{ color: '#fff', fontSize: '50vh' }}>:</div>
+                        <div style={{ color: '#fff', fontSize: '20vh', marginTop: '10vh' }}>:</div>
 
                         <div style={{ textAlign: 'center', flex: 1 }}>
-                            <h2 style={{ color: '#fff', fontSize: '5vw', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+                            <h1 style={{ color: '#fff', fontSize: '5vw', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '5vh' }}>
                                 Gast
-                            </h2>
-                            <div style={{ fontSize: '50vh', fontWeight: 'bold', lineHeight: 1, color: 'white' }}>
+                            </h1>
+                            <div style={{ fontSize: '30vh', fontWeight: 'bold', lineHeight: 1, color: 'white' }}>
                                 {gameState.guestScore}
                             </div>
                         </div>
                     </div>
 
-                    {/* Timer Only */}
-                    <div style={{
-                        color: '#fff',
-                        fontSize: '10vh',
-                        fontWeight: 'bold',
-                        fontFamily: 'monospace',
-                        letterSpacing: '0.1em'
-                    }}>
-                        {timerDisplay}
-                    </div>
                 </div>
 
             </div>
+
+            {/* Timer Only */}
+            <div style={{
+                color: '#fff',
+                fontSize: '5vh',
+                fontWeight: 'bold',
+                fontFamily: 'monospace',
+                letterSpacing: '0.1em',
+                position: 'absolute',
+                bottom: '20px',
+                textAlign: 'center',
+                width: '100%'
+            }}>
+                {timerDisplay}
+            </div>
+
 
         </div>
     );
