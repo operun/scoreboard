@@ -21,31 +21,67 @@ function OutputView() {
 
     if (!media) {
         return (
-            <div style={{ backgroundColor: 'black', height: '100vh', width: '100vw', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                {/* Black screen by default or logo */}
-                <h1 style={{ color: '#333' }}>Scoreboard Output</h1>
+            <div style={{
+                backgroundColor: '#1a1a1a',
+                height: '100vh',
+                width: '100vw',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+            }}>
+                <div style={{
+                    width: '80%',
+                    aspectRatio: '16/9',
+                    border: '2px dashed #444',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: '#444'
+                }}>
+                    <h1>Scoreboard Output</h1>
+                </div>
             </div>
         );
     }
 
     return (
-        <div style={{ backgroundColor: 'black', height: '100vh', width: '100vw', overflow: 'hidden' }}>
-            {media.type === 'video' ? (
-                <video
-                    src={`file://${media.path}`}
-                    autoPlay
-                    style={{ width: '100%', height: '100%', objectFit: 'contain' }}
-                    onEnded={() => {
-                        // Optional: Report back that video ended
-                    }}
-                />
-            ) : (
-                <img
-                    src={`file://${media.path}`}
-                    alt="Display"
-                    style={{ width: '100%', height: '100%', objectFit: 'contain' }}
-                />
-            )}
+        <div style={{
+            backgroundColor: '#1a1a1a',
+            height: '100vh',
+            width: '100vw',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            overflow: 'hidden'
+        }}>
+            <div style={{
+                position: 'relative',
+                width: '90%', // Leave some space around as requested
+                height: '90%',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                border: '1px solid #333', // Visual guide
+                boxShadow: '0 0 20px rgba(0,0,0,0.5)',
+                backgroundColor: 'black'
+            }}>
+                {media.type === 'video' ? (
+                    <video
+                        src={`file://${media.path}`}
+                        autoPlay
+                        style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+                        onEnded={() => {
+                            // Optional: Report back that video ended
+                        }}
+                    />
+                ) : (
+                    <img
+                        src={`file://${media.path}`}
+                        alt="Display"
+                        style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+                    />
+                )}
+            </div>
         </div>
     );
 }
