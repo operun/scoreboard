@@ -84,3 +84,6 @@ Das Herzstück für den Live-Betrieb.
    - Output stoppt Playlist sofort.
    - Output spielt "tor.mp4".
    - Nach Ende: Output zeigt Schwarzbild oder letzten Frame (konfigurierbar).
+
+### 4.3 Zukünftige Erweiterungen
+Für Konzepte zur Entkopplung (WebSockets) und robusterem Datentransfer (Project Bundles) siehe [Future Roadmap](roadmap.md).
