@@ -1,20 +1,62 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { toast } from 'react-toastify';
 import { BsPlayCircle, BsStopCircle, BsClock, BsSave, BsUpload } from "react-icons/bs";
 
+// Helper Component defined outside to prevent re-mounting on parent re-renders
+const PlaylistSelect = ({ label, value, onChange, playlists }) => (
+  <div className="mb-2">
+    <label className="form-label text-muted small fw-bold mb-1">{label}</label>
+    <select
+      className="form-select form-select-sm"
+      value={value}
+      onChange={e => onChange(e.target.value)}
+    >
+      <option value="">-- Ignorieren --</option>
+      {playlists.map(p => <option key={p.id} value={p.id}>{p.title}</option>)}
+    </select>
+  </div>
+);
+
 function ControllerView() {
   const [playlists, setPlaylists] = useState([]);
+
   const [presets, setPresets] = useState([]);
   const [currentPresetId, setCurrentPresetId] = useState('new');
 
   // Game State (part of preset)
   const [gameState, setGameState] = useState({
+    // Scores (Live)
     homeScore: 0,
     guestScore: 0,
-    kickoffTime: '',
-    standardPlaylistId: '',
-    half: 1 // 1 or 2
+
+    // Timer / Match State
+    matchState: 'PRE_GAME', // PRE_GAME, FIRST_HALF, HALF_TIME, SECOND_HALF, POST_GAME
+    timerStart: null, // Timestamp when timer started
+    timerOffset: 0,   // Offset in seconds (e.g. 2700 for 2nd half)
+    timerRunning: false,
+
+    // Playlist Mappings (IDs)
+    plSponsors: '',
+    plCountdown: '',
+    plKickoff: '', // Anpfiff Hintergrund
+    plHalfTime: '',
+    plEnd: '',     // Abpfiff
+    plGoalHome: '',
+    plGoalGuest: '',
+    plSub: '',
+    plYellow: '',
+    plRed: '',
+    plVar: '',
+    plAnnouncement: ''
   });
+
+  // Local Score State (for editing before "Übernehmen")
+  const [localScore, setLocalScore] = useState({ home: 0, guest: 0 });
+
+  // Sync local score when preset loaded or external update
+  useEffect(() => {
+    setLocalScore({ home: gameState.homeScore, guest: gameState.guestScore });
+  }, [gameState.homeScore, gameState.guestScore]);
 
   useEffect(() => {
     const loadData = async () => {
@@ -34,15 +76,23 @@ function ControllerView() {
 
   const loadPreset = (preset) => {
     setCurrentPresetId(preset.id);
-    setGameState({
-      homeScore: preset.homeScore || 0,
-      guestScore: preset.guestScore || 0,
-      kickoffTime: preset.kickoffTime || '',
-      standardPlaylistId: preset.standardPlaylistId || '',
-      half: preset.half || 1
-    });
-    // Optional: Auto-Loop trigger on preset load?
-    // For now we keep it manual (User has to click "Start Loop")
+    setGameState(prev => ({
+      ...prev,
+      ...preset,
+      // Ensure we keep defaults if preset misses new fields
+      plSponsors: preset.plSponsors || '',
+      plCountdown: preset.plCountdown || '',
+      plKickoff: preset.plKickoff || '',
+      plHalfTime: preset.plHalfTime || '',
+      plEnd: preset.plEnd || '',
+      plGoalHome: preset.plGoalHome || '',
+      plGoalGuest: preset.plGoalGuest || '',
+      plSub: preset.plSub || '',
+      plYellow: preset.plYellow || '',
+      plRed: preset.plRed || '',
+      plVar: preset.plVar || '',
+      plAnnouncement: preset.plAnnouncement || ''
+    }));
   };
 
   // Modal State
@@ -95,198 +145,238 @@ function ControllerView() {
   const updateState = (field, value) => {
     setGameState(prev => ({ ...prev, [field]: value }));
   };
-  // Send Game State updates whenever it changes
+
+  const commitScore = () => {
+    updateState('homeScore', localScore.home);
+    updateState('guestScore', localScore.guest);
+    toast.info("Spielstand aktualisiert");
+  };
+
+  // --- MATCH CONTROL LOGIC ---
+  const startMatchState = (state) => {
+    const updates = { matchState: state };
+    let plToPlay = null;
+
+    if (state === 'FIRST_HALF') {
+      updates.timerRunning = true;
+      updates.timerStart = Date.now();
+      updates.timerOffset = 0;
+      plToPlay = gameState.plKickoff;
+    } else if (state === 'HALF_TIME') {
+      updates.timerRunning = false;
+      plToPlay = gameState.plHalfTime;
+    } else if (state === 'SECOND_HALF') {
+      updates.timerRunning = true;
+      updates.timerStart = Date.now();
+      updates.timerOffset = 45 * 60; // 45 min
+      plToPlay = gameState.plKickoff;
+    } else if (state === 'POST_GAME') {
+      updates.timerRunning = false;
+      plToPlay = gameState.plEnd;
+    }
+
+    setGameState(prev => ({ ...prev, ...updates }));
+
+    // Trigger Playlist if configured
+    if (plToPlay) {
+      const pl = playlists.find(p => p.id === plToPlay);
+      if (pl) {
+        window.electronAPI.sendControlCommand('PLAY_PLAYLIST', {
+          playlist: pl,
+          mode: (state === 'FIRST_HALF' || state === 'SECOND_HALF') ? 'BACKGROUND' : 'FULL' // Background during game
+        });
+      }
+    }
+  };
+
+  const triggerScene = (plId) => {
+    if (!plId) {
+      toast.warn("Keine Playlist für diese Szene ausgewählt!");
+      return;
+    }
+    const pl = playlists.find(p => p.id === plId);
+    if (pl) {
+      window.electronAPI.sendControlCommand('SHOW_SCENE', pl);
+    } else {
+      toast.error("Playlist nicht gefunden");
+    }
+  };
+
+  // Generic Control Command Sender (Live Game State)
   useEffect(() => {
-    // Avoid sending on initial load if empty
-    if (currentPresetId !== 'new' || gameState.homeScore > 0 || gameState.guestScore > 0) {
+    if (currentPresetId !== 'new' || gameState.homeScore > 0) {
       window.electronAPI.sendControlCommand('UPDATE_GAME_STATE', gameState);
     }
   }, [gameState]);
 
-  const handleStartLoop = async () => {
-    if (!gameState.standardPlaylistId) return;
-    const pl = playlists.find(p => p.id === gameState.standardPlaylistId);
-    if (pl) {
-      window.electronAPI.sendControlCommand('PLAY_PLAYLIST', pl);
-      toast.success(`Loop "${pl.title}" gestartet`);
+
+  // Timer Logic for Controller Display
+  const [timerString, setTimerString] = useState("00:00");
+  const timerIntervalRef = useRef(null);
+
+  useEffect(() => {
+    const updateTimer = () => {
+      if (gameState.timerRunning && gameState.timerStart) {
+        const now = Date.now();
+        const diffSec = Math.floor((now - gameState.timerStart) / 1000);
+        const totalSec = gameState.timerOffset + diffSec;
+        const m = Math.floor(totalSec / 60);
+        const s = totalSec % 60;
+        setTimerString(`${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`);
+      } else {
+        const totalSec = gameState.timerOffset;
+        const m = Math.floor(totalSec / 60);
+        const s = totalSec % 60;
+        setTimerString(`${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`);
+      }
+    };
+
+    if (gameState.timerRunning) {
+      timerIntervalRef.current = setInterval(updateTimer, 1000);
     }
-  };
+    updateTimer(); // Initial call
 
-  const handleOverlay = async (type) => {
-    // TODO: In future, allow selecting specific media for events.
-    // For now, we pick a random video from library to demonstrate functionality
-    // or just check if a file with "goal" in name exists.
+    return () => clearInterval(timerIntervalRef.current);
+  }, [gameState.timerRunning, gameState.timerStart, gameState.timerOffset]);
 
-    const allMedia = await window.electronAPI.loadMedia();
-    let media = null;
-
-    if (type === 'GOAL') {
-      media = allMedia.find(m => m.fileName.toLowerCase().includes('tor') || m.fileName.toLowerCase().includes('goal'));
-    } else if (type === 'VAR') {
-      media = allMedia.find(m => m.fileName.toLowerCase().includes('var'));
-    }
-
-    if (media) {
-      window.electronAPI.sendControlCommand('SHOW_OVERLAY', media);
-    } else {
-      toast.warn(`Kein Medium für "${type}" gefunden (Dateiname muss "${type}" enthalten).`);
-    }
-  };
 
   return (
     <div className="container-fluid h-100 d-flex flex-column position-relative">
 
-      {/* Main Header */}
+      {/* HEADER (Same as before) */}
       <div className="d-flex justify-content-between align-items-center mb-4 pb-2 border-bottom">
-        <div>
-          <h1 className="m-0">Regie</h1>
-          <p className="lead m-0 text-muted">Steuerung für Anzeigetafel & Videowall</p>
-        </div>
-
+        <div><h1 className="m-0">Regie</h1><p className="lead m-0 text-muted">Steuerung</p></div>
         <div className="d-flex gap-2">
-          <select
-            className="form-select"
-            style={{ minWidth: 200 }}
-            value={currentPresetId}
-            onChange={(e) => {
-              if (e.target.value === 'new') {
-                setCurrentPresetId('new');
-                setGameState({ homeScore: 0, guestScore: 0, kickoffTime: '', standardPlaylistId: '', half: 1 });
-              } else {
-                const p = presets.find(pr => pr.id === e.target.value);
-                if (p) loadPreset(p);
-              }
-            }}
-          >
+          <select className="form-select" style={{ minWidth: 200 }} value={currentPresetId} onChange={(e) => {
+            if (e.target.value === 'new') {
+              setCurrentPresetId('new');
+              // Reset to defaults
+              setGameState(prev => ({
+                homeScore: 0, guestScore: 0,
+                matchState: 'PRE_GAME', timerStart: null, timerOffset: 0, timerRunning: false,
+                plSponsors: '', plCountdown: '', plKickoff: '', plHalfTime: '', plEnd: '',
+                plGoalHome: '', plGoalGuest: '', plSub: '', plYellow: '', plRed: '', plVar: '', plAnnouncement: ''
+              }));
+            } else {
+              const p = presets.find(pr => pr.id === e.target.value);
+              if (p) loadPreset(p);
+            }
+          }}>
             <option value="new">Neues Preset...</option>
             {presets.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
           </select>
-          <button className="btn btn-outline-primary" onClick={handleSaveClick} title="Preset speichern">
-            <BsSave />
-          </button>
+          <button className="btn btn-outline-primary" onClick={handleSaveClick}><BsSave /></button>
         </div>
       </div>
 
-      <div className="row flex-fill">
+      <div className="row flex-fill overflow-hidden">
 
-        {/* SETUP COLUMN */}
-        <div className="col-md-4 pe-4 border-end">
-          <h4 className="mb-4">Setup</h4>
-
-          <div className="mb-4">
-            <label className="form-label text-muted text-uppercase small fw-bold">Standard-Playlist (Loop)</label>
-            <select
-              className="form-select mb-2"
-              value={gameState.standardPlaylistId}
-              onChange={(e) => updateState('standardPlaylistId', e.target.value)}
-            >
-              <option value="">Keine ausgewählt</option>
-              {playlists.map(p => (
-                <option key={p.id} value={p.id}>{p.title}</option>
-              ))}
-            </select>
-            <button className="btn btn-outline-primary w-100" disabled={!gameState.standardPlaylistId} onClick={handleStartLoop}>
-              <BsPlayCircle className="me-2" /> Loop Starten
-            </button>
-          </div>
-
-          <hr className="my-4 text-muted" />
-
-          <div className="mb-4">
-            <label className="form-label text-muted text-uppercase small fw-bold">Anstoßzeit</label>
-            <input
-              type="time"
-              className="form-control"
-              value={gameState.kickoffTime}
-              onChange={(e) => updateState('kickoffTime', e.target.value)}
-            />
-          </div>
+        {/* SETUP COLUMN (Scrollable) */}
+        <div className="col-md-3 pe-3 border-end overflow-auto h-100 pb-5">
+          <h4 className="mb-3">Playlists Zuordnung</h4>
+          <PlaylistSelect label="Sponsoren (Basis)" value={gameState.plSponsors} onChange={v => updateState('plSponsors', v)} playlists={playlists} />
+          <PlaylistSelect label="Countdown" value={gameState.plCountdown} onChange={v => updateState('plCountdown', v)} playlists={playlists} />
+          <PlaylistSelect label="Anpfiff (Background)" value={gameState.plKickoff} onChange={v => updateState('plKickoff', v)} playlists={playlists} />
+          <PlaylistSelect label="Halbzeit" value={gameState.plHalfTime} onChange={v => updateState('plHalfTime', v)} playlists={playlists} />
+          <PlaylistSelect label="Abpfiff" value={gameState.plEnd} onChange={v => updateState('plEnd', v)} playlists={playlists} />
+          <hr />
+          <PlaylistSelect label="Tor Heim" value={gameState.plGoalHome} onChange={v => updateState('plGoalHome', v)} playlists={playlists} />
+          <PlaylistSelect label="Tor Gast" value={gameState.plGoalGuest} onChange={v => updateState('plGoalGuest', v)} playlists={playlists} />
+          <hr />
+          <PlaylistSelect label="Wechsel" value={gameState.plSub} onChange={v => updateState('plSub', v)} playlists={playlists} />
+          <PlaylistSelect label="Gelbe Karte" value={gameState.plYellow} onChange={v => updateState('plYellow', v)} playlists={playlists} />
+          <PlaylistSelect label="Rote Karte" value={gameState.plRed} onChange={v => updateState('plRed', v)} playlists={playlists} />
+          <PlaylistSelect label="VAR Check" value={gameState.plVar} onChange={v => updateState('plVar', v)} playlists={playlists} />
+          <PlaylistSelect label="Durchsage" value={gameState.plAnnouncement} onChange={v => updateState('plAnnouncement', v)} playlists={playlists} />
         </div>
 
-        {/* MATCH CONTROL COLUMN */}
-        <div className="col-md-4 px-4 border-end">
-          <h4 className="mb-4">Spielstand</h4>
+        {/* CENTER COLUMN: LIVE CONTROL */}
+        <div className="col-md-6 px-3 border-end overflow-auto h-100">
+          <h4 className="mb-4 text-center">Match Control</h4>
 
-          <div className="d-flex justify-content-center align-items-center mb-5">
-            <div className="text-center">
-              <label className="form-label text-muted small">Heim</label>
-              <input
-                type="number"
-                className="form-control form-control-lg text-center fw-bold border-primary"
-                style={{ width: 80, fontSize: '1.8rem', height: 60 }}
-                value={gameState.homeScore}
-                onChange={(e) => updateState('homeScore', parseInt(e.target.value))}
-              />
+          {/* SCORE & TIME */}
+          <div className="d-flex flex-column align-items-center mb-4">
+            <div className="d-flex justify-content-center align-items-center mb-2">
+              <div className="d-flex flex-column align-items-center gap-2">
+                <label>Heim</label>
+                <div className="d-flex align-items-center gap-2">
+                  <button className="btn btn-sm btn-outline-secondary" onClick={() => setLocalScore(s => ({ ...s, home: Math.max(0, s.home - 1) }))}>-</button>
+                  <input className="form-control text-center fs-2 fw-bold" style={{ width: 80, height: 60 }} value={localScore.home} readOnly />
+                  <button className="btn btn-sm btn-outline-secondary" onClick={() => setLocalScore(s => ({ ...s, home: s.home + 1 }))}>+</button>
+                </div>
+              </div>
+              <div className="fs-2 mx-4">:</div>
+              <div className="d-flex flex-column align-items-center gap-2">
+                <label>Gast</label>
+                <div className="d-flex align-items-center gap-2">
+                  <button className="btn btn-sm btn-outline-secondary" onClick={() => setLocalScore(s => ({ ...s, guest: Math.max(0, s.guest - 1) }))}>-</button>
+                  <input className="form-control text-center fs-2 fw-bold" style={{ width: 80, height: 60 }} value={localScore.guest} readOnly />
+                  <button className="btn btn-sm btn-outline-secondary" onClick={() => setLocalScore(s => ({ ...s, guest: s.guest + 1 }))}>+</button>
+                </div>
+              </div>
             </div>
-            <span className="fs-2 mx-3 text-muted">:</span>
-            <div className="text-center">
-              <label className="form-label text-muted small">Gast</label>
-              <input
-                type="number"
-                className="form-control form-control-lg text-center fw-bold border-primary"
-                style={{ width: 80, fontSize: '1.8rem', height: 60 }}
-                value={gameState.guestScore}
-                onChange={(e) => updateState('guestScore', parseInt(e.target.value))}
-              />
+
+            {/* TIMER DISPLAY */}
+            <div className="h2 font-monospace my-2">{timerString}</div>
+
+            <div className="text-center mt-3 mb-4">
+              <button className="btn btn-primary px-5" onClick={commitScore}>Übernehmen</button>
+            </div>
+          </div>
+
+          <hr />
+
+          {/* PHASES */}
+          <div className="row g-3">
+            <div className="col-6">
+              <button className="btn btn-outline-primary w-100 py-3" onClick={() => startMatchState('FIRST_HALF')}>
+                Anpfiff 1. HZ
+                <div className="small opacity-75">Start Zeit & BG Loop</div>
+              </button>
+            </div>
+            <div className="col-6">
+              <button className="btn btn-outline-primary w-100 py-3" onClick={() => startMatchState('HALF_TIME')}>
+                Abpfiff 1. HZ
+                <div className="small opacity-75">Stop Zeit & PL Halbzeit</div>
+              </button>
+            </div>
+            <div className="col-6">
+              <button className="btn btn-outline-primary w-100 py-3" onClick={() => startMatchState('SECOND_HALF')}>
+                Anpfiff 2. HZ
+                <div className="small opacity-75">Start Zeit (45') & BG Loop</div>
+              </button>
+            </div>
+            <div className="col-6">
+              <button className="btn btn-outline-primary w-100 py-3" onClick={() => startMatchState('POST_GAME')}>
+                Abpfiff 2. HZ
+                <div className="small opacity-75">Stop Zeit & PL Abpfiff</div>
+              </button>
             </div>
           </div>
 
-          <h4 className="mb-4 mt-5">Zeitnehmung</h4>
-          <div className="d-grid gap-3">
-            <button className="btn btn-outline-primary">
-              Anpfiff {gameState.half}. HZ
-            </button>
-            <button className="btn btn-outline-primary">
-              Halbzeit / Abpfiff
-            </button>
-            <div className="btn-group mt-2">
-              <input
-                type="radio"
-                className="btn-check"
-                name="half" id="h1"
-                autoComplete="off"
-                checked={gameState.half === 1}
-                onChange={() => updateState('half', 1)}
-              />
-              <label className="btn btn-outline-primary" htmlFor="h1">1. HZ</label>
-
-              <input
-                type="radio"
-                className="btn-check"
-                name="half" id="h2"
-                autoComplete="off"
-                checked={gameState.half === 2}
-                onChange={() => updateState('half', 2)}
-              />
-              <label className="btn btn-outline-primary" htmlFor="h2">2. HZ</label>
-            </div>
-          </div>
         </div>
 
-        {/* ACTIONS / SCENES COLUMN */}
-        <div className="col-md-4 ps-4">
-          <h4 className="mb-4">Szenen & Overlays</h4>
-          <p className="text-muted small mb-4">Aktionen unterbrechen den Standard-Loop kurzzeitig.</p>
+        {/* RIGHT COLUMN: SCENES */}
+        <div className="col-md-3 ps-3 overflow-auto h-100">
+          <h4 className="mb-3">Szenen</h4>
+          <div className="d-grid gap-2">
+            <button className="btn btn-outline-primary mb-4" onClick={() => {
+              const pl = playlists.find(p => p.id === gameState.plSponsors);
+              if (pl) window.electronAPI.sendControlCommand('PLAY_PLAYLIST', { playlist: pl, mode: 'FULL' });
+            }}>
+              Aktivieren (Sponsoren)
+            </button>
 
-          <div className="d-grid gap-3">
-            <button className="btn btn-outline-primary fw-bold" onClick={() => handleOverlay('GOAL')}>
-              TOR-Animation
-            </button>
-            <div className="row g-2">
-              <div className="col">
-                <button className="btn btn-outline-primary w-100">
-                  Wechsel
-                </button>
-              </div>
-              <div className="col">
-                <button className="btn btn-outline-primary w-100">
-                  Gelbe Karte
-                </button>
-              </div>
-            </div>
-            <button className="btn btn-outline-primary" onClick={() => handleOverlay('VAR')}>
-              VAR Check
-            </button>
+            <button className="btn btn-outline-primary py-3 fw-bold" onClick={() => triggerScene(gameState.plGoalHome)}>TOR HEIM</button>
+            <button className="btn btn-outline-primary py-3 fw-bold" onClick={() => triggerScene(gameState.plGoalGuest)}>TOR GAST</button>
+
+            <hr />
+
+            <button className="btn btn-outline-primary" onClick={() => triggerScene(gameState.plSub)}>Wechsel</button>
+            <button className="btn btn-outline-primary" onClick={() => triggerScene(gameState.plYellow)}>Gelbe Karte</button>
+            <button className="btn btn-outline-primary" onClick={() => triggerScene(gameState.plRed)}>Rote Karte</button>
+            <button className="btn btn-outline-primary" onClick={() => triggerScene(gameState.plVar)}>VAR Check</button>
+            <button className="btn btn-outline-primary" onClick={() => triggerScene(gameState.plAnnouncement)}>Durchsage</button>
           </div>
         </div>
 
