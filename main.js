@@ -480,7 +480,7 @@ ipcMain.handle('sync-to-remote', async () => {
 
         conn.end();
         console.log('[Sync] Done.');
-        resolve({ status: 'ok', message: `Sync Erfolgreich! (Hoch: ${up}, Runter: ${down})` });
+        resolve({ status: 'ok', message: `Synchronisation abgeschlossen. ${up} Dateien hochgeladen und ${down} Dateien heruntergeladen.` });
 
       } catch (e) {
         console.error('[Sync] Error:', e);

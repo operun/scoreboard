@@ -22,7 +22,7 @@ function App() {
   const color_mode = prefersDark ? 'dark' : 'light';
 
   const handleSync = async () => {
-    const toastId = toast.loading("Synchronisiere... (Bitte warten)");
+    const toastId = toast.loading("Synchronisation gestartet.");
 
     try {
       const res = await window.electronAPI.syncToRemote();
