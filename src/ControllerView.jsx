@@ -330,26 +330,22 @@ function ControllerView() {
           <div className="row g-3">
             <div className="col-6">
               <button className="btn btn-outline-primary w-100 py-3" onClick={() => startMatchState('FIRST_HALF')}>
-                Anpfiff 1. HZ
-                <div className="small opacity-75">Start Zeit & BG Loop</div>
+                Anpfiff 1. Halbzeit
               </button>
             </div>
             <div className="col-6">
               <button className="btn btn-outline-primary w-100 py-3" onClick={() => startMatchState('HALF_TIME')}>
-                Abpfiff 1. HZ
-                <div className="small opacity-75">Stop Zeit & PL Halbzeit</div>
+                Abpfiff 1. Halbzeit
               </button>
             </div>
             <div className="col-6">
               <button className="btn btn-outline-primary w-100 py-3" onClick={() => startMatchState('SECOND_HALF')}>
-                Anpfiff 2. HZ
-                <div className="small opacity-75">Start Zeit (45') & BG Loop</div>
+                Anpfiff 2. Halbzeit
               </button>
             </div>
             <div className="col-6">
               <button className="btn btn-outline-primary w-100 py-3" onClick={() => startMatchState('POST_GAME')}>
-                Abpfiff 2. HZ
-                <div className="small opacity-75">Stop Zeit & PL Abpfiff</div>
+                Abpfiff 2. Halbzeit
               </button>
             </div>
           </div>
@@ -367,8 +363,8 @@ function ControllerView() {
               Aktivieren (Sponsoren)
             </button>
 
-            <button className="btn btn-outline-primary py-3 fw-bold" onClick={() => triggerScene(gameState.plGoalHome)}>TOR HEIM</button>
-            <button className="btn btn-outline-primary py-3 fw-bold" onClick={() => triggerScene(gameState.plGoalGuest)}>TOR GAST</button>
+            <button className="btn btn-outline-primary" onClick={() => triggerScene(gameState.plGoalHome)}>Tor Heim</button>
+            <button className="btn btn-outline-primary" onClick={() => triggerScene(gameState.plGoalGuest)}>Tor Gast</button>
 
             <hr />
 
