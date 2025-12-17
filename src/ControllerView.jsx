@@ -79,6 +79,11 @@ function ControllerView() {
     setGameState(prev => ({
       ...prev,
       ...preset,
+      // Always reset volatile timer state on load
+      timerRunning: false,
+      timerStart: null,
+      timerOffset: 0,
+
       // Ensure we keep defaults if preset misses new fields
       plWarmup: preset.plWarmup || preset.plDefault || preset.plSponsors || '',
       plCountdown: preset.plCountdown || '',
@@ -118,7 +123,11 @@ function ControllerView() {
     const newPreset = {
       id,
       name: presetName,
-      ...gameState
+      ...gameState,
+      // Do not save timer running state (prevents huge timer on reload)
+      timerRunning: false,
+      timerStart: null,
+      timerOffset: 0
     };
 
     try {
