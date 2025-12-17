@@ -241,7 +241,7 @@ function ControllerView() {
 
 
   return (
-    <div className="container-fluid h-100 d-flex flex-column position-relative">
+    <div className="container-fluid d-flex flex-column position-relative" style={{ height: '100%', overflow: 'hidden' }}>
 
       {/* HEADER (Same as before) */}
       <div className="d-flex justify-content-between align-items-center mb-4 pb-2 border-bottom">
@@ -272,7 +272,7 @@ function ControllerView() {
       <div className="row flex-fill overflow-hidden">
 
         {/* SETUP COLUMN (Scrollable) */}
-        <div className="col-md-3 pe-3 border-end overflow-auto h-100 pb-5">
+        <div className="col-md-3 pe-3 border-end h-100 pb-5" style={{ overflowY: 'auto', overflowX: 'hidden' }}>
           <h4 className="mb-3">Zuordnung</h4>
           <div className="mb-4">
             <PlaylistSelect label="Default" value={gameState.plDefault} onChange={v => updateState('plDefault', v)} playlists={playlists} />
@@ -301,7 +301,7 @@ function ControllerView() {
         </div>
 
         {/* CENTER COLUMN: LIVE CONTROL */}
-        <div className="col-md-6 px-3 border-end overflow-auto h-100">
+        <div className="col-md-6 px-3 border-end h-100" style={{ overflowY: 'auto', overflowX: 'hidden' }}>
           <h4 className="mb-4 text-center">Match Control</h4>
 
           {/* SCORE & TIME */}
@@ -363,7 +363,7 @@ function ControllerView() {
         </div>
 
         {/* RIGHT COLUMN: SCENES */}
-        <div className="col-md-3 ps-3 overflow-auto h-100">
+        <div className="col-md-3 ps-3 h-100" style={{ overflowY: 'auto', overflowX: 'hidden' }}>
           <h4 className="mb-3">Szenen</h4>
           <div className="d-grid gap-2">
             <button className="btn btn-outline-primary mb-4" onClick={() => {

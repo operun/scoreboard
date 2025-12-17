@@ -34,7 +34,7 @@ function App() {
           <Sidebar activeView={view} onChangeView={setView} />
         </div>
 
-        <div className="main flex-fill p-5">
+        <div className="main flex-fill p-5" style={{ height: '100vh', overflow: 'hidden' }}>
           {view === 'controller' && <ControllerView />}
           {view === 'playlists' && (
             <PlaylistsView
