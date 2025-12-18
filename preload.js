@@ -38,6 +38,14 @@ contextBridge.exposeInMainWorld('electronAPI', {
     return () => ipcRenderer.removeListener('settings-updated', subscription);
   },
 
+  onTestImageUpdated: (callback) => {
+    const subscription = (event, value) => callback(null, value);
+    ipcRenderer.on('test-image-updated', subscription);
+    return () => ipcRenderer.removeListener('test-image-updated', subscription);
+  },
+
+  selectTestImage: () => ipcRenderer.invoke('select-test-image'),
+
   // Generic control command
   sendControlCommand: (command, payload) => ipcRenderer.invoke('control-command', { command, payload }),
 

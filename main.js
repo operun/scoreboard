@@ -37,6 +37,13 @@ function getMediaType(fileName) {
 ipcMain.handle('load-settings', async () => {
   const filePath = path.join(app.getPath('userData'), 'settings.json');
   const settings = loadEncryptedSettings(filePath);
+
+  // Check for custom test image
+  const customImagePath = path.join(app.getPath('userData'), 'custom_test_image.png');
+  if (fs.existsSync(customImagePath)) {
+    settings.customTestImage = `file://${customImagePath}?t=${Date.now()}`;
+  }
+
   return settings;
 });
 
@@ -231,6 +238,33 @@ ipcMain.handle('open-file-dialog', async () => {
   if (result.canceled) return [];
 
   return result.filePaths;
+});
+
+ipcMain.handle('select-test-image', async () => {
+  const result = await dialog.showOpenDialog({
+    title: 'Testbild auswählen',
+    filters: [{ name: 'Bilder', extensions: ['jpg', 'jpeg', 'png'] }],
+    properties: ['openFile']
+  });
+
+  if (result.canceled || result.filePaths.length === 0) return null;
+
+  const sourcePath = result.filePaths[0];
+  const destPath = path.join(app.getPath('userData'), 'custom_test_image.png');
+
+  try {
+    fs.copyFileSync(sourcePath, destPath);
+
+    // Notify output window to reload the image
+    if (outputWindow && !outputWindow.isDestroyed()) {
+      outputWindow.webContents.send('test-image-updated', `file://${destPath}?t=${Date.now()}`);
+    }
+
+    return `file://${destPath}?t=${Date.now()}`;
+  } catch (error) {
+    console.error('Error saving test image:', error);
+    return null;
+  }
 });
 
 function loadPlaylists() {
@@ -509,6 +543,7 @@ ipcMain.handle('sync-to-remote', async () => {
 
 let outputWindow = null;
 
+// --- CREATE OUTPUT WINDOW ---
 function createOutputWindow() {
   outputWindow = new BrowserWindow({
     width: 1280,
@@ -540,13 +575,14 @@ function createOutputWindow() {
   });
 }
 
+// --- CREATE MAIN WINDOW ---
 function createWindow() {
   const window = new BrowserWindow({
     width: 1280,
-    height: 800,
+    height: 720,
     show: false,
     minWidth: 1024,
-    minHeight: 700,
+    minHeight: 768,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,

@@ -30,6 +30,9 @@ function OutputView() {
     const mediaTimeoutRef = useRef(null);
     const timerIntervalRef = useRef(null);
 
+    // -- TEST IMAGE --
+    const [currentTestImage, setCurrentTestImage] = useState(testImage);
+
     // --- LOAD SETTINGS & LISTEN FOR UPDATES ---
     useEffect(() => {
         const applySettings = (settings) => {
@@ -38,6 +41,11 @@ function OutputView() {
                 const h = parseInt(settings.outputHeight) || 720;
                 setOutputSize({ width: w, height: h });
                 setShowCropMarks(settings.showCropMarks !== false); // Default true
+
+                // If settings include a test image path (added in backend), use it
+                if (settings.customTestImage) {
+                    setCurrentTestImage(settings.customTestImage);
+                }
             }
         };
 
@@ -51,6 +59,16 @@ function OutputView() {
         if (window.electronAPI.onSettingsUpdated) {
             const remove = window.electronAPI.onSettingsUpdated((event, settings) => {
                 applySettings(settings);
+            });
+            return () => remove();
+        }
+    }, []);
+
+    // Listen for test image updates (direct upload)
+    useEffect(() => {
+        if (window.electronAPI.onTestImageUpdated) {
+            const remove = window.electronAPI.onTestImageUpdated((event, path) => {
+                setCurrentTestImage(path);
             });
             return () => remove();
         }
@@ -220,7 +238,7 @@ function OutputView() {
                     ) : (
                         <>
                             <img
-                                src={testImage}
+                                src={currentTestImage}
                                 alt="Testbild"
                                 style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                             />

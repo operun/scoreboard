@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { toast } from 'react-toastify';
-import { BsEye, BsEyeSlash } from 'react-icons/bs';
+import { BsEye, BsEyeSlash, BsUpload } from 'react-icons/bs';
 
 function SettingsView() {
   const [server, setServer] = useState('');
@@ -75,9 +75,9 @@ function SettingsView() {
 
           {activeTab === 'output' && (
             <>
-              <div className="row">
+              <div className="row mb-4">
                 <div className="col-6">
-                  <div className="mb-3">
+                  <div>
                     <label className="form-label">Breite (px)</label>
                     <input
                       type="number"
@@ -88,7 +88,7 @@ function SettingsView() {
                   </div>
                 </div>
                 <div className="col-6">
-                  <div className="mb-3">
+                  <div>
                     <label className="form-label">Höhe (px)</label>
                     <input
                       type="number"
@@ -99,7 +99,7 @@ function SettingsView() {
                   </div>
                 </div>
               </div>
-              <div className="mb-3 form-check">
+              <div className="mb-4 form-check">
                 <input
                   type="checkbox"
                   className="form-check-input"
@@ -107,10 +107,19 @@ function SettingsView() {
                   checked={showCropMarks}
                   onChange={(e) => setShowCropMarks(e.target.checked)}
                 />
-                <label className="form-check-label" htmlFor="cropMarksCheck">Schnittmarken anzeigen</label>
+                <label className="form-check-label" htmlFor="cropMarksCheck">Markierungen anzeigen</label>
               </div>
 
-              <div className="d-flex mt-4">
+              <div className="mb-4">
+                <button className="btn btn-outline-primary d-flex align-items-center gap-2" onClick={async () => {
+                  const result = await window.electronAPI.selectTestImage();
+                  if (result) toast.success("Testbild aktualisiert");
+                }}>
+                  Eigenes Testbild hochladen
+                </button>
+              </div>
+
+              <div className="d-flex">
                 <button className="btn btn-outline-primary" onClick={handleSaveOutput}>
                   Speichern
                 </button>
@@ -120,7 +129,7 @@ function SettingsView() {
 
           {activeTab === 'connection' && (
             <>
-              <div className="mb-3">
+              <div className="mb-4">
                 <label className="form-label">Server</label>
                 <input
                   type="text"
@@ -130,7 +139,7 @@ function SettingsView() {
                 />
               </div>
 
-              <div className="mb-3">
+              <div className="mb-4">
                 <label className="form-label">Benutzername</label>
                 <input
                   type="text"
@@ -140,7 +149,7 @@ function SettingsView() {
                 />
               </div>
 
-              <div className="mb-3">
+              <div className="mb-4">
                 <label className="form-label">Passwort</label>
                 <div className="input-group">
                   <input
