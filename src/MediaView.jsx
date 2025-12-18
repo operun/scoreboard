@@ -154,7 +154,7 @@ function MediaView() {
               {filteredMedia.map((file, idx) => (
                 <tr>
                   <td className="w-75">{file.fileName}</td>
-                  <td>{new Date(file.addedAt).toLocaleString()}</td>
+                  <td>{new Date(file.addedAt).toLocaleString('de-DE')}</td>
                   <td>
                     <span
                       className="me-2 text-success"

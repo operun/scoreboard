@@ -42,7 +42,9 @@ function SortableItem(props) {
           <h6 className="mb-0 text-truncate" title={props.media?.fileName || ''}>
             {props.media?.fileName || 'Unbekannte Datei'}
           </h6>
-          <small className="text-muted">{props.media?.type?.toUpperCase()}</small>
+          <small className="text-muted">
+            {props.media?.type === 'video' ? 'Video' : 'Bild'}
+          </small>
         </div>
 
         <div className="mx-3 flex-shrink-0">
@@ -189,8 +191,7 @@ function EditPlaylistView({ playlistId, onBack }) {
           <h5 className="mb-3">Ablauf</h5>
           {playlist.items.length === 0 ? (
             <div className="alert alert-secondary text-center py-5">
-              Die Playlist ist leer. <br />
-              Füge Medien aus der rechten Spalte hinzu.
+              Die Playlist ist leer. Füge Medien aus der rechten Spalte hinzu.
             </div>
           ) : (
             <DndContext
@@ -236,7 +237,9 @@ function EditPlaylistView({ playlistId, onBack }) {
                   >
                     <div className="text-truncate me-2">
                       <div className="fw-bold text-truncate">{media.fileName}</div>
-                      <small className="text-muted">{media.type} • {new Date(media.addedAt).toLocaleDateString()}</small>
+                      <small className="text-muted">
+                        {media.type === 'video' ? 'Video' : 'Bild'} • {new Date(media.addedAt).toLocaleDateString('de-DE')}
+                      </small>
                     </div>
 
                     {inPlaylist ? (

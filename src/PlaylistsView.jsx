@@ -78,7 +78,7 @@ function PlaylistsView({ onEdit }) {
               {playlists.map((playlist) => (
                 <tr key={playlist.id}>
                   <td className="w-75">{playlist.title}</td>
-                  <td>{new Date(playlist.updated).toLocaleString()}</td>
+                  <td>{new Date(playlist.updated).toLocaleString('de-DE')}</td>
                   <td>
                     <span onClick={() => onEdit(playlist.id)} className="me-3" style={{ cursor: 'pointer' }}>
                       <BsPencil />
