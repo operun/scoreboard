@@ -104,6 +104,9 @@ function ControllerView() {
   const [showSaveModal, setShowSaveModal] = useState(false);
   const [presetName, setPresetName] = useState("");
 
+  const [showAnnouncementModal, setShowAnnouncementModal] = useState(false);
+  const [announcementText, setAnnouncementText] = useState("");
+
   const handleSaveClick = () => {
     // Pre-fill name
     if (currentPresetId !== 'new') {
@@ -211,6 +214,15 @@ function ControllerView() {
     }
   };
 
+  const handleAnnouncement = () => {
+    if (gameState.plAnnouncement) {
+      triggerScene(gameState.plAnnouncement);
+    }
+    window.electronAPI.sendControlCommand('SHOW_ANNOUNCEMENT', { message: announcementText });
+    setShowAnnouncementModal(false);
+    toast.success('Durchsage gesendet');
+  };
+
   // Generic Control Command Sender (Live Game State)
   useEffect(() => {
     if (currentPresetId !== 'new' || gameState.homeScore > 0) {
@@ -279,7 +291,7 @@ function ControllerView() {
         {/* SETUP COLUMN (Scrollable) */}
         <div className="col-md-3 pe-4 h-100" style={{ overflowY: 'auto', overflowX: 'hidden' }}>
 
-          <h4 className="mb-3">Zuordnung</h4>
+          <h5 className="mb-2 text-center">Zuordnung</h5>
 
           <div className="mb-4">
             <PlaylistSelect label="Warmup" value={gameState.plWarmup} onChange={v => updateState('plWarmup', v)} playlists={playlists} />
@@ -413,8 +425,9 @@ function ControllerView() {
 
         {/* RIGHT COLUMN: SCENES */}
         <div className="col-md-3 ps-4 psh-100" style={{ overflowY: 'auto', overflowX: 'hidden' }}>
-          <h4 className="mb-4">Szenen</h4>
           <div className="d-grid gap-2">
+
+            <h5 className="mb-2 text-center">Vor dem Spiel</h5>
             <button className="btn btn-outline-primary" onClick={() => {
               const pl = playlists.find(p => p.id === gameState.plWarmup);
               if (pl) window.electronAPI.sendControlCommand('PLAY_PLAYLIST', { playlist: pl, mode: 'FULL' });
@@ -422,6 +435,8 @@ function ControllerView() {
               Warmup
             </button>
             <button className="btn btn-outline-primary mb-3" onClick={() => triggerScene(gameState.plCountdown)}>Countdown</button>
+
+            <h5 className="mb-2 text-center">Im Spiel</h5>
             <button className="btn btn-outline-primary" onClick={() => {
               triggerScene(gameState.plGoalHome);
               setGameState(prev => ({ ...prev, homeScore: prev.homeScore + 1 }));
@@ -433,9 +448,17 @@ function ControllerView() {
             <button className="btn btn-outline-primary" onClick={() => triggerScene(gameState.plSub)}>Wechsel</button>
             <button className="btn btn-outline-primary" onClick={() => triggerScene(gameState.plYellow)}>Gelbe Karte</button>
             <button className="btn btn-outline-primary" onClick={() => triggerScene(gameState.plRed)}>Rote Karte</button>
-            <button className="btn btn-outline-primary mb-3" onClick={() => triggerScene(gameState.plVar)}>VAR Check</button>
-            <button className="btn btn-outline-primary" onClick={() => triggerScene(gameState.plAnnouncement)}>Durchsage</button>
-            <button className="btn btn-outline-danger mt-3" onClick={() => { window.electronAPI.sendControlCommand('STOP_OUTPUT', {}); }}>
+            <button className="btn btn-outline-primary mb-4" onClick={() => triggerScene(gameState.plVar)}>VAR Check</button>
+
+            <h5 className="mb-2 text-center">Allgemein</h5>
+            <button className="btn btn-outline-primary" onClick={() => window.electronAPI.sendControlCommand('SHOW_SCOREBOARD')}>
+              Spielstand
+            </button>
+            <button className="btn btn-outline-primary" onClick={() => {
+              setAnnouncementText('');
+              setShowAnnouncementModal(true);
+            }}>Durchsage</button>
+            <button className="btn btn-outline-danger" onClick={() => { window.electronAPI.sendControlCommand('STOP_OUTPUT', {}); }}>
               Ausgabe anhalten
             </button>
           </div>
@@ -465,6 +488,34 @@ function ControllerView() {
               <div className="modal-footer">
                 <button type="button" className="btn btn-secondary" onClick={() => setShowSaveModal(false)}>Abbrechen</button>
                 <button type="button" className="btn btn-primary" onClick={confirmSave}>Speichern</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ANNOUNCEMENT MODAL */}
+      {showAnnouncementModal && (
+        <div className="modal d-block" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
+          <div className="modal-dialog modal-dialog-centered">
+            <div className="modal-content">
+              <div className="modal-header">
+                <h5 className="modal-title">Durchsage machen</h5>
+                <button type="button" className="btn-close" onClick={() => setShowAnnouncementModal(false)}></button>
+              </div>
+              <div className="modal-body">
+                <label className="form-label">Nachricht</label>
+                <textarea
+                  className="form-control"
+                  rows="3"
+                  value={announcementText}
+                  onChange={e => setAnnouncementText(e.target.value)}
+                  autoFocus
+                ></textarea>
+              </div>
+              <div className="modal-footer">
+                <button type="button" className="btn btn-secondary" onClick={() => setShowAnnouncementModal(false)}>Abbrechen</button>
+                <button type="button" className="btn btn-primary" onClick={handleAnnouncement}>Senden</button>
               </div>
             </div>
           </div>

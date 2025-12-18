@@ -6,6 +6,7 @@ function OutputView() {
     const [standardPlaylist, setStandardPlaylist] = useState(null);
     const [standardMode, setStandardMode] = useState('BACKGROUND'); // 'BACKGROUND' or 'FULL'
     const [scenePlaylist, setScenePlaylist] = useState(null);
+    const [announcement, setAnnouncement] = useState(null);
 
     // Current Playback State
     const [currentPlaylist, setCurrentPlaylist] = useState(null);
@@ -105,6 +106,19 @@ function OutputView() {
                     setScenePlaylist(payload);
                     setCurrentPlaylist(payload);
                     setCurrentIndex(0);
+                    setAnnouncement(null); // Clear announcement when switching scenes unless explicitly kept
+                }
+
+                if (command === 'SHOW_ANNOUNCEMENT') {
+                    setAnnouncement(payload.message);
+                }
+
+                if (command === 'SHOW_SCOREBOARD') {
+                    setScenePlaylist(null);
+                    setAnnouncement(null);
+                    // Always reset to standard playlist (even if null) to stop any running scene
+                    setCurrentPlaylist(standardPlaylist);
+                    setCurrentIndex(0);
                 }
 
                 if (command === 'STOP_OUTPUT') {
@@ -113,11 +127,12 @@ function OutputView() {
                     setCurrentPlaylist(null);
                     setActiveMedia(null);
                     setStandardMode('BACKGROUND');
+                    setAnnouncement(null);
                 }
             });
             return () => remove();
         }
-    }, []);
+    }, [standardPlaylist]); // Dependency added to ensure we have latest standardPlaylist
 
     // --- TIMER LOGIC ---
     useEffect(() => {
@@ -176,12 +191,19 @@ function OutputView() {
 
         if (nextIndex >= currentPlaylist.items.length) {
             if (scenePlaylist) {
+                // ERROR-CHECK: If we are in announcement mode, we loop the scene!
+                if (announcement) {
+                    setCurrentIndex(0);
+                    return;
+                }
+
                 setScenePlaylist(null);
                 if (standardPlaylist) {
                     setCurrentPlaylist(standardPlaylist);
                     setCurrentIndex(0);
                 } else {
                     setActiveMedia(null);
+                    setCurrentPlaylist(null);
                 }
             } else {
                 setCurrentIndex(0);
@@ -194,9 +216,9 @@ function OutputView() {
     // --- RENDER ---
     // Overlay is visible ONLY if:
     // 1. No Scene is active AND
-    // 2. Standard Mode is NOT 'FULL' (because FULL means full screen video without overlay)
-    // 3. Media is active (if no media is active, we show the test image and want no overlay)
-    const showOverlay = activeMedia && !scenePlaylist && standardMode !== 'FULL';
+    // 2. Standard Mode is NOT 'FULL'
+    // Note: We allow overlay without activeMedia (showing over test image)
+    const showOverlay = !scenePlaylist && standardMode !== 'FULL';
 
     // Outer container: Centers the output view in the window (Letterboxing)
     return (
@@ -267,7 +289,6 @@ function OutputView() {
                     )}
                 </div>
 
-                {/* OVERLAY LAYER - ALWAYS PRESENT, conditionally 'visible' */}
                 <div style={{
                     position: 'absolute',
                     top: 0, left: 0, width: '100%', height: '100%',
@@ -276,65 +297,81 @@ function OutputView() {
                     flexDirection: 'column',
                     justifyContent: 'center', // Centered vertically
                     alignItems: 'center',     // Centered horizontally
-                    opacity: showOverlay ? 1 : 0,
+                    opacity: (showOverlay || announcement) ? 1 : 0,
                     transition: 'opacity 0.5s ease-in-out'
                 }}>
 
-                    {/* Default Scoreboard Design */}
-                    <div style={{
-                        width: '40cqw', // Changed vw to cqw
-                        height: '100%',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        justifyContent: 'center',
-                        alignItems: 'center',
-                    }}>
-
-                        {/* Timer Only */}
+                    {announcement ? (
                         <div style={{
+                            width: '80%',
+                            padding: '40px',
+                            backgroundColor: 'rgba(0,0,0,0.7)',
                             color: '#fff',
-                            fontSize: '5cqh', // Changed vh to cqh
+                            fontSize: '6cqw',
                             fontWeight: 'bold',
-                            fontFamily: 'monospace',
-                            letterSpacing: '0.1em',
-                            position: 'absolute',
-                            bottom: '20px',
                             textAlign: 'center',
-                            width: '100%'
+                            borderRadius: '20px',
+                            whiteSpace: 'pre-wrap',
+                            letterSpacing: '0.1em',
                         }}>
-                            {timerDisplay}
+                            {announcement}
                         </div>
-
-                        {/* Teams & Score */}
+                    ) : (
+                        /* Default Scoreboard Design */
                         <div style={{
+                            width: '40cqw', // Changed vw to cqw
+                            height: '100%',
                             display: 'flex',
-                            justifyContent: 'space-around',
-                            width: '100%',
+                            flexDirection: 'column',
+                            justifyContent: 'center',
                             alignItems: 'center',
-                            marginBottom: '15cqh' // Changed vh to cqh
                         }}>
-                            <div style={{ textAlign: 'center', flex: 1 }}>
-                                <h1 style={{ color: '#fff', fontSize: '5cqw', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '5cqh' }}>
-                                    Heim
-                                </h1>
-                                <div style={{ fontSize: '30cqh', fontWeight: 'bold', lineHeight: 1, color: 'white' }}>
-                                    {gameState.homeScore}
-                                </div>
+
+                            {/* Timer Only */}
+                            <div style={{
+                                color: '#fff',
+                                fontSize: '5cqh', // Changed vh to cqh
+                                fontWeight: 'bold',
+                                fontFamily: 'monospace',
+                                letterSpacing: '0.1em',
+                                position: 'absolute',
+                                bottom: '20px',
+                                textAlign: 'center',
+                                width: '100%'
+                            }}>
+                                {timerDisplay}
                             </div>
 
-                            <div style={{ color: '#fff', fontSize: '20cqh', marginTop: '10cqh' }}>:</div>
+                            {/* Teams & Score */}
+                            <div style={{
+                                display: 'flex',
+                                justifyContent: 'space-around',
+                                width: '100%',
+                                alignItems: 'center',
+                                marginBottom: '15cqh' // Changed vh to cqh
+                            }}>
+                                <div style={{ textAlign: 'center', flex: 1 }}>
+                                    <h1 style={{ color: '#fff', fontSize: '5cqw', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '5cqh' }}>
+                                        Heim
+                                    </h1>
+                                    <div style={{ fontSize: '30cqh', fontWeight: 'bold', lineHeight: 1, color: 'white' }}>
+                                        {gameState.homeScore}
+                                    </div>
+                                </div>
 
-                            <div style={{ textAlign: 'center', flex: 1 }}>
-                                <h1 style={{ color: '#fff', fontSize: '5cqw', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '5cqh' }}>
-                                    Gast
-                                </h1>
-                                <div style={{ fontSize: '30cqh', fontWeight: 'bold', lineHeight: 1, color: 'white' }}>
-                                    {gameState.guestScore}
+                                <div style={{ color: '#fff', fontSize: '20cqh', marginTop: '10cqh' }}>:</div>
+
+                                <div style={{ textAlign: 'center', flex: 1 }}>
+                                    <h1 style={{ color: '#fff', fontSize: '5cqw', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '5cqh' }}>
+                                        Gast
+                                    </h1>
+                                    <div style={{ fontSize: '30cqh', fontWeight: 'bold', lineHeight: 1, color: 'white' }}>
+                                        {gameState.guestScore}
+                                    </div>
                                 </div>
                             </div>
                         </div>
-
-                    </div>
+                    )}
 
                 </div>
 
