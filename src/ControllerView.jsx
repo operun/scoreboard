@@ -255,9 +255,9 @@ function ControllerView() {
       <div className="row flex-fill overflow-hidden">
 
         {/* SETUP COLUMN (Scrollable) */}
-        <div className="col-md-3 pe-3 border-end h-100 pb-5" style={{ overflowY: 'auto', overflowX: 'hidden' }}>
+        <div className="col-md-3 pe-4 h-100" style={{ overflowY: 'auto', overflowX: 'hidden' }}>
 
-          <h4 className="mb-3">Zuordnung</h4>
+          <h4 className="mb-4">Zuordnung</h4>
 
           <div className="d-flex gap-2 mb-4">
             <select className="form-select form-select-sm" value={currentPresetId} onChange={(e) => {
@@ -308,8 +308,8 @@ function ControllerView() {
         </div>
 
         {/* CENTER COLUMN: LIVE CONTROL */}
-        <div className="col-md-6 px-3 border-end h-100" style={{ overflowY: 'auto', overflowX: 'hidden' }}>
-          <h4 className="mb-4 text-center">Match</h4>
+        <div className="col-md-6 px-5 h-100" style={{ overflowY: 'auto', overflowX: 'hidden' }}>
+          <h4 className="mb-5 text-center">Match</h4>
 
           {/* SCORE & TIME */}
           <div className="d-flex flex-column align-items-center mb-4">
@@ -344,7 +344,7 @@ function ControllerView() {
           {/* PHASES */}
 
           <div className="mb-4">
-            <h4 className="mb-4 text-center">1. Halbzeit</h4>
+            <h4 className="mb-3 text-center">1. Halbzeit</h4>
             <div className="row g-3">
               <div className="col-6">
                 <button className="btn btn-outline-primary w-100" onClick={() => startMatchState('FIRST_HALF')}>
@@ -360,7 +360,7 @@ function ControllerView() {
           </div>
 
           <div className="mb-0">
-            <h4 className="mb-4 text-center">2. Halbzeit</h4>
+            <h4 className="mb-3 text-center">2. Halbzeit</h4>
             <div className="row g-3">
               <div className="col-6">
                 <button className="btn btn-outline-primary w-100" onClick={() => startMatchState('SECOND_HALF')}>
@@ -378,8 +378,8 @@ function ControllerView() {
         </div>
 
         {/* RIGHT COLUMN: SCENES */}
-        <div className="col-md-3 ps-3 h-100" style={{ overflowY: 'auto', overflowX: 'hidden' }}>
-          <h4 className="mb-3">Szenen</h4>
+        <div className="col-md-3 ps-4 psh-100" style={{ overflowY: 'auto', overflowX: 'hidden' }}>
+          <h4 className="mb-4">Szenen</h4>
           <div className="d-grid gap-2">
             <button className="btn btn-outline-primary" onClick={() => {
               const pl = playlists.find(p => p.id === gameState.plWarmup);
@@ -387,20 +387,15 @@ function ControllerView() {
             }}>
               Warmup
             </button>
-            <button className="btn btn-outline-primary" onClick={() => triggerScene(gameState.plCountdown)}>Countdown</button>
+            <button className="btn btn-outline-primary mb-3" onClick={() => triggerScene(gameState.plCountdown)}>Countdown</button>
             <button className="btn btn-outline-primary" onClick={() => triggerScene(gameState.plGoalHome)}>Tor Heim</button>
             <button className="btn btn-outline-primary" onClick={() => triggerScene(gameState.plGoalGuest)}>Tor Gast</button>
             <button className="btn btn-outline-primary" onClick={() => triggerScene(gameState.plSub)}>Wechsel</button>
             <button className="btn btn-outline-primary" onClick={() => triggerScene(gameState.plYellow)}>Gelbe Karte</button>
             <button className="btn btn-outline-primary" onClick={() => triggerScene(gameState.plRed)}>Rote Karte</button>
-            <button className="btn btn-outline-primary" onClick={() => triggerScene(gameState.plVar)}>VAR Check</button>
+            <button className="btn btn-outline-primary mb-3" onClick={() => triggerScene(gameState.plVar)}>VAR Check</button>
             <button className="btn btn-outline-primary" onClick={() => triggerScene(gameState.plAnnouncement)}>Durchsage</button>
-
-            <hr className="my-2" />
-
-            <button className="btn btn-outline-danger d-flex align-items-center justify-content-center gap-2" onClick={() => {
-              window.electronAPI.sendControlCommand('STOP_OUTPUT', {});
-            }}>
+            <button className="btn btn-outline-danger mt-3" onClick={() => { window.electronAPI.sendControlCommand('STOP_OUTPUT', {}); }}>
               Ausgabe anhalten
             </button>
           </div>

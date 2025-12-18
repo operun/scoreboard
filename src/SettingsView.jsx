@@ -50,30 +50,37 @@ function SettingsView() {
 
   return (
     <div className="container">
-      <h1>Settings</h1>
-      <p className="lead mb-4">Verwaltung der Anwendungseinstellungen und Verbindungsdaten.</p>
+
+      <div className="d-flex align-items-center mb-4">
+
+        <div className="me-5">
+          <h1>Playlisten</h1>
+        </div>
+
+        <ul className="nav nav-underline">
+          <li className="nav-item">
+            <button
+              className={`nav-link ${activeTab === 'output' ? 'active' : ''}`}
+              onClick={() => setActiveTab('output')}
+            >
+              Ausgabe
+            </button>
+          </li>
+          <li className="nav-item">
+            <button
+              className={`nav-link ${activeTab === 'connection' ? 'active' : ''}`}
+              onClick={() => setActiveTab('connection')}
+            >
+              Verbindung
+            </button>
+          </li>
+        </ul>
+
+      </div>
+
 
       <div className="row">
         <div className="col-md-8 col-lg-6">
-
-          <ul className="nav nav-underline mb-4">
-            <li className="nav-item">
-              <button
-                className={`nav-link ${activeTab === 'output' ? 'active' : ''}`}
-                onClick={() => setActiveTab('output')}
-              >
-                Ausgabe
-              </button>
-            </li>
-            <li className="nav-item">
-              <button
-                className={`nav-link ${activeTab === 'connection' ? 'active' : ''}`}
-                onClick={() => setActiveTab('connection')}
-              >
-                Verbindung
-              </button>
-            </li>
-          </ul>
 
           {activeTab === 'output' && (
             <>

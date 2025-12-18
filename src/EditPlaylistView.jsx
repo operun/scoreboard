@@ -161,30 +161,31 @@ function EditPlaylistView({ playlistId, onBack }) {
   return (
     <div className="container-fluid h-100 d-flex flex-column">
 
-      <div className="row">
-        <div className="col">
-          <h1>{playlist.title} <small className="text-muted fs-4">(Editor)</small></h1>
-          <p className="lead mb-4">Erstelle den Ablauf per Drag & Drop und füge Medien aus der Bibliothek hinzu.</p>
+      <div className="d-flex align-items-center mb-4">
 
-          <div className="d-flex justify-content-between align-items-center mb-4">
-            <button className="btn btn-outline-secondary" onClick={onBack}>
-              <BsArrowLeft /> Zurück
-            </button>
-            <button
-              className={`btn ${hasChanges ? 'btn-primary' : 'btn-outline-primary'}`}
-              onClick={handleSave}
-              disabled={!hasChanges}
-            >
-              <BsSave className="me-2" /> Playlist speichern
-            </button>
-          </div>
+        <div className="me-5">
+          <h1>{playlist.title} <small className="text-muted fs-4">Playlist</small></h1>
         </div>
+
+        <div className="ms-auto">
+          <button className="btn btn-outline-secondary me-2" onClick={onBack}>
+            Zurück
+          </button>
+          <button
+            className={`btn ${hasChanges ? 'btn-primary' : 'btn-outline-primary'}`}
+            onClick={handleSave}
+            disabled={!hasChanges}
+          >
+            Playlist speichern
+          </button>
+        </div>
+
       </div>
 
-      <div className="row flex-fill overflow-hidden border-top pt-3">
+      <div className="row flex-fill overflow-hidden">
 
         {/* Left Column: Playlist Items */}
-        <div className="col-md-7 d-flex flex-column h-100 overflow-auto pe-4">
+        <div className="col-md-6 d-flex flex-column h-100 overflow-auto">
           <h5 className="mb-3">Ablauf</h5>
           {playlist.items.length === 0 ? (
             <div className="alert alert-secondary text-center py-5">
@@ -219,7 +220,7 @@ function EditPlaylistView({ playlistId, onBack }) {
         </div>
 
         {/* Right Column: Media Library */}
-        <div className="col-md-5 d-flex flex-column h-100 border-start ps-4">
+        <div className="col-md-6 d-flex flex-column h-100">
           <h5 className="mb-3">Verfügbare Medien</h5>
           <div className="overflow-auto flex-fill">
             {allMedia.length === 0 && <p className="text-muted">Keine Medien hochgeladen.</p>}

@@ -31,10 +31,10 @@ function PlaylistsView({ onEdit }) {
     // Optimistic UI update
     const updated = [...playlists, newPlaylist];
     setPlaylists(updated);
-    
+
     // Backend call with single item
     await window.electronAPI.savePlaylist(newPlaylist);
-    
+
     toast.success('Playlist gespeichert');
     setTitle('');
     setShowForm(false);
@@ -43,18 +43,21 @@ function PlaylistsView({ onEdit }) {
   return (
 
     <div className="container">
+
+      <div className="d-flex align-items-center mb-4">
+
+        <div className="me-5">
+          <h1>Playlisten</h1>
+        </div>
+
+        <button className="btn btn-outline-primary ms-auto" onClick={() => setShowForm(true)}>
+          Playlist hinzufügen
+        </button>
+
+      </div>
+
       <div className="row">
         <div className="col">
-
-          <h1>Playlisten</h1>
-
-          <p className="lead mb-4">Hier kanns du die Playlisten bearbeiten.</p>
-
-          <div className="d-flex mb-3">
-            <button className="btn btn-outline-primary mb-3" onClick={() => setShowForm(true)}>
-              Neue Playlist
-            </button>
-          </div>
 
           <table className="table">
             <thead>
@@ -110,6 +113,7 @@ function PlaylistsView({ onEdit }) {
                 className="form-control mb-3"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
+                autoFocus
               />
               <button className="btn btn-primary" onClick={handleAdd}>
                 Speichern

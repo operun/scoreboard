@@ -100,48 +100,48 @@ function MediaView() {
       onDragOver={(e) => e.preventDefault()}
       onDrop={handleDrop}
     >
+      <div className="d-flex align-items-center mb-4">
+
+        <div className="me-5">
+          <h1>Medien</h1>
+        </div>
+
+        <ul className="nav nav-underline me-auto">
+          <li className="nav-item">
+            <button
+              className={`nav-link ${activeTab === 'videos' ? 'active' : ''}`}
+              onClick={() => setActiveTab('videos')}
+            >
+              Videos
+            </button>
+          </li>
+          <li className="nav-item">
+            <button
+              className={`nav-link ${activeTab === 'images' ? 'active' : ''}`}
+              onClick={() => setActiveTab('images')}
+            >
+              Bilder
+            </button>
+          </li>
+        </ul>
+
+        <button
+          className="btn btn-outline-primary"
+          onClick={async () => {
+            const result = await window.electronAPI.openFileDialog();
+            if (Array.isArray(result)) {
+              for (const path of result) {
+                await handleAddMedia(path);
+              }
+            }
+          }}
+        >
+          Datei hinzufügen
+        </button>
+      </div>
+
       <div className="row">
         <div className="col">
-
-          <h1>Medien</h1>
-
-          <p className="lead mb-4">Hier kanns du Bilder und Videos verwalten.</p>
-
-          <div className="d-flex mb-3">
-            <button
-              className="btn btn-outline-primary"
-              onClick={async () => {
-                const result = await window.electronAPI.openFileDialog();
-                if (Array.isArray(result)) {
-                  for (const path of result) {
-                    await handleAddMedia(path);
-                  }
-                }
-              }}
-            >
-              Datei hinzufügen
-            </button>
-          </div>
-
-          <ul className="nav nav-underline mb-3">
-            <li className="nav-item">
-              <button
-                className={`nav-link ${activeTab === 'videos' ? 'active' : ''}`}
-                onClick={() => setActiveTab('videos')}
-              >
-                Videos
-              </button>
-            </li>
-            <li className="nav-item">
-              <button
-                className={`nav-link ${activeTab === 'images' ? 'active' : ''}`}
-                onClick={() => setActiveTab('images')}
-              >
-                Bilder
-              </button>
-            </li>
-          </ul>
-
           <table className="table">
             <thead>
               <tr>
@@ -152,24 +152,24 @@ function MediaView() {
             </thead>
             <tbody>
               {filteredMedia.map((file, idx) => (
-              <tr>
-                <td className="w-75">{file.fileName}</td>
-                <td>{new Date(file.addedAt).toLocaleString()}</td>
-                <td>
-                  <span
-                    className="me-2 text-success"
-                    onClick={() => handleShow(file)}
-                  >
-                    <BsPlayCircle />
-                  </span>
-                  <span
-                    className="me-2 text-danger"
-                    onClick={() => handleDeleteMedia(file.id)}
-                  >
-                    <BsXCircle />
-                  </span>
-                </td>
-              </tr>
+                <tr>
+                  <td className="w-75">{file.fileName}</td>
+                  <td>{new Date(file.addedAt).toLocaleString()}</td>
+                  <td>
+                    <span
+                      className="me-2 text-success"
+                      onClick={() => handleShow(file)}
+                    >
+                      <BsPlayCircle />
+                    </span>
+                    <span
+                      className="me-2 text-danger"
+                      onClick={() => handleDeleteMedia(file.id)}
+                    >
+                      <BsXCircle />
+                    </span>
+                  </td>
+                </tr>
               ))}
             </tbody>
           </table>
