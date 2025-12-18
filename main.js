@@ -625,7 +625,7 @@ function createOutputWindow() {
 function createWindow() {
   const window = new BrowserWindow({
     width: 1280,
-    height: 720,
+    height: 820,
     show: false,
     minWidth: 1024,
     minHeight: 768,

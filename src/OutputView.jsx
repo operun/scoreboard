@@ -7,6 +7,7 @@ function OutputView() {
     const [standardMode, setStandardMode] = useState('BACKGROUND'); // 'BACKGROUND' or 'FULL'
     const [scenePlaylist, setScenePlaylist] = useState(null);
     const [announcement, setAnnouncement] = useState(null);
+    const [showScoreboard, setShowScoreboard] = useState(false);
 
     // Current Playback State
     const [currentPlaylist, setCurrentPlaylist] = useState(null);
@@ -95,6 +96,11 @@ function OutputView() {
                     setStandardPlaylist(playlist);
                     setStandardMode(mode || 'BACKGROUND');
 
+                    // If mode is BACKGROUND, we assume we want to show the scoreboard
+                    if ((mode || 'BACKGROUND') === 'BACKGROUND') {
+                        setShowScoreboard(true);
+                    }
+
                     // If we receive a new standard playlist, we generally switch to it immediately
                     // Clearing any scene that might be running
                     setScenePlaylist(null);
@@ -119,6 +125,7 @@ function OutputView() {
                     // Always reset to standard playlist (even if null) to stop any running scene
                     setCurrentPlaylist(standardPlaylist);
                     setCurrentIndex(0);
+                    setShowScoreboard(true);
                 }
 
                 if (command === 'STOP_OUTPUT') {
@@ -128,6 +135,7 @@ function OutputView() {
                     setActiveMedia(null);
                     setStandardMode('BACKGROUND');
                     setAnnouncement(null);
+                    setShowScoreboard(false);
                 }
             });
             return () => remove();
@@ -215,10 +223,11 @@ function OutputView() {
 
     // --- RENDER ---
     // Overlay is visible ONLY if:
-    // 1. No Scene is active AND
-    // 2. Standard Mode is NOT 'FULL'
+    // 1. showScoreboard is TRUE
+    // 2. No Scene is active AND
+    // 3. Standard Mode is NOT 'FULL'
     // Note: We allow overlay without activeMedia (showing over test image)
-    const showOverlay = !scenePlaylist && standardMode !== 'FULL';
+    const showOverlay = showScoreboard && !scenePlaylist && standardMode !== 'FULL';
 
     // Outer container: Centers the output view in the window (Letterboxing)
     return (
