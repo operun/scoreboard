@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import testImage from '../assets/testbild.png';
 
 function OutputView() {
     // -- CONTENT STATE --
@@ -10,6 +11,10 @@ function OutputView() {
     const [currentPlaylist, setCurrentPlaylist] = useState(null);
     const [currentIndex, setCurrentIndex] = useState(0);
     const [activeMedia, setActiveMedia] = useState(null);
+
+    // -- OUTPUT SETTINGS --
+    const [outputSize, setOutputSize] = useState({ width: 1280, height: 720 });
+    const [showCropMarks, setShowCropMarks] = useState(true);
 
     // -- GAME STATE --
     const [gameState, setGameState] = useState({
@@ -24,6 +29,32 @@ function OutputView() {
     const [timerDisplay, setTimerDisplay] = useState("00:00");
     const mediaTimeoutRef = useRef(null);
     const timerIntervalRef = useRef(null);
+
+    // --- LOAD SETTINGS & LISTEN FOR UPDATES ---
+    useEffect(() => {
+        const applySettings = (settings) => {
+            if (settings) {
+                const w = parseInt(settings.outputWidth) || 1280;
+                const h = parseInt(settings.outputHeight) || 720;
+                setOutputSize({ width: w, height: h });
+                setShowCropMarks(settings.showCropMarks !== false); // Default true
+            }
+        };
+
+        const loadSettings = async () => {
+            const settings = await window.electronAPI.loadSettings();
+            applySettings(settings);
+        };
+        loadSettings();
+
+        // Listen for updates from SettingsView
+        if (window.electronAPI.onSettingsUpdated) {
+            const remove = window.electronAPI.onSettingsUpdated((event, settings) => {
+                applySettings(settings);
+            });
+            return () => remove();
+        }
+    }, []);
 
     // --- COMMAND LISTENER ---
     useEffect(() => {
@@ -52,6 +83,14 @@ function OutputView() {
                     setScenePlaylist(payload);
                     setCurrentPlaylist(payload);
                     setCurrentIndex(0);
+                }
+
+                if (command === 'STOP_OUTPUT') {
+                    setScenePlaylist(null);
+                    setStandardPlaylist(null);
+                    setCurrentPlaylist(null);
+                    setActiveMedia(null);
+                    setStandardMode('BACKGROUND');
                 }
             });
             return () => remove();
@@ -134,106 +173,150 @@ function OutputView() {
     // Overlay is visible ONLY if:
     // 1. No Scene is active AND
     // 2. Standard Mode is NOT 'FULL' (because FULL means full screen video without overlay)
-    const showOverlay = !scenePlaylist && standardMode !== 'FULL';
+    // 3. Media is active (if no media is active, we show the test image and want no overlay)
+    const showOverlay = activeMedia && !scenePlaylist && standardMode !== 'FULL';
 
+    // Outer container: Centers the output view in the window (Letterboxing)
     return (
-        <div style={{ backgroundColor: 'black', height: '100vh', width: '100vw', position: 'relative', overflow: 'hidden' }}>
-
-            {/* MEDIA LAYER */}
-            <div style={{ width: '100%', height: '100%' }}>
-                {activeMedia ? (
-                    activeMedia.type === 'video' ? (
-                        <video
-                            key={activeMedia.id}
-                            src={`file://${activeMedia.path}`}
-                            autoPlay
-                            muted={false}
-                            style={{ width: '100%', height: '100%', objectFit: 'contain' }}
-                            onEnded={handleMediaEnd}
-                        />
-                    ) : (
-                        <img
-                            src={`file://${activeMedia.path}`}
-                            alt="Content"
-                            style={{ width: '100%', height: '100%', objectFit: 'contain' }}
-                        />
-                    )
-                ) : (
-                    <div style={{ width: '100%', height: '100%', background: 'black' }} />
-                )}
-            </div>
-
-            {/* OVERLAY LAYER - ALWAYS PRESENT, conditionally 'visible' */}
+        <div style={{
+            backgroundColor: '#111',
+            height: '100vh',
+            width: '100vw',
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            overflow: 'hidden'
+        }}>
+            {/* Inner Container: Fixed resolution based on settings */}
             <div style={{
-                position: 'absolute',
-                top: 0, left: 0, width: '100%', height: '100%',
-                pointerEvents: 'none',
-                display: 'flex',
-                flexDirection: 'column',
-                justifyContent: 'center', // Centered vertically
-                alignItems: 'center',     // Centered horizontally
-                opacity: showOverlay ? 1 : 0,
-                transition: 'opacity 0.5s ease-in-out'
+                width: outputSize.width,
+                height: outputSize.height,
+                position: 'relative',
+                overflow: 'hidden',
+                backgroundColor: 'black',
+                containerType: 'size', // Key for using cqw/cqh units
+                border: '1px solid #333'
             }}>
 
-                {/* Default Scoreboard Design */}
+                {/* MEDIA LAYER */}
+                <div style={{ width: '100%', height: '100%' }}>
+                    {activeMedia ? (
+                        activeMedia.type === 'video' ? (
+                            <video
+                                key={activeMedia.id}
+                                src={`file://${activeMedia.path}`}
+                                autoPlay
+                                muted={false}
+                                style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+                                onEnded={handleMediaEnd}
+                            />
+                        ) : (
+                            <img
+                                src={`file://${activeMedia.path}`}
+                                alt="Content"
+                                style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+                            />
+                        )
+                    ) : (
+                        <>
+                            <img
+                                src={testImage}
+                                alt="Testbild"
+                                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                            />
+                            {/* Schnittmarken (Crop Marks) */}
+                            {showCropMarks && (
+                                <>
+                                    {/* Top Left */}
+                                    <div style={{ position: 'absolute', top: 0, left: 0, width: '40px', height: '40px', borderTop: '6px solid #f00', borderLeft: '6px solid #f00', zIndex: 100 }} />
+                                    {/* Top Right */}
+                                    <div style={{ position: 'absolute', top: 0, right: 0, width: '40px', height: '40px', borderTop: '6px solid #f00', borderRight: '6px solid #f00', zIndex: 100 }} />
+                                    {/* Bottom Left */}
+                                    <div style={{ position: 'absolute', bottom: 0, left: 0, width: '40px', height: '40px', borderBottom: '6px solid #f00', borderLeft: '6px solid #f00', zIndex: 100 }} />
+                                    {/* Bottom Right */}
+                                    <div style={{ position: 'absolute', bottom: 0, right: 0, width: '40px', height: '40px', borderBottom: '6px solid #f00', borderRight: '6px solid #f00', zIndex: 100 }} />
+
+                                    {/* Center Cross */}
+                                    <div style={{ position: 'absolute', top: '50%', left: '50%', width: '40px', height: '2px', backgroundColor: '#f00', transform: 'translate(-50%, -50%)', zIndex: 100 }} />
+                                    <div style={{ position: 'absolute', top: '50%', left: '50%', width: '2px', height: '40px', backgroundColor: '#f00', transform: 'translate(-50%, -50%)', zIndex: 100 }} />
+                                </>
+                            )}
+                        </>
+                    )}
+                </div>
+
+                {/* OVERLAY LAYER - ALWAYS PRESENT, conditionally 'visible' */}
                 <div style={{
-                    width: '40vw',
-                    height: '100vh',
+                    position: 'absolute',
+                    top: 0, left: 0, width: '100%', height: '100%',
+                    pointerEvents: 'none',
                     display: 'flex',
                     flexDirection: 'column',
-                    justifyContent: 'center',
-                    alignItems: 'center',
+                    justifyContent: 'center', // Centered vertically
+                    alignItems: 'center',     // Centered horizontally
+                    opacity: showOverlay ? 1 : 0,
+                    transition: 'opacity 0.5s ease-in-out'
                 }}>
-                    {/* Teams & Score */}
+
+                    {/* Default Scoreboard Design */}
                     <div style={{
+                        width: '40cqw', // Changed vw to cqw
+                        height: '100%',
                         display: 'flex',
-                        justifyContent: 'space-around',
-                        width: '100%',
+                        flexDirection: 'column',
+                        justifyContent: 'center',
                         alignItems: 'center',
-                        marginBottom: '15vh'
                     }}>
-                        <div style={{ textAlign: 'center', flex: 1 }}>
-                            <h1 style={{ color: '#fff', fontSize: '5vw', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '5vh' }}>
-                                Heim
-                            </h1>
-                            <div style={{ fontSize: '30vh', fontWeight: 'bold', lineHeight: 1, color: 'white' }}>
-                                {gameState.homeScore}
+
+                        {/* Timer Only */}
+                        <div style={{
+                            color: '#fff',
+                            fontSize: '5cqh', // Changed vh to cqh
+                            fontWeight: 'bold',
+                            fontFamily: 'monospace',
+                            letterSpacing: '0.1em',
+                            position: 'absolute',
+                            bottom: '20px',
+                            textAlign: 'center',
+                            width: '100%'
+                        }}>
+                            {timerDisplay}
+                        </div>
+
+                        {/* Teams & Score */}
+                        <div style={{
+                            display: 'flex',
+                            justifyContent: 'space-around',
+                            width: '100%',
+                            alignItems: 'center',
+                            marginBottom: '15cqh' // Changed vh to cqh
+                        }}>
+                            <div style={{ textAlign: 'center', flex: 1 }}>
+                                <h1 style={{ color: '#fff', fontSize: '5cqw', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '5cqh' }}>
+                                    Heim
+                                </h1>
+                                <div style={{ fontSize: '30cqh', fontWeight: 'bold', lineHeight: 1, color: 'white' }}>
+                                    {gameState.homeScore}
+                                </div>
+                            </div>
+
+                            <div style={{ color: '#fff', fontSize: '20cqh', marginTop: '10cqh' }}>:</div>
+
+                            <div style={{ textAlign: 'center', flex: 1 }}>
+                                <h1 style={{ color: '#fff', fontSize: '5cqw', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '5cqh' }}>
+                                    Gast
+                                </h1>
+                                <div style={{ fontSize: '30cqh', fontWeight: 'bold', lineHeight: 1, color: 'white' }}>
+                                    {gameState.guestScore}
+                                </div>
                             </div>
                         </div>
 
-                        <div style={{ color: '#fff', fontSize: '20vh', marginTop: '10vh' }}>:</div>
-
-                        <div style={{ textAlign: 'center', flex: 1 }}>
-                            <h1 style={{ color: '#fff', fontSize: '5vw', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '5vh' }}>
-                                Gast
-                            </h1>
-                            <div style={{ fontSize: '30vh', fontWeight: 'bold', lineHeight: 1, color: 'white' }}>
-                                {gameState.guestScore}
-                            </div>
-                        </div>
                     </div>
 
                 </div>
 
             </div>
-
-            {/* Timer Only */}
-            <div style={{
-                color: '#fff',
-                fontSize: '5vh',
-                fontWeight: 'bold',
-                fontFamily: 'monospace',
-                letterSpacing: '0.1em',
-                position: 'absolute',
-                bottom: '20px',
-                textAlign: 'center',
-                width: '100%'
-            }}>
-                {timerDisplay}
-            </div>
-
-
         </div>
     );
 }

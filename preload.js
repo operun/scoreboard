@@ -32,6 +32,12 @@ contextBridge.exposeInMainWorld('electronAPI', {
     return () => ipcRenderer.removeListener('control-command', subscription);
   },
 
+  onSettingsUpdated: (callback) => {
+    const subscription = (event, value) => callback(null, value);
+    ipcRenderer.on('settings-updated', subscription);
+    return () => ipcRenderer.removeListener('settings-updated', subscription);
+  },
+
   // Generic control command
   sendControlCommand: (command, payload) => ipcRenderer.invoke('control-command', { command, payload }),
 

@@ -7,6 +7,11 @@ function SettingsView() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [outputWidth, setOutputWidth] = useState(1280);
+  const [outputHeight, setOutputHeight] = useState(720);
+  const [showCropMarks, setShowCropMarks] = useState(true);
+
+  const [activeTab, setActiveTab] = useState('output');
 
   useEffect(() => {
     const loadSettings = async () => {
@@ -15,13 +20,16 @@ function SettingsView() {
         setServer(settings.server || '');
         setUsername(settings.username || '');
         setPassword(settings.password || '');
+        if (settings.outputWidth) setOutputWidth(settings.outputWidth);
+        if (settings.outputHeight) setOutputHeight(settings.outputHeight);
+        setShowCropMarks(settings.showCropMarks !== false); // Default true
       }
     };
     loadSettings();
   }, []);
 
   const handleSave = () => {
-    window.electronAPI.saveSettings({ server, username, password });
+    window.electronAPI.saveSettings({ server, username, password, outputWidth, outputHeight, showCropMarks });
     toast.success('Gespeichert');
     setTimeout(handleTestConnection, 300);
   };
@@ -34,61 +42,120 @@ function SettingsView() {
       toast.error(`${result.message}`);
     }
   };
-  
+
   return (
     <div className="container">
       <h1>Settings</h1>
-      <p className="lead mb-4">Cras justo odio, dapibus ac facilisis in, egestas eget quam. Aenean eu leo quam. Pellentesque ornare sem lacinia quam venenatis vestibulum. Donec sed odio dui. Lorem ipsum dolor sit amet, consectetur adipiscing elit.</p>
+      <p className="lead mb-4">Verwaltung der Anwendungseinstellungen und Verbindungsdaten.</p>
 
       <div className="row">
         <div className="col-md-8 col-lg-6">
-          <h2 className="mb-3">Anmeldedaten</h2>
 
-          <div className="mb-3">
-            <label className="form-label">Server</label>
-            <input
-              type="text"
-              className="form-control"
-              value={server}
-              onChange={(e) => setServer(e.target.value)}
-            />
-          </div>
-
-          <div className="mb-3">
-            <label className="form-label">Benutzername</label>
-            <input
-              type="text"
-              className="form-control"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-            />
-          </div>
-
-          <div className="mb-3">
-            <label className="form-label">Passwort</label>
-            <div className="input-group">
-              <input
-                type={showPassword ? 'text' : 'password'}
-                className="form-control"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-              />
-              <span
-                className="input-group-text"
-                role="button"
-                style={{ cursor: 'pointer' }}
-                onClick={() => setShowPassword(!showPassword)}
+          <ul className="nav nav-underline mb-4">
+            <li className="nav-item">
+              <button
+                className={`nav-link ${activeTab === 'output' ? 'active' : ''}`}
+                onClick={() => setActiveTab('output')}
               >
-                {showPassword ? <BsEye /> : <BsEyeSlash />}
-              </span>
-            </div>
-          </div>
+                Ausgabe
+              </button>
+            </li>
+            <li className="nav-item">
+              <button
+                className={`nav-link ${activeTab === 'connection' ? 'active' : ''}`}
+                onClick={() => setActiveTab('connection')}
+              >
+                Verbindung
+              </button>
+            </li>
+          </ul>
 
-          <div className="d-flex justify-content-end">
-            <button className="btn btn-primary" onClick={handleSave}>
-              Speichern
-            </button>
-          </div>
+          {activeTab === 'output' && (
+            <>
+              <div className="row">
+                <div className="col-6">
+                  <div className="mb-3">
+                    <label className="form-label">Breite (px)</label>
+                    <input
+                      type="number"
+                      className="form-control"
+                      value={outputWidth}
+                      onChange={(e) => setOutputWidth(parseInt(e.target.value) || 1280)}
+                    />
+                  </div>
+                </div>
+                <div className="col-6">
+                  <div className="mb-3">
+                    <label className="form-label">Höhe (px)</label>
+                    <input
+                      type="number"
+                      className="form-control"
+                      value={outputHeight}
+                      onChange={(e) => setOutputHeight(parseInt(e.target.value) || 720)}
+                    />
+                  </div>
+                </div>
+              </div>
+              <div className="mb-3 form-check">
+                <input
+                  type="checkbox"
+                  className="form-check-input"
+                  id="cropMarksCheck"
+                  checked={showCropMarks}
+                  onChange={(e) => setShowCropMarks(e.target.checked)}
+                />
+                <label className="form-check-label" htmlFor="cropMarksCheck">Schnittmarken anzeigen</label>
+              </div>
+            </>
+          )}
+
+          {activeTab === 'connection' && (
+            <>
+              <div className="mb-3">
+                <label className="form-label">Server</label>
+                <input
+                  type="text"
+                  className="form-control"
+                  value={server}
+                  onChange={(e) => setServer(e.target.value)}
+                />
+              </div>
+
+              <div className="mb-3">
+                <label className="form-label">Benutzername</label>
+                <input
+                  type="text"
+                  className="form-control"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                />
+              </div>
+
+              <div className="mb-3">
+                <label className="form-label">Passwort</label>
+                <div className="input-group">
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    className="form-control"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                  />
+                  <span
+                    className="input-group-text"
+                    role="button"
+                    style={{ cursor: 'pointer' }}
+                    onClick={() => setShowPassword(!showPassword)}
+                  >
+                    {showPassword ? <BsEye /> : <BsEyeSlash />}
+                  </span>
+                </div>
+              </div>
+            </>
+          )}
+
+          <button className="btn btn-outline-primary mt-2" onClick={handleSave}>
+            Speichern
+          </button>
 
         </div>
       </div>

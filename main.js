@@ -43,6 +43,10 @@ ipcMain.handle('load-settings', async () => {
 ipcMain.handle('save-settings', async (event, settings) => {
   const filePath = path.join(app.getPath('userData'), 'settings.json');
   await saveEncryptedSettings(filePath, settings);
+
+  if (outputWindow && !outputWindow.isDestroyed()) {
+    outputWindow.webContents.send('settings-updated', settings);
+  }
 });
 
 ipcMain.handle('test-connection', async () => {
@@ -507,8 +511,8 @@ let outputWindow = null;
 
 function createOutputWindow() {
   outputWindow = new BrowserWindow({
-    width: 800,
-    height: 600,
+    width: 1280,
+    height: 720,
     show: false,
     frame: true,
     autoHideMenuBar: true,

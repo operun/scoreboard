@@ -395,6 +395,14 @@ function ControllerView() {
             <button className="btn btn-outline-primary" onClick={() => triggerScene(gameState.plRed)}>Rote Karte</button>
             <button className="btn btn-outline-primary" onClick={() => triggerScene(gameState.plVar)}>VAR Check</button>
             <button className="btn btn-outline-primary" onClick={() => triggerScene(gameState.plAnnouncement)}>Durchsage</button>
+
+            <hr className="my-2" />
+
+            <button className="btn btn-outline-danger d-flex align-items-center justify-content-center gap-2" onClick={() => {
+              window.electronAPI.sendControlCommand('STOP_OUTPUT', {});
+            }}>
+              Ausgabe anhalten
+            </button>
           </div>
         </div>
 
