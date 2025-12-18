@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { toast } from 'react-toastify';
-import { BsPlayCircle, BsStopCircle, BsClock, BsSave, BsUpload } from "react-icons/bs";
+import { BsFloppy } from "react-icons/bs";
 
 // Helper Component defined outside to prevent re-mounting on parent re-renders
 const PlaylistSelect = ({ label, value, onChange, playlists }) => (
@@ -38,7 +38,7 @@ function ControllerView() {
     // Playlist Mappings (IDs)
     plWarmup: '',
     plCountdown: '',
-    plKickoff: '', // Anpfiff Hintergrund
+    plScoreboard: '', // Hintergrund (Spielstand)
     plHalfTime: '',
     plEnd: '',     // Abpfiff
     plGoalHome: '',
@@ -87,7 +87,7 @@ function ControllerView() {
       // Ensure we keep defaults if preset misses new fields
       plWarmup: preset.plWarmup || preset.plDefault || preset.plSponsors || '',
       plCountdown: preset.plCountdown || '',
-      plKickoff: preset.plKickoff || '',
+      plScoreboard: preset.plScoreboard || preset.plBackground || preset.plKickoff || '',
       plHalfTime: preset.plHalfTime || '',
       plEnd: preset.plEnd || '',
       plGoalHome: preset.plGoalHome || '',
@@ -165,6 +165,7 @@ function ControllerView() {
   };
 
   // --- MATCH CONTROL LOGIC ---
+  // --- MATCH CONTROL LOGIC ---
   const startMatchState = (state) => {
     const updates = { matchState: state };
     let plToPlay = null;
@@ -173,7 +174,7 @@ function ControllerView() {
       updates.timerRunning = true;
       updates.timerStart = Date.now();
       updates.timerOffset = 0;
-      plToPlay = gameState.plKickoff;
+      plToPlay = gameState.plScoreboard;
     } else if (state === 'HALF_TIME') {
       updates.timerRunning = false;
       plToPlay = gameState.plHalfTime;
@@ -181,7 +182,7 @@ function ControllerView() {
       updates.timerRunning = true;
       updates.timerStart = Date.now();
       updates.timerOffset = 45 * 60; // 45 min
-      plToPlay = gameState.plKickoff;
+      plToPlay = gameState.plScoreboard;
     } else if (state === 'POST_GAME') {
       updates.timerRunning = false;
       plToPlay = gameState.plEnd;
@@ -220,7 +221,6 @@ function ControllerView() {
     }
     window.electronAPI.sendControlCommand('SHOW_ANNOUNCEMENT', { message: announcementText });
     setShowAnnouncementModal(false);
-    toast.success('Durchsage gesendet');
   };
 
   // Generic Control Command Sender (Live Game State)
@@ -296,7 +296,7 @@ function ControllerView() {
           <div className="mb-4">
             <PlaylistSelect label="Warmup" value={gameState.plWarmup} onChange={v => updateState('plWarmup', v)} playlists={playlists} />
             <PlaylistSelect label="Countdown" value={gameState.plCountdown} onChange={v => updateState('plCountdown', v)} playlists={playlists} />
-            <PlaylistSelect label="Anpfiff" value={gameState.plKickoff} onChange={v => updateState('plKickoff', v)} playlists={playlists} />
+            <PlaylistSelect label="Spielstand" value={gameState.plScoreboard} onChange={v => updateState('plScoreboard', v)} playlists={playlists} />
             <PlaylistSelect label="Halbzeit" value={gameState.plHalfTime} onChange={v => updateState('plHalfTime', v)} playlists={playlists} />
             <PlaylistSelect label="Abpfiff" value={gameState.plEnd} onChange={v => updateState('plEnd', v)} playlists={playlists} />
           </div>
@@ -320,7 +320,7 @@ function ControllerView() {
           {/* PRESET MANAGEMENT */}
           <div className="mb-4">
             <label className="form-label text-muted small ms-1 mb-1">Preset</label>
-            <div className="d-flex gap-2 mb-4">
+            <div className="d-flex gap-1">
               <select className="form-select form-select-sm" value={currentPresetId} onChange={(e) => {
                 if (e.target.value === 'new') {
                   setCurrentPresetId('new');
@@ -328,7 +328,7 @@ function ControllerView() {
                   setGameState(prev => ({
                     homeScore: 0, guestScore: 0,
                     matchState: 'PRE_GAME', timerStart: null, timerOffset: 0, timerRunning: false,
-                    plWarmup: '', plCountdown: '', plKickoff: '', plHalfTime: '', plEnd: '',
+                    plWarmup: '', plCountdown: '', plScoreboard: '', plHalfTime: '', plEnd: '',
                     plGoalHome: '', plGoalGuest: '', plSub: '', plYellow: '', plRed: '', plVar: '', plAnnouncement: ''
                   }));
                 } else {
@@ -339,7 +339,7 @@ function ControllerView() {
                 <option value="new">Neues Preset...</option>
                 {presets.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
               </select>
-              <button className="btn btn-outline-secondary btn-sm" onClick={handleSaveClick}><BsSave /></button>
+              <button className="btn btn-link" onClick={handleSaveClick}><BsFloppy /></button>
             </div>
           </div>
         </div>
@@ -451,7 +451,18 @@ function ControllerView() {
             <button className="btn btn-outline-primary mb-4" onClick={() => triggerScene(gameState.plVar)}>VAR Check</button>
 
             <h5 className="mb-2 text-center">Allgemein</h5>
-            <button className="btn btn-outline-primary" onClick={() => window.electronAPI.sendControlCommand('SHOW_SCOREBOARD')}>
+            <button className="btn btn-outline-primary" onClick={() => {
+              // 1. Show standard scoreboard
+              window.electronAPI.sendControlCommand('SHOW_SCOREBOARD');
+              // 2. Restart background playlist if available, to be safe
+              const pl = playlists.find(p => p.id === gameState.plScoreboard);
+              if (pl) {
+                window.electronAPI.sendControlCommand('PLAY_PLAYLIST', {
+                  playlist: pl,
+                  mode: 'BACKGROUND'
+                });
+              }
+            }}>
               Spielstand
             </button>
             <button className="btn btn-outline-primary" onClick={() => {
