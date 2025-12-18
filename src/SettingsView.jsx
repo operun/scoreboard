@@ -54,7 +54,7 @@ function SettingsView() {
       <div className="d-flex align-items-center mb-4">
 
         <div className="me-5">
-          <h1>Playlisten</h1>
+          <h1>Einstellungen</h1>
         </div>
 
         <ul className="nav nav-underline">

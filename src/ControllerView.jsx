@@ -222,9 +222,31 @@ function ControllerView() {
   // Timer Logic for Controller Display
   const [timerString, setTimerString] = useState("00:00");
   const timerIntervalRef = useRef(null);
+  const isEditingTimerRef = useRef(false);
+
+  const handleTimerBlur = () => {
+    isEditingTimerRef.current = false;
+    const parts = timerString.split(':');
+    let m = 0, s = 0;
+    if (parts.length === 2) {
+      m = parseInt(parts[0], 10) || 0;
+      s = parseInt(parts[1], 10) || 0;
+    } else {
+      m = parseInt(timerString, 10) || 0;
+    }
+    const newTotal = (m * 60) + s;
+
+    setGameState(prev => ({
+      ...prev,
+      timerOffset: newTotal,
+      timerStart: prev.timerRunning ? Date.now() : null
+    }));
+  };
 
   useEffect(() => {
     const updateTimer = () => {
+      if (isEditingTimerRef.current) return;
+
       if (gameState.timerRunning && gameState.timerStart) {
         const now = Date.now();
         const diffSec = Math.floor((now - gameState.timerStart) / 1000);
@@ -257,29 +279,7 @@ function ControllerView() {
         {/* SETUP COLUMN (Scrollable) */}
         <div className="col-md-3 pe-4 h-100" style={{ overflowY: 'auto', overflowX: 'hidden' }}>
 
-          <h4 className="mb-4">Zuordnung</h4>
-
-          <div className="d-flex gap-2 mb-4">
-            <select className="form-select form-select-sm" value={currentPresetId} onChange={(e) => {
-              if (e.target.value === 'new') {
-                setCurrentPresetId('new');
-                // Reset to defaults
-                setGameState(prev => ({
-                  homeScore: 0, guestScore: 0,
-                  matchState: 'PRE_GAME', timerStart: null, timerOffset: 0, timerRunning: false,
-                  plWarmup: '', plCountdown: '', plKickoff: '', plHalfTime: '', plEnd: '',
-                  plGoalHome: '', plGoalGuest: '', plSub: '', plYellow: '', plRed: '', plVar: '', plAnnouncement: ''
-                }));
-              } else {
-                const p = presets.find(pr => pr.id === e.target.value);
-                if (p) loadPreset(p);
-              }
-            }}>
-              <option value="new">Neues Preset...</option>
-              {presets.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-            </select>
-            <button className="btn btn-outline-secondary btn-sm" onClick={handleSaveClick}><BsSave /></button>
-          </div>
+          <h4 className="mb-3">Zuordnung</h4>
 
           <div className="mb-4">
             <PlaylistSelect label="Warmup" value={gameState.plWarmup} onChange={v => updateState('plWarmup', v)} playlists={playlists} />
@@ -305,6 +305,31 @@ function ControllerView() {
             <PlaylistSelect label="Durchsage" value={gameState.plAnnouncement} onChange={v => updateState('plAnnouncement', v)} playlists={playlists} />
           </div>
 
+          {/* PRESET MANAGEMENT */}
+          <div className="mb-4">
+            <label className="form-label text-muted small ms-1 mb-1">Preset</label>
+            <div className="d-flex gap-2 mb-4">
+              <select className="form-select form-select-sm" value={currentPresetId} onChange={(e) => {
+                if (e.target.value === 'new') {
+                  setCurrentPresetId('new');
+                  // Reset to defaults
+                  setGameState(prev => ({
+                    homeScore: 0, guestScore: 0,
+                    matchState: 'PRE_GAME', timerStart: null, timerOffset: 0, timerRunning: false,
+                    plWarmup: '', plCountdown: '', plKickoff: '', plHalfTime: '', plEnd: '',
+                    plGoalHome: '', plGoalGuest: '', plSub: '', plYellow: '', plRed: '', plVar: '', plAnnouncement: ''
+                  }));
+                } else {
+                  const p = presets.find(pr => pr.id === e.target.value);
+                  if (p) loadPreset(p);
+                }
+              }}>
+                <option value="new">Neues Preset...</option>
+                {presets.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+              </select>
+              <button className="btn btn-outline-secondary btn-sm" onClick={handleSaveClick}><BsSave /></button>
+            </div>
+          </div>
         </div>
 
         {/* CENTER COLUMN: LIVE CONTROL */}
@@ -334,7 +359,16 @@ function ControllerView() {
             </div>
 
             {/* TIMER DISPLAY */}
-            <div className="h2 font-monospace my-2">{timerString}</div>
+            <input
+              type="text"
+              className="form-control text-center fs-2 fw-bold font-monospace my-2"
+              style={{ width: 160 }}
+              value={timerString}
+              onFocus={() => { isEditingTimerRef.current = true; }}
+              onBlur={handleTimerBlur}
+              onKeyDown={(e) => { if (e.key === 'Enter') e.target.blur(); }}
+              onChange={(e) => setTimerString(e.target.value)}
+            />
 
             <div className="text-center mt-3 mb-4">
               <button className="btn btn-primary px-5" onClick={commitScore}>Übernehmen</button>
@@ -388,8 +422,14 @@ function ControllerView() {
               Warmup
             </button>
             <button className="btn btn-outline-primary mb-3" onClick={() => triggerScene(gameState.plCountdown)}>Countdown</button>
-            <button className="btn btn-outline-primary" onClick={() => triggerScene(gameState.plGoalHome)}>Tor Heim</button>
-            <button className="btn btn-outline-primary" onClick={() => triggerScene(gameState.plGoalGuest)}>Tor Gast</button>
+            <button className="btn btn-outline-primary" onClick={() => {
+              triggerScene(gameState.plGoalHome);
+              setGameState(prev => ({ ...prev, homeScore: prev.homeScore + 1 }));
+            }}>Tor Heim</button>
+            <button className="btn btn-outline-primary" onClick={() => {
+              triggerScene(gameState.plGoalGuest);
+              setGameState(prev => ({ ...prev, guestScore: prev.guestScore + 1 }));
+            }}>Tor Gast</button>
             <button className="btn btn-outline-primary" onClick={() => triggerScene(gameState.plSub)}>Wechsel</button>
             <button className="btn btn-outline-primary" onClick={() => triggerScene(gameState.plYellow)}>Gelbe Karte</button>
             <button className="btn btn-outline-primary" onClick={() => triggerScene(gameState.plRed)}>Rote Karte</button>
