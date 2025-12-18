@@ -28,10 +28,13 @@ function SettingsView() {
     loadSettings();
   }, []);
 
-  const handleSave = () => {
+  const saveAllSettings = () => {
     window.electronAPI.saveSettings({ server, username, password, outputWidth, outputHeight, showCropMarks });
-    toast.success('Gespeichert');
-    setTimeout(handleTestConnection, 300);
+  };
+
+  const handleSaveOutput = () => {
+    saveAllSettings();
+    toast.success('Einstellungen gespeichert');
   };
 
   const handleTestConnection = async () => {
@@ -106,6 +109,12 @@ function SettingsView() {
                 />
                 <label className="form-check-label" htmlFor="cropMarksCheck">Schnittmarken anzeigen</label>
               </div>
+
+              <div className="d-flex mt-4">
+                <button className="btn btn-outline-primary" onClick={handleSaveOutput}>
+                  Speichern
+                </button>
+              </div>
             </>
           )}
 
@@ -150,12 +159,20 @@ function SettingsView() {
                   </span>
                 </div>
               </div>
+
+              <div className="d-flex mt-4 gap-2">
+                <button className="btn btn-outline-primary" onClick={handleTestConnection}>
+                  Verbindung testen
+                </button>
+                <button className="btn btn-outline-primary" onClick={() => {
+                  saveAllSettings();
+                  toast.success('Einstellungen gespeichert');
+                }}>
+                  Speichern
+                </button>
+              </div>
             </>
           )}
-
-          <button className="btn btn-outline-primary mt-2" onClick={handleSave}>
-            Speichern
-          </button>
 
         </div>
       </div>
