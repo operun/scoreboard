@@ -40,6 +40,13 @@ function PlaylistsView({ onEdit }) {
     setShowForm(false);
   };
 
+  const handleDelete = async (id) => {
+    if (!confirm('Playlist wirklich löschen?')) return;
+    await window.electronAPI.deletePlaylist(id);
+    setPlaylists((prev) => prev.filter((p) => p.id !== id));
+    toast.success('Playlist gelöscht');
+  };
+
   return (
 
     <div className="container">
@@ -73,8 +80,11 @@ function PlaylistsView({ onEdit }) {
                   <td className="w-75">{playlist.title}</td>
                   <td>{new Date(playlist.updated).toLocaleString()}</td>
                   <td>
-                    <span onClick={() => onEdit(playlist.id)}>
+                    <span onClick={() => onEdit(playlist.id)} className="me-3" style={{ cursor: 'pointer' }}>
                       <BsPencil />
+                    </span>
+                    <span onClick={() => handleDelete(playlist.id)} className="text-danger" style={{ cursor: 'pointer' }}>
+                      <BsXCircle />
                     </span>
                   </td>
                 </tr>

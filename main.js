@@ -330,6 +330,19 @@ ipcMain.handle('save-playlist', (event, updated) => {
   return { status: 'ok' };
 });
 
+ipcMain.handle('delete-playlist', (event, id) => {
+  const playlists = loadPlaylists();
+  const index = playlists.findIndex((p) => p.id === id);
+
+  if (index !== -1) {
+    playlists[index].deleted = true;
+    playlists[index].updatedAt = Date.now();
+    savePlaylists(playlists);
+    return { status: 'ok' };
+  }
+  return { status: 'error', message: 'Not found' };
+});
+
 function loadPresetsList() {
   if (fs.existsSync(presetsPath)) {
     return JSON.parse(fs.readFileSync(presetsPath, 'utf-8'));
