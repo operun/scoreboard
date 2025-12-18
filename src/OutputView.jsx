@@ -64,11 +64,15 @@ function OutputView() {
         }
     }, []);
 
-    // Listen for test image updates (direct upload)
+    // Listen for test image updates (direct upload or delete)
     useEffect(() => {
         if (window.electronAPI.onTestImageUpdated) {
             const remove = window.electronAPI.onTestImageUpdated((event, path) => {
-                setCurrentTestImage(path);
+                if (path) {
+                    setCurrentTestImage(path);
+                } else {
+                    setCurrentTestImage(testImage);
+                }
             });
             return () => remove();
         }

@@ -42,6 +42,11 @@ ipcMain.handle('load-settings', async () => {
   const customImagePath = path.join(app.getPath('userData'), 'custom_test_image.png');
   if (fs.existsSync(customImagePath)) {
     settings.customTestImage = `file://${customImagePath}?t=${Date.now()}`;
+    // Ensure name is present, default to generic if missing but file exists
+    if (!settings.customTestImageName) settings.customTestImageName = 'Eigenes Testbild';
+  } else {
+    settings.customTestImage = null;
+    settings.customTestImageName = null;
   }
 
   return settings;
@@ -255,15 +260,43 @@ ipcMain.handle('select-test-image', async () => {
   try {
     fs.copyFileSync(sourcePath, destPath);
 
+    // Verify settings existence before saving
+    let settings = loadEncryptedSettings(path.join(app.getPath('userData'), 'settings.json')) || {};
+    settings.customTestImageName = path.basename(sourcePath);
+    await saveEncryptedSettings(path.join(app.getPath('userData'), 'settings.json'), settings);
+
     // Notify output window to reload the image
     if (outputWindow && !outputWindow.isDestroyed()) {
       outputWindow.webContents.send('test-image-updated', `file://${destPath}?t=${Date.now()}`);
     }
 
-    return `file://${destPath}?t=${Date.now()}`;
+    return { path: `file://${destPath}?t=${Date.now()}`, name: settings.customTestImageName };
   } catch (error) {
     console.error('Error saving test image:', error);
     return null;
+  }
+});
+
+ipcMain.handle('delete-test-image', async () => {
+  const destPath = path.join(app.getPath('userData'), 'custom_test_image.png');
+  try {
+    if (fs.existsSync(destPath)) {
+      fs.unlinkSync(destPath);
+    }
+
+    // Clear name in settings
+    let settings = loadEncryptedSettings(path.join(app.getPath('userData'), 'settings.json')) || {};
+    delete settings.customTestImageName;
+    await saveEncryptedSettings(path.join(app.getPath('userData'), 'settings.json'), settings);
+
+    // Notify output window
+    if (outputWindow && !outputWindow.isDestroyed()) {
+      outputWindow.webContents.send('test-image-updated', null);
+    }
+    return true;
+  } catch (e) {
+    console.error('Error deleting test image:', e);
+    return false;
   }
 });
 

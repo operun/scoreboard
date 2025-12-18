@@ -45,6 +45,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   },
 
   selectTestImage: () => ipcRenderer.invoke('select-test-image'),
+  deleteTestImage: () => ipcRenderer.invoke('delete-test-image'),
 
   // Generic control command
   sendControlCommand: (command, payload) => ipcRenderer.invoke('control-command', { command, payload }),

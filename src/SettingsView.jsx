@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { toast } from 'react-toastify';
-import { BsEye, BsEyeSlash, BsUpload } from 'react-icons/bs';
+import { BsEye, BsEyeSlash, BsXCircle } from 'react-icons/bs';
 
 function SettingsView() {
   const [server, setServer] = useState('');
@@ -10,6 +10,7 @@ function SettingsView() {
   const [outputWidth, setOutputWidth] = useState(1280);
   const [outputHeight, setOutputHeight] = useState(720);
   const [showCropMarks, setShowCropMarks] = useState(true);
+  const [customTestImageName, setCustomTestImageName] = useState(null);
 
   const [activeTab, setActiveTab] = useState('output');
 
@@ -23,6 +24,7 @@ function SettingsView() {
         if (settings.outputWidth) setOutputWidth(settings.outputWidth);
         if (settings.outputHeight) setOutputHeight(settings.outputHeight);
         setShowCropMarks(settings.showCropMarks !== false); // Default true
+        if (settings.customTestImageName) setCustomTestImageName(settings.customTestImageName);
       }
     };
     loadSettings();
@@ -111,12 +113,29 @@ function SettingsView() {
               </div>
 
               <div className="mb-4">
-                <button className="btn btn-outline-primary d-flex align-items-center gap-2" onClick={async () => {
-                  const result = await window.electronAPI.selectTestImage();
-                  if (result) toast.success("Testbild aktualisiert");
-                }}>
-                  Eigenes Testbild hochladen
-                </button>
+                <label className="form-label">Testbild</label>
+                {customTestImageName ? (
+                  <div className="d-flex align-items-center">
+                    <span className="text-success fw-bold">{customTestImageName}</span>
+                    <button className="btn btn-link text-danger" onClick={async () => {
+                      await window.electronAPI.deleteTestImage();
+                      setCustomTestImageName(null);
+                      toast.info("Testbild zurückgesetzt");
+                    }}>
+                      <BsXCircle />
+                    </button>
+                  </div>
+                ) : (
+                  <button className="btn btn-outline-primary d-flex align-items-center gap-2" onClick={async () => {
+                    const result = await window.electronAPI.selectTestImage();
+                    if (result && result.name) {
+                      setCustomTestImageName(result.name);
+                      toast.success("Testbild aktualisiert");
+                    }
+                  }}>
+                    Testbild hochladen
+                  </button>
+                )}
               </div>
 
               <div className="d-flex">
