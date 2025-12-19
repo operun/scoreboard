@@ -339,14 +339,16 @@ function OutputView() {
                             {/* Timer Only */}
                             <div style={{
                                 color: '#fff',
-                                fontSize: '5cqh', // Changed vh to cqh
+                                backgroundColor: 'rgba(0,0,0,0.7)',
+                                fontSize: '8cqh',
                                 fontWeight: 'bold',
                                 fontFamily: 'monospace',
                                 letterSpacing: '0.1em',
                                 position: 'absolute',
-                                bottom: '20px',
-                                textAlign: 'center',
-                                width: '100%'
+                                top: '-0.1em',
+                                padding: '0.2em 0.5em 0.1em 0.5em',
+                                borderBottomLeftRadius: '0.1em',
+                                borderBottomRightRadius: '0.1em',
                             }}>
                                 {timerDisplay}
                             </div>
@@ -360,9 +362,6 @@ function OutputView() {
                                 marginBottom: '15cqh' // Changed vh to cqh
                             }}>
                                 <div style={{ textAlign: 'center', flex: 1 }}>
-                                    <h1 style={{ color: '#fff', fontSize: '5cqw', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '5cqh' }}>
-                                        Heim
-                                    </h1>
                                     <div style={{ fontSize: '30cqh', fontWeight: 'bold', lineHeight: 1, color: 'white' }}>
                                         {gameState.homeScore}
                                     </div>
@@ -371,9 +370,6 @@ function OutputView() {
                                 <div style={{ color: '#fff', fontSize: '20cqh', marginTop: '10cqh' }}>:</div>
 
                                 <div style={{ textAlign: 'center', flex: 1 }}>
-                                    <h1 style={{ color: '#fff', fontSize: '5cqw', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '5cqh' }}>
-                                        Gast
-                                    </h1>
                                     <div style={{ fontSize: '30cqh', fontWeight: 'bold', lineHeight: 1, color: 'white' }}>
                                         {gameState.guestScore}
                                     </div>
