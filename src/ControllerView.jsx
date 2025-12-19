@@ -387,7 +387,7 @@ function ControllerView() {
             />
 
             <div className="text-center mt-3 mb-4">
-              <button className="btn btn-primary px-5" onClick={commitScore}>Übernehmen</button>
+              <button className="btn btn-outline-primary px-5" onClick={commitScore}>Übernehmen</button>
             </div>
           </div>
 

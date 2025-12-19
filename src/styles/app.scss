@@ -1,8 +1,21 @@
 // app.scss
 
 .sidebar {
-    // background-color: $sidebar-bg; // Removed to allow theme-based colors
     width: 60px;
-    min-width: 60px;
-    max-width: 60px;
+}
+
+// Dark Mode Overrides
+[data-bs-theme="dark"] {
+    .btn-outline-primary {
+        --bs-btn-color: #e0e0e0;
+        --bs-btn-border-color: #e0e0e0;
+
+        --bs-btn-hover-color: #000;
+        --bs-btn-hover-bg: #e0e0e0;
+        --bs-btn-hover-border-color: #e0e0e0;
+
+        --bs-btn-active-color: #000;
+        --bs-btn-active-bg: #e0e0e0;
+        --bs-btn-active-border-color: #e0e0e0;
+    }
 }
