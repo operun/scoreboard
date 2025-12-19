@@ -18,6 +18,10 @@ const PlaylistSelect = ({ label, value, onChange, playlists }) => (
 );
 
 function ControllerView() {
+  useEffect(() => {
+    document.title = 'Controller - Scoreboard';
+  }, []);
+
   const [playlists, setPlaylists] = useState([]);
 
   const [presets, setPresets] = useState([]);

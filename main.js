@@ -603,7 +603,7 @@ function createOutputWindow() {
       nodeIntegration: false,
       webSecurity: false
     },
-    title: "Output"
+    title: "Output - Scoreboard"
   });
 
   if (app.isPackaged) {
@@ -635,6 +635,7 @@ function createWindow() {
       nodeIntegration: false,
       webSecurity: false
     },
+    title: "Controller - Scoreboard"
   });
 
   if (app.isPackaged) {

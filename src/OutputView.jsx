@@ -2,6 +2,10 @@ import { useState, useEffect, useRef } from 'react';
 import testImage from '../assets/testbild.png';
 
 function OutputView() {
+    useEffect(() => {
+        document.title = 'Output - Scoreboard';
+    }, []);
+
     // -- CONTENT STATE --
     const [standardPlaylist, setStandardPlaylist] = useState(null);
     const [standardMode, setStandardMode] = useState('BACKGROUND'); // 'BACKGROUND' or 'FULL'
