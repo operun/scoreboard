@@ -51,7 +51,10 @@ function ControllerView() {
     plSub: '',
     plYellow: '',
     plRed: '',
+    plRed: '',
     plVar: '',
+    plSpecial: '',
+    plCorner: '',
     plAnnouncement: ''
   });
 
@@ -67,7 +70,7 @@ function ControllerView() {
   // Visibility Settings
   const [visibility, setVisibility] = useState({
     warmup: true, lineup: true, scoreboard: true, halftime: true, end: true,
-    goalHome: true, goalGuest: true, sub: true, yellow: true, red: true, var: true, announcement: true
+    goalHome: true, goalGuest: true, sub: true, yellow: true, red: true, var: true, special: true, corner: true, announcement: true
   });
 
   useEffect(() => {
@@ -114,6 +117,8 @@ function ControllerView() {
       plYellow: preset.plYellow || '',
       plRed: preset.plRed || '',
       plVar: preset.plVar || '',
+      plSpecial: preset.plSpecial || '',
+      plCorner: preset.plCorner || '',
       plAnnouncement: preset.plAnnouncement || ''
     }));
   };
@@ -336,9 +341,11 @@ function ControllerView() {
             {visibility.yellow && <PlaylistSelect label="Gelbe Karte" value={gameState.plYellow} onChange={v => updateState('plYellow', v)} playlists={playlists} />}
             {visibility.red && <PlaylistSelect label="Rote Karte" value={gameState.plRed} onChange={v => updateState('plRed', v)} playlists={playlists} />}
             {visibility.var && <PlaylistSelect label="VAR Check" value={gameState.plVar} onChange={v => updateState('plVar', v)} playlists={playlists} />}
+            {visibility.corner && <PlaylistSelect label="Eckstoß" value={gameState.plCorner} onChange={v => updateState('plCorner', v)} playlists={playlists} />}
           </div>
 
           <div className="mb-4">
+            {visibility.special && <PlaylistSelect label="Special" value={gameState.plSpecial} onChange={v => updateState('plSpecial', v)} playlists={playlists} />}
             {visibility.announcement && <PlaylistSelect label="Durchsage" value={gameState.plAnnouncement} onChange={v => updateState('plAnnouncement', v)} playlists={playlists} />}
           </div>
 
@@ -355,7 +362,7 @@ function ControllerView() {
                     homeScore: 0, guestScore: 0,
                     matchState: 'PRE_GAME', timerStart: null, timerOffset: 0, timerRunning: false,
                     plWarmup: '', plLineup: '', plScoreboard: '', plHalfTime: '', plEnd: '',
-                    plGoalHome: '', plGoalGuest: '', plSub: '', plYellow: '', plRed: '', plVar: '', plAnnouncement: ''
+                    plGoalHome: '', plGoalGuest: '', plSub: '', plYellow: '', plRed: '', plVar: '', plSpecial: '', plCorner: '', plAnnouncement: ''
                   }));
                 } else {
                   const p = presets.find(pr => pr.id === e.target.value);
@@ -419,7 +426,7 @@ function ControllerView() {
         </div>
 
         {/* RIGHT COLUMN: SCENES */}
-        <div className="col-md-3 ps-4 psh-100" style={{ overflowY: 'auto', overflowX: 'hidden' }}>
+        <div className="col-md-3 ps-4 h-100" style={{ overflowY: 'auto', overflowX: 'hidden' }}>
           <div className="d-grid gap-2">
 
             {visibility.warmup && (
@@ -472,6 +479,12 @@ function ControllerView() {
               </button>
             )}
 
+            {visibility.corner && (
+              <button className="btn btn-outline-primary" onClick={() => triggerScene(gameState.plCorner)}>
+                Eckstoß
+              </button>
+            )}
+
             {visibility.yellow && (
               <button className="btn btn-outline-primary" onClick={() => triggerScene(gameState.plYellow)}>
                 Gelbe Karte
@@ -489,6 +502,10 @@ function ControllerView() {
                 VAR Check
               </button>
             )}
+
+            <div className="mb-3">
+              {/* Spacer */}
+            </div>
 
             {visibility.scoreboard && (
               <button className="btn btn-outline-primary" onClick={() => {
@@ -513,6 +530,12 @@ function ControllerView() {
                 setAnnouncementDuration('');
                 setShowAnnouncementModal(true);
               }}>Durchsage</button>
+            )}
+
+            {visibility.special && (
+              <button className="btn btn-outline-primary" onClick={() => triggerScene(gameState.plSpecial)}>
+                Special
+              </button>
             )}
 
             <button className="btn btn-outline-danger my-3" onClick={() => { window.electronAPI.sendControlCommand('STOP_OUTPUT', {}); }}>

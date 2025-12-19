@@ -24,6 +24,8 @@ function SettingsView() {
     yellow: true,
     red: true,
     var: true,
+    special: true,
+    corner: true,
     announcement: true
   });
 
@@ -303,6 +305,8 @@ function SettingsView() {
                     { key: 'yellow', label: 'Gelbe Karte' },
                     { key: 'red', label: 'Rote Karte' },
                     { key: 'var', label: 'VAR Check' },
+                    { key: 'special', label: 'Special' },
+                    { key: 'corner', label: 'Eckstoß' },
                     { key: 'announcement', label: 'Durchsage' },
                   ].map(({ key, label }) => (
                     <div className="form-check" key={key}>
