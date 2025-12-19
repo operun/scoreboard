@@ -58,9 +58,16 @@ function ControllerView() {
   const [localScore, setLocalScore] = useState({ home: 0, guest: 0 });
 
   // Sync local score when preset loaded or external update
+  // Sync local score when preset loaded or external update
   useEffect(() => {
     setLocalScore({ home: gameState.homeScore, guest: gameState.guestScore });
   }, [gameState.homeScore, gameState.guestScore]);
+
+  // Visibility Settings
+  const [visibility, setVisibility] = useState({
+    warmup: true, countdown: true, scoreboard: true, halftime: true, end: true,
+    goalHome: true, goalGuest: true, sub: true, yellow: true, red: true, var: true, announcement: true
+  });
 
   useEffect(() => {
     const loadData = async () => {
@@ -69,6 +76,12 @@ function ControllerView() {
 
       const pr = await window.electronAPI.loadPresets();
       setPresets(pr);
+
+      // Load Settings to get Visibility
+      const settings = await window.electronAPI.loadSettings();
+      if (settings && settings.controllerVisibility) {
+        setVisibility(prev => ({ ...prev, ...settings.controllerVisibility }));
+      }
 
       if (pr.length > 0) {
         // Load first preset by default
@@ -296,27 +309,27 @@ function ControllerView() {
         <div className="col-md-3 pe-4 h-100" style={{ overflowY: 'auto', overflowX: 'hidden' }}>
 
           <div className="mb-4">
-            <PlaylistSelect label="Warmup" value={gameState.plWarmup} onChange={v => updateState('plWarmup', v)} playlists={playlists} />
-            <PlaylistSelect label="Countdown" value={gameState.plCountdown} onChange={v => updateState('plCountdown', v)} playlists={playlists} />
-            <PlaylistSelect label="Spielstand" value={gameState.plScoreboard} onChange={v => updateState('plScoreboard', v)} playlists={playlists} />
-            <PlaylistSelect label="Halbzeit" value={gameState.plHalfTime} onChange={v => updateState('plHalfTime', v)} playlists={playlists} />
-            <PlaylistSelect label="Abpfiff" value={gameState.plEnd} onChange={v => updateState('plEnd', v)} playlists={playlists} />
+            {visibility.warmup && <PlaylistSelect label="Warmup" value={gameState.plWarmup} onChange={v => updateState('plWarmup', v)} playlists={playlists} />}
+            {visibility.countdown && <PlaylistSelect label="Countdown" value={gameState.plCountdown} onChange={v => updateState('plCountdown', v)} playlists={playlists} />}
+            {visibility.scoreboard && <PlaylistSelect label="Spielstand" value={gameState.plScoreboard} onChange={v => updateState('plScoreboard', v)} playlists={playlists} />}
+            {visibility.halftime && <PlaylistSelect label="Halbzeit" value={gameState.plHalfTime} onChange={v => updateState('plHalfTime', v)} playlists={playlists} />}
+            {visibility.end && <PlaylistSelect label="Abpfiff" value={gameState.plEnd} onChange={v => updateState('plEnd', v)} playlists={playlists} />}
           </div>
 
           <div className="mb-4">
-            <PlaylistSelect label="Tor Heim" value={gameState.plGoalHome} onChange={v => updateState('plGoalHome', v)} playlists={playlists} />
-            <PlaylistSelect label="Tor Gast" value={gameState.plGoalGuest} onChange={v => updateState('plGoalGuest', v)} playlists={playlists} />
+            {visibility.goalHome && <PlaylistSelect label="Tor Heim" value={gameState.plGoalHome} onChange={v => updateState('plGoalHome', v)} playlists={playlists} />}
+            {visibility.goalGuest && <PlaylistSelect label="Tor Gast" value={gameState.plGoalGuest} onChange={v => updateState('plGoalGuest', v)} playlists={playlists} />}
           </div>
 
           <div className="mb-4">
-            <PlaylistSelect label="Wechsel" value={gameState.plSub} onChange={v => updateState('plSub', v)} playlists={playlists} />
-            <PlaylistSelect label="Gelbe Karte" value={gameState.plYellow} onChange={v => updateState('plYellow', v)} playlists={playlists} />
-            <PlaylistSelect label="Rote Karte" value={gameState.plRed} onChange={v => updateState('plRed', v)} playlists={playlists} />
-            <PlaylistSelect label="VAR Check" value={gameState.plVar} onChange={v => updateState('plVar', v)} playlists={playlists} />
+            {visibility.sub && <PlaylistSelect label="Wechsel" value={gameState.plSub} onChange={v => updateState('plSub', v)} playlists={playlists} />}
+            {visibility.yellow && <PlaylistSelect label="Gelbe Karte" value={gameState.plYellow} onChange={v => updateState('plYellow', v)} playlists={playlists} />}
+            {visibility.red && <PlaylistSelect label="Rote Karte" value={gameState.plRed} onChange={v => updateState('plRed', v)} playlists={playlists} />}
+            {visibility.var && <PlaylistSelect label="VAR Check" value={gameState.plVar} onChange={v => updateState('plVar', v)} playlists={playlists} />}
           </div>
 
           <div className="mb-4">
-            <PlaylistSelect label="Durchsage" value={gameState.plAnnouncement} onChange={v => updateState('plAnnouncement', v)} playlists={playlists} />
+            {visibility.announcement && <PlaylistSelect label="Durchsage" value={gameState.plAnnouncement} onChange={v => updateState('plAnnouncement', v)} playlists={playlists} />}
           </div>
 
           {/* PRESET MANAGEMENT */}
@@ -428,45 +441,56 @@ function ControllerView() {
         <div className="col-md-3 ps-4 psh-100" style={{ overflowY: 'auto', overflowX: 'hidden' }}>
           <div className="d-grid gap-2">
 
-            <button className="btn btn-outline-primary" onClick={() => {
-              const pl = playlists.find(p => p.id === gameState.plWarmup);
-              if (pl) window.electronAPI.sendControlCommand('PLAY_PLAYLIST', { playlist: pl, mode: 'FULL' });
-            }}>
-              Warmup
-            </button>
-            <button className="btn btn-outline-primary mb-3" onClick={() => triggerScene(gameState.plCountdown)}>Countdown</button>
+            {visibility.warmup && (
+              <button className="btn btn-outline-primary" onClick={() => {
+                const pl = playlists.find(p => p.id === gameState.plWarmup);
+                if (pl) window.electronAPI.sendControlCommand('PLAY_PLAYLIST', { playlist: pl, mode: 'FULL' });
+              }}>
+                Warmup
+              </button>
+            )}
+            {visibility.countdown && <button className="btn btn-outline-primary mb-3" onClick={() => triggerScene(gameState.plCountdown)}>Countdown</button>}
 
-            <button className="btn btn-outline-primary" onClick={() => {
-              triggerScene(gameState.plGoalHome);
-              setGameState(prev => ({ ...prev, homeScore: prev.homeScore + 1 }));
-            }}>Tor Heim</button>
-            <button className="btn btn-outline-primary mb-3" onClick={() => {
-              triggerScene(gameState.plGoalGuest);
-              setGameState(prev => ({ ...prev, guestScore: prev.guestScore + 1 }));
-            }}>Tor Gast</button>
-            <button className="btn btn-outline-primary" onClick={() => triggerScene(gameState.plSub)}>Wechsel</button>
-            <button className="btn btn-outline-primary" onClick={() => triggerScene(gameState.plYellow)}>Gelbe Karte</button>
-            <button className="btn btn-outline-primary" onClick={() => triggerScene(gameState.plRed)}>Rote Karte</button>
-            <button className="btn btn-outline-primary mb-3" onClick={() => triggerScene(gameState.plVar)}>VAR Check</button>
+            {visibility.goalHome && (
+              <button className="btn btn-outline-primary" onClick={() => {
+                triggerScene(gameState.plGoalHome);
+                setGameState(prev => ({ ...prev, homeScore: prev.homeScore + 1 }));
+              }}>Tor Heim</button>
+            )}
+            {visibility.goalGuest && (
+              <button className="btn btn-outline-primary mb-3" onClick={() => {
+                triggerScene(gameState.plGoalGuest);
+                setGameState(prev => ({ ...prev, guestScore: prev.guestScore + 1 }));
+              }}>Tor Gast</button>
+            )}
 
-            <button className="btn btn-outline-primary" onClick={() => {
-              // 1. Show standard scoreboard
-              window.electronAPI.sendControlCommand('SHOW_SCOREBOARD');
-              // 2. Restart background playlist if available, to be safe
-              const pl = playlists.find(p => p.id === gameState.plScoreboard);
-              if (pl) {
-                window.electronAPI.sendControlCommand('PLAY_PLAYLIST', {
-                  playlist: pl,
-                  mode: 'BACKGROUND'
-                });
-              }
-            }}>
-              Spielstand
-            </button>
-            <button className="btn btn-outline-primary mb-3" onClick={() => {
-              setAnnouncementText('');
-              setShowAnnouncementModal(true);
-            }}>Durchsage</button>
+            {visibility.sub && <button className="btn btn-outline-primary" onClick={() => triggerScene(gameState.plSub)}>Wechsel</button>}
+            {visibility.yellow && <button className="btn btn-outline-primary" onClick={() => triggerScene(gameState.plYellow)}>Gelbe Karte</button>}
+            {visibility.red && <button className="btn btn-outline-primary" onClick={() => triggerScene(gameState.plRed)}>Rote Karte</button>}
+            {visibility.var && <button className="btn btn-outline-primary mb-3" onClick={() => triggerScene(gameState.plVar)}>VAR Check</button>}
+
+            {visibility.scoreboard && (
+              <button className="btn btn-outline-primary" onClick={() => {
+                // 1. Show standard scoreboard
+                window.electronAPI.sendControlCommand('SHOW_SCOREBOARD');
+                // 2. Restart background playlist if available, to be safe
+                const pl = playlists.find(p => p.id === gameState.plScoreboard);
+                if (pl) {
+                  window.electronAPI.sendControlCommand('PLAY_PLAYLIST', {
+                    playlist: pl,
+                    mode: 'BACKGROUND'
+                  });
+                }
+              }}>
+                Spielstand
+              </button>
+            )}
+            {visibility.announcement && (
+              <button className="btn btn-outline-primary mb-3" onClick={() => {
+                setAnnouncementText('');
+                setShowAnnouncementModal(true);
+              }}>Durchsage</button>
+            )}
             <button className="btn btn-outline-danger" onClick={() => { window.electronAPI.sendControlCommand('STOP_OUTPUT', {}); }}>
               Ausgabe anhalten
             </button>

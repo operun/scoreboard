@@ -12,6 +12,20 @@ function SettingsView() {
   const [showCropMarks, setShowCropMarks] = useState(true);
   const [customTestImageName, setCustomTestImageName] = useState(null);
   const [themeMode, setThemeMode] = useState('system');
+  const [controllerVisibility, setControllerVisibility] = useState({
+    warmup: true,
+    countdown: true,
+    scoreboard: true,
+    halftime: true,
+    end: true,
+    goalHome: true,
+    goalGuest: true,
+    sub: true,
+    yellow: true,
+    red: true,
+    var: true,
+    announcement: true
+  });
 
   const [activeTab, setActiveTab] = useState('output');
   const settingsRef = useState({})[0]; // Need a ref to hold full settings for partial updates if needed, or just re-read. Simpler: just reload on mount. 
@@ -32,6 +46,7 @@ function SettingsView() {
         setShowCropMarks(settings.showCropMarks !== false);
         if (settings.customTestImageName) setCustomTestImageName(settings.customTestImageName);
         if (settings.themeMode) setThemeMode(settings.themeMode);
+        if (settings.controllerVisibility) setControllerVisibility(prev => ({ ...prev, ...settings.controllerVisibility }));
       }
     };
     loadSettings();
@@ -47,6 +62,7 @@ function SettingsView() {
       outputHeight,
       showCropMarks,
       themeMode,
+      controllerVisibility,
       ...overrides
     };
     Object.assign(settingsRef, newSettings);
@@ -75,6 +91,12 @@ function SettingsView() {
 
     saveAllSettings(changes);
   }
+
+  const handleVisibilityChange = (key, value) => {
+    const newVisibility = { ...controllerVisibility, [key]: value };
+    setControllerVisibility(newVisibility);
+    saveAllSettings({ controllerVisibility: newVisibility });
+  };
 
   const handleTestConnection = async () => {
     const result = await window.electronAPI.testConnection();
@@ -121,7 +143,7 @@ function SettingsView() {
           </li>
         </ul>
 
-      </div>
+      </div >
 
 
       <div className="row">
@@ -264,8 +286,38 @@ function SettingsView() {
                   <option value="light">Hell</option>
                   <option value="dark">Dunkel</option>
                 </select>
-                <div className="form-text">
-                  Wähle zwischen hellem und dunklem Design oder folge der Systemeinstellung.
+              </div>
+
+              <div className="mb-4">
+                <label className="form-label">Szenen</label>
+                <div className="d-flex flex-column gap-1">
+                  {[
+                    { key: 'warmup', label: 'Warmup' },
+                    { key: 'countdown', label: 'Countdown' },
+                    { key: 'scoreboard', label: 'Spielstand' },
+                    { key: 'halftime', label: 'Halbzeit' },
+                    { key: 'end', label: 'Abpfiff' },
+                    { key: 'goalHome', label: 'Tor Heim' },
+                    { key: 'goalGuest', label: 'Tor Gast' },
+                    { key: 'sub', label: 'Wechsel' },
+                    { key: 'yellow', label: 'Gelbe Karte' },
+                    { key: 'red', label: 'Rote Karte' },
+                    { key: 'var', label: 'VAR Check' },
+                    { key: 'announcement', label: 'Durchsage' },
+                  ].map(({ key, label }) => (
+                    <div className="form-check" key={key}>
+                      <input
+                        className="form-check-input"
+                        type="checkbox"
+                        id={`vis-${key}`}
+                        checked={controllerVisibility[key]}
+                        onChange={(e) => handleVisibilityChange(key, e.target.checked)}
+                      />
+                      <label className="form-check-label" htmlFor={`vis-${key}`}>
+                        {label}
+                      </label>
+                    </div>
+                  ))}
                 </div>
               </div>
             </>
@@ -273,7 +325,7 @@ function SettingsView() {
 
         </div>
       </div>
-    </div>
+    </div >
   );
 }
 
