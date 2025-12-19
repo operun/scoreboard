@@ -348,7 +348,6 @@ function OutputView({ preview = false }) {
                     justifyContent: 'center', // Centered vertically
                     alignItems: 'center',     // Centered horizontally
                     opacity: (showOverlay || announcement) ? 1 : 0,
-                    transition: 'opacity 0.5s ease-in-out'
                 }}>
 
                     {announcement ? (
