@@ -1,11 +1,12 @@
 import { ToastContainer, toast } from 'react-toastify';
 import { useState } from 'react';
+import TitleBar from './components/TitleBar';
+import SideBar from './components/SideBar';
 import ControllerView from './ControllerView';
 import PlaylistsView from './PlaylistsView';
 import EditPlaylistView from './EditPlaylistView';
 import MediaView from './MediaView';
 import SettingsView from './SettingsView';
-import Sidebar from './Sidebar';
 import './styles/bootstrap.scss';
 import 'react-toastify/dist/ReactToastify.css';
 
@@ -39,16 +40,23 @@ function App() {
   };
 
   if (isOutputWindow) {
-    return <OutputView />;
+    return (
+      <>
+        <TitleBar />
+        <div style={{ paddingTop: '30px', height: '100vh', boxSizing: 'border-box' }}>
+          <OutputView />
+        </div>
+      </>
+    );
   }
 
   return (
     <div className="app">
+      <TitleBar />
+      <div className="d-flex position-relative" style={{ paddingTop: '35px', height: '100vh', boxSizing: 'border-box' }}>
 
-      <div className="d-flex position-relative">
-
-        <div className="sidebar d-flex flex-column text-white vh-100">
-          <Sidebar activeView={view} onChangeView={(newView) => {
+        <div className="sidebar d-flex flex-column text-white" style={{ height: 'calc(100vh - 35px)' }}>
+          <SideBar activeView={view} onChangeView={(newView) => {
             if (newView === 'sync') {
               handleSync();
             } else {
@@ -57,7 +65,7 @@ function App() {
           }} />
         </div>
 
-        <div className="main flex-fill p-5" style={{ height: '100vh', overflow: 'hidden' }}>
+        <div className="main flex-fill p-5" style={{ height: '100%', overflow: 'hidden' }}>
           {view === 'controller' && <ControllerView />}
           {view === 'playlists' && (
             <PlaylistsView

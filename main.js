@@ -603,7 +603,9 @@ function createOutputWindow() {
       nodeIntegration: false,
       webSecurity: false
     },
-    title: "Output - Scoreboard"
+    title: "Output - Scoreboard",
+    titleBarStyle: 'hidden',
+    trafficLightPosition: { x: 10, y: 10 } // Optional tweak
   });
 
   if (app.isPackaged) {
@@ -635,7 +637,9 @@ function createWindow() {
       nodeIntegration: false,
       webSecurity: false
     },
-    title: "Controller - Scoreboard"
+    title: "Controller - Scoreboard",
+    titleBarStyle: 'hidden',
+    trafficLightPosition: { x: 10, y: 10 }
   });
 
   if (app.isPackaged) {

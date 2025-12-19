@@ -5,7 +5,7 @@ import { BsPlayCircle } from "react-icons/bs";
 import { BsCollectionPlay } from "react-icons/bs";
 import { BsArrowRepeat } from "react-icons/bs";
 
-function Sidebar({ activeView, onChangeView }) {
+function SideBar({ activeView, onChangeView }) {
   const mainItems = [
     { id: 'controller', icon: <BsTv />, label: 'Controller' },
     { id: 'playlists', icon: <BsCollectionPlay />, label: 'Playlists' },
@@ -33,4 +33,4 @@ function Sidebar({ activeView, onChangeView }) {
   );
 }
 
-export default Sidebar;
+export default SideBar;
