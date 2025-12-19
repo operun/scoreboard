@@ -11,6 +11,8 @@ function OutputView({ preview = false }) {
     const [standardMode, setStandardMode] = useState('BACKGROUND'); // 'BACKGROUND' or 'FULL'
     const [scenePlaylist, setScenePlaylist] = useState(null);
     const [announcement, setAnnouncement] = useState(null);
+    const [announcementDuration, setAnnouncementDuration] = useState(null);
+    const [savedScene, setSavedScene] = useState(null); // Snapshot of scenePlaylist to restore
     const [showScoreboard, setShowScoreboard] = useState(false);
 
     // Current Playback State
@@ -111,26 +113,44 @@ function OutputView({ preview = false }) {
                     }
 
                     // If we receive a new standard playlist, we generally switch to it immediately
-                    // Clearing any scene that might be running
                     setScenePlaylist(null);
                     setCurrentPlaylist(playlist);
                     setCurrentIndex(0);
+                    // Standard playlist change might clear announcement? Let's assume standard behavior:
+                    // Only SHOW_SCENE / SHOW_ANNOUNCEMENT explicitly change announcement state logic.
+                    // But if we start a new playlist, maybe we want to keep announcement if it's overlay?
+                    // For now, let's keep it simple: playlist change does NOT auto-hide announcement
                 }
 
                 if (command === 'SHOW_SCENE') {
                     setScenePlaylist(payload);
                     setCurrentPlaylist(payload);
                     setCurrentIndex(0);
-                    setAnnouncement(null); // Clear announcement when switching scenes unless explicitly kept
+                    setAnnouncement(null); // Clear announcement when switching scenes
+                    setAnnouncementDuration(null);
+                    setSavedScene(null); // Explicit scene change clears restore path
                 }
 
                 if (command === 'SHOW_ANNOUNCEMENT') {
+                    console.log('CMD: SHOW_ANNOUNCEMENT', payload);
                     setAnnouncement(payload.message);
+                    const d = parseInt(payload.duration, 10);
+                    setAnnouncementDuration((!isNaN(d) && d > 0) ? d : null);
+
+                    if (payload.backgroundPlaylist) {
+                        // Save current scene if not already saved (to handle updates to text without losing origin)
+                        setSavedScene(prev => prev !== null ? prev : { playlist: scenePlaylist });
+                        setScenePlaylist(payload.backgroundPlaylist);
+                        setCurrentPlaylist(payload.backgroundPlaylist);
+                        setCurrentIndex(0);
+                    }
                 }
 
                 if (command === 'SHOW_SCOREBOARD') {
                     setScenePlaylist(null);
                     setAnnouncement(null);
+                    setAnnouncementDuration(null);
+                    setSavedScene(null);
                     // Always reset to standard playlist (even if null) to stop any running scene
                     setCurrentPlaylist(standardPlaylist);
                     setCurrentIndex(0);
@@ -143,7 +163,11 @@ function OutputView({ preview = false }) {
                     setCurrentPlaylist(null);
                     setActiveMedia(null);
                     setStandardMode('BACKGROUND');
+                    setActiveMedia(null);
+                    setStandardMode('BACKGROUND');
                     setAnnouncement(null);
+                    setAnnouncementDuration(null);
+                    setSavedScene(null);
                     setShowScoreboard(false);
                 }
 
@@ -155,6 +179,7 @@ function OutputView({ preview = false }) {
                         standardMode,
                         scenePlaylist,
                         announcement,
+                        announcementDuration,
                         showScoreboard,
                         currentPlaylist,
                         // For currentIndex, we send the current one.
@@ -172,6 +197,7 @@ function OutputView({ preview = false }) {
                     setStandardMode(s.standardMode);
                     setScenePlaylist(s.scenePlaylist);
                     setAnnouncement(s.announcement);
+                    setAnnouncementDuration(s.announcementDuration);
                     setShowScoreboard(s.showScoreboard);
                     setCurrentPlaylist(s.currentPlaylist);
                     setCurrentIndex(s.currentIndex);
@@ -181,6 +207,30 @@ function OutputView({ preview = false }) {
             return () => remove();
         }
     }, [standardPlaylist]); // Dependency added to ensure we have latest standardPlaylist
+
+    // --- ANNOUNCEMENT TIMEOUT ---
+    // If an announcement is set WITH a duration, clear it after that time
+    useEffect(() => {
+        if (announcement && announcementDuration) {
+            console.log(`[OutputView] Timer started for ${announcementDuration}s`);
+            const timer = setTimeout(() => {
+                console.log('[OutputView] Timer finished. Clearing.');
+                setAnnouncement(null);
+                setAnnouncementDuration(null);
+
+                // Restore previous scene logic
+                if (savedScene) {
+                    console.log('[OutputView] Restoring saved scene:', savedScene);
+                    setScenePlaylist(savedScene.playlist);
+                    setCurrentPlaylist(savedScene.playlist || standardPlaylist);
+                    setCurrentIndex(0);
+                    setSavedScene(null);
+                }
+
+            }, announcementDuration * 1000);
+            return () => clearTimeout(timer);
+        }
+    }, [announcement, announcementDuration, savedScene, standardPlaylist]);
 
     // --- TIMER LOGIC ---
     useEffect(() => {

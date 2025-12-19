@@ -124,6 +124,7 @@ function ControllerView() {
 
   const [showAnnouncementModal, setShowAnnouncementModal] = useState(false);
   const [announcementText, setAnnouncementText] = useState("");
+  const [announcementDuration, setAnnouncementDuration] = useState("");
 
   const handleSaveClick = () => {
     // Pre-fill name
@@ -234,10 +235,18 @@ function ControllerView() {
   };
 
   const handleAnnouncement = () => {
+    let bgPl = null;
     if (gameState.plAnnouncement) {
-      triggerScene(gameState.plAnnouncement);
+      bgPl = playlists.find(p => p.id === gameState.plAnnouncement) || null;
     }
-    window.electronAPI.sendControlCommand('SHOW_ANNOUNCEMENT', { message: announcementText });
+
+    const payload = {
+      message: announcementText,
+      duration: announcementDuration ? parseInt(announcementDuration, 10) : null,
+      backgroundPlaylist: bgPl
+    };
+    console.log('[Controller] Sending Announcement:', payload);
+    window.electronAPI.sendControlCommand('SHOW_ANNOUNCEMENT', payload);
     setShowAnnouncementModal(false);
   };
 
@@ -501,6 +510,7 @@ function ControllerView() {
             {visibility.announcement && (
               <button className="btn btn-outline-primary" onClick={() => {
                 setAnnouncementText('');
+                setAnnouncementDuration('');
                 setShowAnnouncementModal(true);
               }}>Durchsage</button>
             )}
@@ -560,6 +570,15 @@ function ControllerView() {
                   onChange={e => setAnnouncementText(e.target.value)}
                   autoFocus
                 ></textarea>
+
+                <label className="form-label mt-3">Dauer (Sekunden)</label>
+                <input
+                  type="number"
+                  className="form-control"
+                  placeholder="Leer für dauerhaft"
+                  value={announcementDuration}
+                  onChange={e => setAnnouncementDuration(e.target.value)}
+                />
               </div>
               <div className="modal-footer">
                 <button type="button" className="btn btn-secondary" onClick={() => setShowAnnouncementModal(false)}>Abbrechen</button>
