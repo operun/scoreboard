@@ -295,8 +295,6 @@ function ControllerView() {
         {/* SETUP COLUMN (Scrollable) */}
         <div className="col-md-3 pe-4 h-100" style={{ overflowY: 'auto', overflowX: 'hidden' }}>
 
-          <h5 className="mb-2 text-center">Zuordnung</h5>
-
           <div className="mb-4">
             <PlaylistSelect label="Warmup" value={gameState.plWarmup} onChange={v => updateState('plWarmup', v)} playlists={playlists} />
             <PlaylistSelect label="Countdown" value={gameState.plCountdown} onChange={v => updateState('plCountdown', v)} playlists={playlists} />
@@ -350,7 +348,6 @@ function ControllerView() {
 
         {/* CENTER COLUMN: LIVE CONTROL */}
         <div className="col-md-6 px-5 h-100" style={{ overflowY: 'auto', overflowX: 'hidden' }}>
-          <h4 className="mb-5 text-center">Match</h4>
 
           {/* SCORE & TIME */}
           <div className="d-flex flex-column align-items-center mb-4">
@@ -431,7 +428,6 @@ function ControllerView() {
         <div className="col-md-3 ps-4 psh-100" style={{ overflowY: 'auto', overflowX: 'hidden' }}>
           <div className="d-grid gap-2">
 
-            <h5 className="mb-2 text-center">Vor dem Spiel</h5>
             <button className="btn btn-outline-primary" onClick={() => {
               const pl = playlists.find(p => p.id === gameState.plWarmup);
               if (pl) window.electronAPI.sendControlCommand('PLAY_PLAYLIST', { playlist: pl, mode: 'FULL' });
@@ -440,21 +436,19 @@ function ControllerView() {
             </button>
             <button className="btn btn-outline-primary mb-3" onClick={() => triggerScene(gameState.plCountdown)}>Countdown</button>
 
-            <h5 className="mb-2 text-center">Im Spiel</h5>
             <button className="btn btn-outline-primary" onClick={() => {
               triggerScene(gameState.plGoalHome);
               setGameState(prev => ({ ...prev, homeScore: prev.homeScore + 1 }));
             }}>Tor Heim</button>
-            <button className="btn btn-outline-primary" onClick={() => {
+            <button className="btn btn-outline-primary mb-3" onClick={() => {
               triggerScene(gameState.plGoalGuest);
               setGameState(prev => ({ ...prev, guestScore: prev.guestScore + 1 }));
             }}>Tor Gast</button>
             <button className="btn btn-outline-primary" onClick={() => triggerScene(gameState.plSub)}>Wechsel</button>
             <button className="btn btn-outline-primary" onClick={() => triggerScene(gameState.plYellow)}>Gelbe Karte</button>
             <button className="btn btn-outline-primary" onClick={() => triggerScene(gameState.plRed)}>Rote Karte</button>
-            <button className="btn btn-outline-primary mb-4" onClick={() => triggerScene(gameState.plVar)}>VAR Check</button>
+            <button className="btn btn-outline-primary mb-3" onClick={() => triggerScene(gameState.plVar)}>VAR Check</button>
 
-            <h5 className="mb-2 text-center">Allgemein</h5>
             <button className="btn btn-outline-primary" onClick={() => {
               // 1. Show standard scoreboard
               window.electronAPI.sendControlCommand('SHOW_SCOREBOARD');
@@ -469,7 +463,7 @@ function ControllerView() {
             }}>
               Spielstand
             </button>
-            <button className="btn btn-outline-primary" onClick={() => {
+            <button className="btn btn-outline-primary mb-3" onClick={() => {
               setAnnouncementText('');
               setShowAnnouncementModal(true);
             }}>Durchsage</button>

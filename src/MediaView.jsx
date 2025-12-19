@@ -157,13 +157,12 @@ function MediaView() {
                   <td>{new Date(file.addedAt).toLocaleString('de-DE')}</td>
                   <td>
                     <span
-                      className="me-2 text-success"
+                      className="me-2"
                       onClick={() => handleShow(file)}
                     >
                       <BsPlayCircle />
                     </span>
                     <span
-                      className="me-2 text-danger"
                       onClick={() => handleDeleteMedia(file.id)}
                     >
                       <BsXCircle />

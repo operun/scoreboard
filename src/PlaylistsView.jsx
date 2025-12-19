@@ -80,10 +80,10 @@ function PlaylistsView({ onEdit }) {
                   <td className="w-75">{playlist.title}</td>
                   <td>{new Date(playlist.updated).toLocaleString('de-DE')}</td>
                   <td>
-                    <span onClick={() => onEdit(playlist.id)} className="me-3" style={{ cursor: 'pointer' }}>
+                    <span onClick={() => onEdit(playlist.id)} className="me-2" style={{ cursor: 'pointer' }}>
                       <BsPencil />
                     </span>
-                    <span onClick={() => handleDelete(playlist.id)} className="text-danger" style={{ cursor: 'pointer' }}>
+                    <span onClick={() => handleDelete(playlist.id)} style={{ cursor: 'pointer' }}>
                       <BsXCircle />
                     </span>
                   </td>

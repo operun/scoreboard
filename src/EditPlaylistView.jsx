@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { toast } from 'react-toastify';
-import { BsArrowLeft, BsPlusCircle, BsTrash, BsGripVertical, BsSave } from 'react-icons/bs';
+import { BsArrowLeft, BsPlusCircle, BsTrash, BsGripVertical, BsSave, BsXCircle } from 'react-icons/bs';
 import {
   DndContext,
   closestCenter,
@@ -62,11 +62,11 @@ function SortableItem(props) {
         </div>
 
         <button
-          className="btn btn-sm btn-outline-danger"
+          className="btn btn-link"
           onClick={() => props.onRemove(props.id)}
           title="Entfernen"
         >
-          <BsTrash />
+          <BsXCircle />
         </button>
       </div>
     </div>
