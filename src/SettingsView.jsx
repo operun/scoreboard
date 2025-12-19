@@ -37,16 +37,44 @@ function SettingsView() {
     loadSettings();
   }, []);
 
-  const saveAllSettings = () => {
-    const newSettings = { server, username, password, outputWidth, outputHeight, showCropMarks, themeMode };
+  // Helper to save current state
+  const saveAllSettings = (overrides = {}) => {
+    const newSettings = {
+      server,
+      username,
+      password,
+      outputWidth,
+      outputHeight,
+      showCropMarks,
+      themeMode,
+      ...overrides
+    };
     Object.assign(settingsRef, newSettings);
     window.electronAPI.saveSettings(newSettings);
   };
 
-  const handleSaveOutput = () => {
-    saveAllSettings();
-    toast.success('Einstellungen gespeichert');
+  const handleOutputChange = (changes) => {
+    // Update state and save
+    if ('width' in changes) setOutputWidth(changes.width);
+    if ('height' in changes) setOutputHeight(changes.height);
+    if ('crop' in changes) setShowCropMarks(changes.crop);
+
+    // Prepare save object
+    const saveObj = {};
+    if ('width' in changes) saveObj.outputWidth = changes.width;
+    if ('height' in changes) saveObj.outputHeight = changes.height;
+    if ('crop' in changes) saveObj.showCropMarks = changes.crop;
+
+    saveAllSettings(saveObj);
   };
+
+  const handleConnectionChange = (changes) => {
+    if ('server' in changes) setServer(changes.server);
+    if ('username' in changes) setUsername(changes.username);
+    if ('password' in changes) setPassword(changes.password);
+
+    saveAllSettings(changes);
+  }
 
   const handleTestConnection = async () => {
     const result = await window.electronAPI.testConnection();
@@ -109,7 +137,7 @@ function SettingsView() {
                       type="number"
                       className="form-control"
                       value={outputWidth}
-                      onChange={(e) => setOutputWidth(parseInt(e.target.value) || 1280)}
+                      onChange={(e) => handleOutputChange({ width: parseInt(e.target.value) || 1280 })}
                     />
                   </div>
                 </div>
@@ -120,7 +148,7 @@ function SettingsView() {
                       type="number"
                       className="form-control"
                       value={outputHeight}
-                      onChange={(e) => setOutputHeight(parseInt(e.target.value) || 720)}
+                      onChange={(e) => handleOutputChange({ height: parseInt(e.target.value) || 720 })}
                     />
                   </div>
                 </div>
@@ -131,7 +159,7 @@ function SettingsView() {
                   className="form-check-input"
                   id="cropMarksCheck"
                   checked={showCropMarks}
-                  onChange={(e) => setShowCropMarks(e.target.checked)}
+                  onChange={(e) => handleOutputChange({ crop: e.target.checked })}
                 />
                 <label className="form-check-label" htmlFor="cropMarksCheck">Markierungen anzeigen</label>
               </div>
@@ -161,12 +189,6 @@ function SettingsView() {
                   </button>
                 )}
               </div>
-
-              <div className="d-flex">
-                <button className="btn btn-outline-primary" onClick={handleSaveOutput}>
-                  Speichern
-                </button>
-              </div>
             </>
           )}
 
@@ -178,7 +200,7 @@ function SettingsView() {
                   type="text"
                   className="form-control"
                   value={server}
-                  onChange={(e) => setServer(e.target.value)}
+                  onChange={(e) => handleConnectionChange({ server: e.target.value })}
                 />
               </div>
 
@@ -188,7 +210,7 @@ function SettingsView() {
                   type="text"
                   className="form-control"
                   value={username}
-                  onChange={(e) => setUsername(e.target.value)}
+                  onChange={(e) => handleConnectionChange({ username: e.target.value })}
                 />
               </div>
 
@@ -199,7 +221,7 @@ function SettingsView() {
                     type={showPassword ? 'text' : 'password'}
                     className="form-control"
                     value={password}
-                    onChange={(e) => setPassword(e.target.value)}
+                    onChange={(e) => handleConnectionChange({ password: e.target.value })}
                   />
                   <span
                     className="input-group-text"
@@ -216,12 +238,6 @@ function SettingsView() {
                 <button className="btn btn-outline-primary" onClick={handleTestConnection}>
                   Verbindung testen
                 </button>
-                <button className="btn btn-outline-primary" onClick={() => {
-                  saveAllSettings();
-                  toast.success('Einstellungen gespeichert');
-                }}>
-                  Speichern
-                </button>
               </div>
             </>
           )}
@@ -236,11 +252,9 @@ function SettingsView() {
                   onChange={(e) => {
                     const newMode = e.target.value;
                     setThemeMode(newMode);
-                    const newSettings = { ...settingsRef.current, themeMode: newMode };
-                    Object.assign(settingsRef, newSettings); // Update ref immediately
-                    window.electronAPI.saveSettings(newSettings);
-
-                    // Delay toast slightly so it picks up the new theme
+                    saveAllSettings({ themeMode: newMode });
+                    // Toast logic is handled via settings update, or kept explicitly here?
+                    // Previous logic:
                     setTimeout(() => {
                       toast.success('Design-Modus gespeichert');
                     }, 50);
