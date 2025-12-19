@@ -386,6 +386,24 @@ ipcMain.handle('trigger-output', async (event, media) => {
   return { status: 'error', message: 'Output window not available' };
 });
 
+ipcMain.handle('window-minimize', (event) => {
+  const win = BrowserWindow.fromWebContents(event.sender);
+  if (win) win.minimize();
+});
+
+ipcMain.handle('window-maximize', (event) => {
+  const win = BrowserWindow.fromWebContents(event.sender);
+  if (win) {
+    if (win.isMaximized()) win.unmaximize();
+    else win.maximize();
+  }
+});
+
+ipcMain.handle('window-close', (event) => {
+  const win = BrowserWindow.fromWebContents(event.sender);
+  if (win) win.close();
+});
+
 // --- SYNC TO REMOTE (BIDIRECTIONAL) ---
 ipcMain.handle('sync-to-remote', async () => {
   console.log('[Sync] Starting sync request...');

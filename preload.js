@@ -53,4 +53,12 @@ contextBridge.exposeInMainWorld('electronAPI', {
 
   // Legacy single trigger (can be deprecated later)
   triggerOutput: (media) => ipcRenderer.invoke('trigger-output', media),
+
+  // Window Controls
+  minimizeWindow: () => ipcRenderer.invoke('window-minimize'),
+  maximizeWindow: () => ipcRenderer.invoke('window-maximize'),
+  closeWindow: () => ipcRenderer.invoke('window-close'),
+
+  // Environment
+  platform: process.platform
 });
