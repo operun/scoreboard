@@ -239,9 +239,11 @@ function SettingsView() {
                     const newSettings = { ...settingsRef.current, themeMode: newMode };
                     Object.assign(settingsRef, newSettings); // Update ref immediately
                     window.electronAPI.saveSettings(newSettings);
-                    // Manually trigger local update in case IPC broadcast doesn't reach sender immediately (which is separate issue)
-                    // But actually App.jsx listens to IPC. If main.js only sends to outputWindow, that's the issue.
-                    toast.success('Design-Modus gespeichert');
+
+                    // Delay toast slightly so it picks up the new theme
+                    setTimeout(() => {
+                      toast.success('Design-Modus gespeichert');
+                    }, 50);
                   }}
                 >
                   <option value="system">System (Auto)</option>
