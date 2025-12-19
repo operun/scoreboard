@@ -42,7 +42,7 @@ function ControllerView() {
 
     // Playlist Mappings (IDs)
     plWarmup: '',
-    plCountdown: '',
+    plLineup: '',
     plScoreboard: '', // Hintergrund (Spielstand)
     plHalfTime: '',
     plEnd: '',     // Abpfiff
@@ -66,7 +66,7 @@ function ControllerView() {
 
   // Visibility Settings
   const [visibility, setVisibility] = useState({
-    warmup: true, countdown: true, scoreboard: true, halftime: true, end: true,
+    warmup: true, lineup: true, scoreboard: true, halftime: true, end: true,
     goalHome: true, goalGuest: true, sub: true, yellow: true, red: true, var: true, announcement: true
   });
 
@@ -104,7 +104,7 @@ function ControllerView() {
 
       // Ensure we keep defaults if preset misses new fields
       plWarmup: preset.plWarmup || preset.plDefault || preset.plSponsors || '',
-      plCountdown: preset.plCountdown || '',
+      plLineup: preset.plLineup || '',
       plScoreboard: preset.plScoreboard || preset.plBackground || preset.plKickoff || '',
       plHalfTime: preset.plHalfTime || '',
       plEnd: preset.plEnd || '',
@@ -311,7 +311,7 @@ function ControllerView() {
 
           <div className="mb-4">
             {visibility.warmup && <PlaylistSelect label="Warmup" value={gameState.plWarmup} onChange={v => updateState('plWarmup', v)} playlists={playlists} />}
-            {visibility.countdown && <PlaylistSelect label="Countdown" value={gameState.plCountdown} onChange={v => updateState('plCountdown', v)} playlists={playlists} />}
+            {visibility.lineup && <PlaylistSelect label="Aufstellung" value={gameState.plLineup} onChange={v => updateState('plLineup', v)} playlists={playlists} />}
             {visibility.scoreboard && <PlaylistSelect label="Spielstand" value={gameState.plScoreboard} onChange={v => updateState('plScoreboard', v)} playlists={playlists} />}
             {visibility.halftime && <PlaylistSelect label="Halbzeit" value={gameState.plHalfTime} onChange={v => updateState('plHalfTime', v)} playlists={playlists} />}
             {visibility.end && <PlaylistSelect label="Abpfiff" value={gameState.plEnd} onChange={v => updateState('plEnd', v)} playlists={playlists} />}
@@ -343,8 +343,9 @@ function ControllerView() {
                   // Reset to defaults
                   setGameState(prev => ({
                     homeScore: 0, guestScore: 0,
+                    homeScore: 0, guestScore: 0,
                     matchState: 'PRE_GAME', timerStart: null, timerOffset: 0, timerRunning: false,
-                    plWarmup: '', plCountdown: '', plScoreboard: '', plHalfTime: '', plEnd: '',
+                    plWarmup: '', plLineup: '', plScoreboard: '', plHalfTime: '', plEnd: '',
                     plGoalHome: '', plGoalGuest: '', plSub: '', plYellow: '', plRed: '', plVar: '', plAnnouncement: ''
                   }));
                 } else {
@@ -402,10 +403,8 @@ function ControllerView() {
             </div>
           </div>
 
-          <div className="mb-0">
-            <div className="mt-4 border rounded bg-dark" style={{ width: '100%', overflow: 'hidden' }}>
-              <OutputView preview={true} />
-            </div>
+          <div style={{ width: '100%', overflow: 'hidden' }}>
+            <OutputView preview={true} />
           </div>
 
         </div>
@@ -422,20 +421,27 @@ function ControllerView() {
                 Warmup
               </button>
             )}
-            {visibility.countdown && <button className="btn btn-outline-primary mb-3" onClick={() => triggerScene(gameState.plCountdown)}>Countdown</button>}
 
-            <button className="btn btn-outline-primary w-100" onClick={() => startMatchState('FIRST_HALF')}>
-              Anpfiff 1. Halbzeit
-            </button>
-            <button className="btn btn-outline-primary w-100" onClick={() => startMatchState('HALF_TIME')}>
-              Abpfiff 1. Halbzeit
-            </button>
-            <button className="btn btn-outline-primary w-100" onClick={() => startMatchState('SECOND_HALF')}>
-              Anpfiff 2. Halbzeit
-            </button>
-            <button className="btn btn-outline-primary w-100" onClick={() => startMatchState('POST_GAME')}>
-              Abpfiff 2. Halbzeit
-            </button>
+            {visibility.lineup && (
+              <button className="btn btn-outline-primary" onClick={() => triggerScene(gameState.plLineup)}>
+                Aufstellung
+              </button>
+            )}
+
+            <div className="d-grid gap-2 my-3">
+              <button className="btn btn-outline-primary w-100" onClick={() => startMatchState('FIRST_HALF')}>
+                Anpfiff 1. Halbzeit
+              </button>
+              <button className="btn btn-outline-primary w-100" onClick={() => startMatchState('HALF_TIME')}>
+                Abpfiff 1. Halbzeit
+              </button>
+              <button className="btn btn-outline-primary w-100" onClick={() => startMatchState('SECOND_HALF')}>
+                Anpfiff 2. Halbzeit
+              </button>
+              <button className="btn btn-outline-primary w-100" onClick={() => startMatchState('POST_GAME')}>
+                Abpfiff 2. Halbzeit
+              </button>
+            </div>
 
             {visibility.goalHome && (
               <button className="btn btn-outline-primary" onClick={() => {
@@ -443,17 +449,37 @@ function ControllerView() {
                 setGameState(prev => ({ ...prev, homeScore: prev.homeScore + 1 }));
               }}>Tor Heim</button>
             )}
+
             {visibility.goalGuest && (
-              <button className="btn btn-outline-primary mb-3" onClick={() => {
+              <button className="btn btn-outline-primary" onClick={() => {
                 triggerScene(gameState.plGoalGuest);
                 setGameState(prev => ({ ...prev, guestScore: prev.guestScore + 1 }));
               }}>Tor Gast</button>
             )}
 
-            {visibility.sub && <button className="btn btn-outline-primary" onClick={() => triggerScene(gameState.plSub)}>Wechsel</button>}
-            {visibility.yellow && <button className="btn btn-outline-primary" onClick={() => triggerScene(gameState.plYellow)}>Gelbe Karte</button>}
-            {visibility.red && <button className="btn btn-outline-primary" onClick={() => triggerScene(gameState.plRed)}>Rote Karte</button>}
-            {visibility.var && <button className="btn btn-outline-primary mb-3" onClick={() => triggerScene(gameState.plVar)}>VAR Check</button>}
+            {visibility.sub && (
+              <button className="btn btn-outline-primary" onClick={() => triggerScene(gameState.plSub)}>
+                Wechsel
+              </button>
+            )}
+
+            {visibility.yellow && (
+              <button className="btn btn-outline-primary" onClick={() => triggerScene(gameState.plYellow)}>
+                Gelbe Karte
+              </button>
+            )}
+
+            {visibility.red && (
+              <button className="btn btn-outline-primary" onClick={() => triggerScene(gameState.plRed)}>
+                Rote Karte
+              </button>
+            )}
+
+            {visibility.var && (
+              <button className="btn btn-outline-primary" onClick={() => triggerScene(gameState.plVar)}>
+                VAR Check
+              </button>
+            )}
 
             {visibility.scoreboard && (
               <button className="btn btn-outline-primary" onClick={() => {
@@ -471,15 +497,18 @@ function ControllerView() {
                 Spielstand
               </button>
             )}
+
             {visibility.announcement && (
-              <button className="btn btn-outline-primary mb-3" onClick={() => {
+              <button className="btn btn-outline-primary" onClick={() => {
                 setAnnouncementText('');
                 setShowAnnouncementModal(true);
               }}>Durchsage</button>
             )}
-            <button className="btn btn-outline-danger" onClick={() => { window.electronAPI.sendControlCommand('STOP_OUTPUT', {}); }}>
+
+            <button className="btn btn-outline-danger my-3" onClick={() => { window.electronAPI.sendControlCommand('STOP_OUTPUT', {}); }}>
               Ausgabe anhalten
             </button>
+
           </div>
         </div>
 

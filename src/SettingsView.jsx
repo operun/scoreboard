@@ -14,7 +14,7 @@ function SettingsView() {
   const [themeMode, setThemeMode] = useState('system');
   const [controllerVisibility, setControllerVisibility] = useState({
     warmup: true,
-    countdown: true,
+    lineup: true,
     scoreboard: true,
     halftime: true,
     end: true,
@@ -293,7 +293,7 @@ function SettingsView() {
                 <div className="d-flex flex-column gap-1">
                   {[
                     { key: 'warmup', label: 'Warmup' },
-                    { key: 'countdown', label: 'Countdown' },
+                    { key: 'lineup', label: 'Aufstellung' },
                     { key: 'scoreboard', label: 'Spielstand' },
                     { key: 'halftime', label: 'Halbzeit' },
                     { key: 'end', label: 'Abpfiff' },
