@@ -11,27 +11,36 @@ function SettingsView() {
   const [outputHeight, setOutputHeight] = useState(720);
   const [showCropMarks, setShowCropMarks] = useState(true);
   const [customTestImageName, setCustomTestImageName] = useState(null);
+  const [themeMode, setThemeMode] = useState('system');
 
   const [activeTab, setActiveTab] = useState('output');
+  const settingsRef = useState({})[0]; // Need a ref to hold full settings for partial updates if needed, or just re-read. Simpler: just reload on mount. 
+  // Actually, let's keep it simple. We read all, set state. On save, we write state. 
+  // BUT the tab "appearance" saves immediately in my previous snippet. 
+  // Let's make sure loadSettings populates themeMode.
 
   useEffect(() => {
     const loadSettings = async () => {
       const settings = await window.electronAPI.loadSettings();
       if (settings) {
+        Object.assign(settingsRef, settings); // Sync ref
         setServer(settings.server || '');
         setUsername(settings.username || '');
         setPassword(settings.password || '');
         if (settings.outputWidth) setOutputWidth(settings.outputWidth);
         if (settings.outputHeight) setOutputHeight(settings.outputHeight);
-        setShowCropMarks(settings.showCropMarks !== false); // Default true
+        setShowCropMarks(settings.showCropMarks !== false);
         if (settings.customTestImageName) setCustomTestImageName(settings.customTestImageName);
+        if (settings.themeMode) setThemeMode(settings.themeMode);
       }
     };
     loadSettings();
   }, []);
 
   const saveAllSettings = () => {
-    window.electronAPI.saveSettings({ server, username, password, outputWidth, outputHeight, showCropMarks });
+    const newSettings = { server, username, password, outputWidth, outputHeight, showCropMarks, themeMode };
+    Object.assign(settingsRef, newSettings);
+    window.electronAPI.saveSettings(newSettings);
   };
 
   const handleSaveOutput = () => {
@@ -72,6 +81,14 @@ function SettingsView() {
               onClick={() => setActiveTab('connection')}
             >
               Verbindung
+            </button>
+          </li>
+          <li className="nav-item">
+            <button
+              className={`nav-link ${activeTab === 'appearance' ? 'active' : ''}`}
+              onClick={() => setActiveTab('appearance')}
+            >
+              Aussehen
             </button>
           </li>
         </ul>
@@ -205,6 +222,35 @@ function SettingsView() {
                 }}>
                   Speichern
                 </button>
+              </div>
+            </>
+          )}
+
+          {activeTab === 'appearance' && (
+            <>
+              <div className="mb-4">
+                <label className="form-label">Modus</label>
+                <select
+                  className="form-select"
+                  value={themeMode}
+                  onChange={(e) => {
+                    const newMode = e.target.value;
+                    setThemeMode(newMode);
+                    const newSettings = { ...settingsRef.current, themeMode: newMode };
+                    Object.assign(settingsRef, newSettings); // Update ref immediately
+                    window.electronAPI.saveSettings(newSettings);
+                    // Manually trigger local update in case IPC broadcast doesn't reach sender immediately (which is separate issue)
+                    // But actually App.jsx listens to IPC. If main.js only sends to outputWindow, that's the issue.
+                    toast.success('Design-Modus gespeichert');
+                  }}
+                >
+                  <option value="system">System (Auto)</option>
+                  <option value="light">Hell</option>
+                  <option value="dark">Dunkel</option>
+                </select>
+                <div className="form-text">
+                  Wähle zwischen hellem und dunklem Design oder folge der Systemeinstellung.
+                </div>
               </div>
             </>
           )}

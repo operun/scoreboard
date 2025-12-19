@@ -1,5 +1,5 @@
 import { ToastContainer, toast } from 'react-toastify';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import TitleBar from './components/TitleBar';
 import SideBar from './components/SideBar';
 import ControllerView from './ControllerView';
@@ -19,8 +19,52 @@ function App() {
   // Check if we are running as the output window
   const isOutputWindow = window.location.hash === '#/output';
 
-  const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-  const color_mode = prefersDark ? 'dark' : 'light';
+  // --- Theme Logic ---
+  // Default to system
+  const [themeMode, setThemeMode] = useState('system');
+  const [effectiveTheme, setEffectiveTheme] = useState('light');
+
+  // Load theme setting on mount
+  useEffect(() => {
+    window.electronAPI.loadSettings().then(s => {
+      if (s && s.themeMode) setThemeMode(s.themeMode);
+    });
+
+    // Listen for updates from settings view
+    const unsub = window.electronAPI.onSettingsUpdated((err, s) => {
+      if (!err && s.themeMode) setThemeMode(s.themeMode);
+    });
+    return () => { if (unsub) unsub(); };
+  }, []);
+
+  // Calculate effective theme
+  // We need to listen to system changes if mode is system
+  useEffect(() => {
+    const handleSystemChange = (e) => {
+      if (themeMode === 'system') {
+        setEffectiveTheme(e.matches ? 'dark' : 'light');
+      }
+    };
+
+    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+    mediaQuery.addEventListener('change', handleSystemChange);
+
+    // Initial check or update on themeMode change
+    if (themeMode === 'system') {
+      setEffectiveTheme(mediaQuery.matches ? 'dark' : 'light');
+    } else {
+      setEffectiveTheme(themeMode);
+    }
+
+    return () => mediaQuery.removeEventListener('change', handleSystemChange);
+  }, [themeMode]);
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-bs-theme', effectiveTheme);
+  }, [effectiveTheme]);
+
+  const color_mode = effectiveTheme;
+  // -------------------
 
   const handleSync = async () => {
     const toastId = toast.loading("Synchronisation gestartet.");
@@ -42,8 +86,8 @@ function App() {
   if (isOutputWindow) {
     return (
       <>
-        <TitleBar />
-        <div style={{ paddingTop: '30px', height: '100vh', boxSizing: 'border-box' }}>
+        <TitleBar title="Output" />
+        <div style={{ paddingTop: '30px', height: '100vh', boxSizing: 'border-box', backgroundColor: '#000', color: '#fff' }}>
           <OutputView />
         </div>
       </>
@@ -52,10 +96,10 @@ function App() {
 
   return (
     <div className="app">
-      <TitleBar />
+      <TitleBar title="Scoreboard" />
       <div className="d-flex position-relative" style={{ paddingTop: '35px', height: '100vh', boxSizing: 'border-box' }}>
 
-        <div className="sidebar d-flex flex-column text-white" style={{ height: 'calc(100vh - 35px)' }}>
+        <div className="sidebar d-flex flex-column border-end bg-body-tertiary" style={{ height: 'calc(100vh - 35px)', width: '60px' }}>
           <SideBar activeView={view} onChangeView={(newView) => {
             if (newView === 'sync') {
               handleSync();

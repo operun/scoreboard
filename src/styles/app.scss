@@ -1,8 +1,8 @@
 // app.scss
 
 .sidebar {
-    background-color: $sidebar-bg;
-    width: 50px;
-    min-width: 50px;
-    max-width: 50px;
+    // background-color: $sidebar-bg; // Removed to allow theme-based colors
+    width: 60px;
+    min-width: 60px;
+    max-width: 60px;
 }

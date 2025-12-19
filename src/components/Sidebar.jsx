@@ -22,8 +22,10 @@ function SideBar({ activeView, onChangeView }) {
             key={item.id}
             onClick={() => onChangeView(item.id)}
             title={item.label}
-            className={`text-center fs-5 py-1 ${activeView === item.id ? 'text-white border-start border-white' : 'text-white-50 border-start border-black'} cursor-pointer`}
-            style={{ width: '100%' }}
+            className={`text-center fs-5 py-2 ${activeView === item.id ? 'text-primary border-start border-primary border-3' : 'text-body-secondary border-start border-0'} cursor-pointer`}
+            style={{ width: '100%', transition: 'all 0.2s', cursor: 'pointer' }}
+            onMouseOver={(e) => { if (activeView !== item.id) e.currentTarget.classList.add('text-body'); }}
+            onMouseOut={(e) => { if (activeView !== item.id) e.currentTarget.classList.remove('text-body'); }}
           >
             {item.icon}
           </div>

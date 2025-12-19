@@ -59,6 +59,10 @@ ipcMain.handle('save-settings', async (event, settings) => {
   if (outputWindow && !outputWindow.isDestroyed()) {
     outputWindow.webContents.send('settings-updated', settings);
   }
+
+  // Also send to the sender window (Main Window / Controller) if it's different or just always
+  // event.sender is the webContents of the caller.
+  event.sender.send('settings-updated', settings);
 });
 
 ipcMain.handle('test-connection', async () => {
