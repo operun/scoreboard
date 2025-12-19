@@ -1,10 +1,10 @@
 import { useState, useEffect, useRef } from 'react';
 import testImage from '../assets/testbild.png';
 
-function OutputView() {
+function OutputView({ preview = false }) {
     useEffect(() => {
-        document.title = 'Output - Scoreboard';
-    }, []);
+        if (!preview) document.title = 'Output - Scoreboard';
+    }, [preview]);
 
     // -- CONTENT STATE --
     const [standardPlaylist, setStandardPlaylist] = useState(null);
@@ -60,6 +60,11 @@ function OutputView() {
             applySettings(settings);
         };
         loadSettings();
+
+        // If PREVIEW, request sync from the main output
+        if (preview) {
+            window.electronAPI.sendControlCommand('REQUEST_SYNC', {});
+        }
 
         // Listen for updates from SettingsView
         if (window.electronAPI.onSettingsUpdated) {
@@ -140,6 +145,37 @@ function OutputView() {
                     setStandardMode('BACKGROUND');
                     setAnnouncement(null);
                     setShowScoreboard(false);
+                }
+
+                // --- SYNC MECHANISM ---
+                if (command === 'REQUEST_SYNC' && !preview) {
+                    // MAIN OUTPUT: Respond with current state
+                    window.electronAPI.sendControlCommand('SYNC_STATUS', {
+                        standardPlaylist,
+                        standardMode,
+                        scenePlaylist,
+                        announcement,
+                        showScoreboard,
+                        currentPlaylist,
+                        // For currentIndex, we send the current one.
+                        // Ideally we might want to sync start timestamps to overlap video perfectly,
+                        // but simple index sync is often "good enough" for preview.
+                        currentIndex,
+                        gameState
+                    });
+                }
+
+                if (command === 'SYNC_STATUS' && preview) {
+                    // PREVIEW: Adopt the state
+                    const s = payload;
+                    setStandardPlaylist(s.standardPlaylist);
+                    setStandardMode(s.standardMode);
+                    setScenePlaylist(s.scenePlaylist);
+                    setAnnouncement(s.announcement);
+                    setShowScoreboard(s.showScoreboard);
+                    setCurrentPlaylist(s.currentPlaylist);
+                    setCurrentIndex(s.currentIndex);
+                    setGameState(s.gameState);
                 }
             });
             return () => remove();
@@ -236,9 +272,9 @@ function OutputView() {
     // Outer container: Centers the output view in the window (Letterboxing)
     return (
         <div style={{
-            backgroundColor: '#111',
-            height: '100vh',
-            width: '100vw',
+            backgroundColor: preview ? 'transparent' : '#111',
+            height: preview ? '100%' : '100vh',
+            width: preview ? '100%' : '100vw',
             display: 'flex',
             justifyContent: 'center',
             alignItems: 'center',
@@ -246,8 +282,9 @@ function OutputView() {
         }}>
             {/* Inner Container: Fixed resolution based on settings */}
             <div style={{
-                width: outputSize.width,
-                height: outputSize.height,
+                width: preview ? '100%' : outputSize.width,
+                height: preview ? '100%' : outputSize.height,
+                aspectRatio: preview ? `${outputSize.width} / ${outputSize.height}` : undefined,
                 position: 'relative',
                 overflow: 'hidden',
                 backgroundColor: 'black',
@@ -263,7 +300,7 @@ function OutputView() {
                                 key={activeMedia.id}
                                 src={`file://${activeMedia.path}`}
                                 autoPlay
-                                muted={false}
+                                muted={preview ? true : false}
                                 style={{ width: '100%', height: '100%', objectFit: 'contain' }}
                                 onEnded={handleMediaEnd}
                             />

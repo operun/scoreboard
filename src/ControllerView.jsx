@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { toast } from 'react-toastify';
+import OutputView from './OutputView';
 import { BsFloppy } from "react-icons/bs";
 
 // Helper Component defined outside to prevent re-mounting on parent re-renders
@@ -401,37 +402,9 @@ function ControllerView() {
             </div>
           </div>
 
-          {/* PHASES */}
-
-          <div className="mb-4">
-            <h4 className="mb-3 text-center">1. Halbzeit</h4>
-            <div className="row g-3">
-              <div className="col-6">
-                <button className="btn btn-outline-primary w-100" onClick={() => startMatchState('FIRST_HALF')}>
-                  Anpfiff
-                </button>
-              </div>
-              <div className="col-6">
-                <button className="btn btn-outline-primary w-100" onClick={() => startMatchState('HALF_TIME')}>
-                  Abpfiff
-                </button>
-              </div>
-            </div>
-          </div>
-
           <div className="mb-0">
-            <h4 className="mb-3 text-center">2. Halbzeit</h4>
-            <div className="row g-3">
-              <div className="col-6">
-                <button className="btn btn-outline-primary w-100" onClick={() => startMatchState('SECOND_HALF')}>
-                  Anpfiff
-                </button>
-              </div>
-              <div className="col-6">
-                <button className="btn btn-outline-primary w-100" onClick={() => startMatchState('POST_GAME')}>
-                  Abpfiff
-                </button>
-              </div>
+            <div className="mt-4 border rounded bg-dark" style={{ width: '100%', overflow: 'hidden' }}>
+              <OutputView preview={true} />
             </div>
           </div>
 
@@ -450,6 +423,19 @@ function ControllerView() {
               </button>
             )}
             {visibility.countdown && <button className="btn btn-outline-primary mb-3" onClick={() => triggerScene(gameState.plCountdown)}>Countdown</button>}
+
+            <button className="btn btn-outline-primary w-100" onClick={() => startMatchState('FIRST_HALF')}>
+              Anpfiff 1. Halbzeit
+            </button>
+            <button className="btn btn-outline-primary w-100" onClick={() => startMatchState('HALF_TIME')}>
+              Abpfiff 1. Halbzeit
+            </button>
+            <button className="btn btn-outline-primary w-100" onClick={() => startMatchState('SECOND_HALF')}>
+              Anpfiff 2. Halbzeit
+            </button>
+            <button className="btn btn-outline-primary w-100" onClick={() => startMatchState('POST_GAME')}>
+              Abpfiff 2. Halbzeit
+            </button>
 
             {visibility.goalHome && (
               <button className="btn btn-outline-primary" onClick={() => {

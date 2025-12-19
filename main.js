@@ -375,11 +375,13 @@ ipcMain.handle('save-preset', (event, updated) => {
 });
 
 ipcMain.handle('control-command', async (event, { command, payload }) => {
-  if (outputWindow && !outputWindow.isDestroyed()) {
-    outputWindow.webContents.send('control-command', { command, payload });
-    return { status: 'ok' };
-  }
-  return { status: 'error', message: 'Output window not available' };
+  BrowserWindow.getAllWindows().forEach(win => {
+    if (!win.isDestroyed()) {
+      win.webContents.send('control-command', { command, payload });
+    }
+  });
+
+  return { status: 'ok' };
 });
 
 ipcMain.handle('trigger-output', async (event, media) => {
