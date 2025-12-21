@@ -368,10 +368,23 @@ ipcMain.handle('save-preset', (event, updated) => {
 
   const now = Date.now();
   if (index !== -1) list[index] = { ...updated, updatedAt: now };
-  else list.push({ ...updated, updatedAt: now, deleted: false });
+  else list.push({ ...updated, updatedAt: now }); // Removed deleted: false as we don't use soft deletes anymore
 
   savePresetsList(list);
   return { status: 'ok' };
+});
+
+ipcMain.handle('delete-preset', (event, id) => {
+  let list = loadPresetsList();
+  // Hard delete: Filter out the item with the given ID
+  const initialLength = list.length;
+  list = list.filter(p => p.id !== id);
+
+  if (list.length !== initialLength) {
+    savePresetsList(list);
+    return { status: 'ok' };
+  }
+  return { status: 'error', message: 'Not found' };
 });
 
 ipcMain.handle('control-command', async (event, { command, payload }) => {

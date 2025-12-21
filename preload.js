@@ -19,6 +19,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // Presets
   loadPresets: () => ipcRenderer.invoke('load-presets'),
   savePreset: (preset) => ipcRenderer.invoke('save-preset', preset),
+  deletePreset: (id) => ipcRenderer.invoke('delete-preset', id),
 
   // Communication for Output Window
   onUpdateOutput: (callback) => {

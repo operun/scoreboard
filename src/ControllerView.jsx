@@ -51,10 +51,8 @@ function ControllerView() {
     plSub: '',
     plYellow: '',
     plRed: '',
-    plRed: '',
     plVar: '',
     plSpecial: '',
-    plCorner: '',
     plCorner: '',
     plOvertime: '',
     plAnnouncement: ''
@@ -74,6 +72,21 @@ function ControllerView() {
     warmup: true, lineup: true, scoreboard: true, halftime: true, end: true,
     goalHome: true, goalGuest: true, sub: true, yellow: true, red: true, var: true, special: true, corner: true, overtime: true, announcement: true
   });
+
+  const confirmSave = async () => {
+    if (!presetName) return;
+    const id = window.crypto.randomUUID();
+    await savePresetInternal(id, presetName);
+    setShowSaveModal(false);
+    toast.success("Preset gespeichert!");
+    // After saving, load the newly saved preset
+    const newPresets = await window.electronAPI.loadPresets();
+    setPresets(newPresets);
+    const newPreset = newPresets.find(p => p.id === id);
+    if (newPreset) {
+      loadPreset(newPreset);
+    }
+  };
 
   useEffect(() => {
     const loadData = async () => {
@@ -206,7 +219,12 @@ function ControllerView() {
     // So if I save it with `deleted: true`, it should work!
 
     try {
-      await window.electronAPI.savePreset({ ...current, deleted: true });
+      if (window.electronAPI.deletePreset) {
+        await window.electronAPI.deletePreset(currentPresetId);
+      } else {
+        // Fallback if preload not updated yet (though I should update it)
+        await window.electronAPI.savePreset({ ...current, deleted: true });
+      }
 
       const newPresets = presets.filter(p => p.id !== currentPresetId);
       setPresets(newPresets);
