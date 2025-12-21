@@ -137,6 +137,8 @@ function OutputView({ preview = false }) {
                     setCurrentIndex(0);
                     setAnnouncement(null); // Clear announcement when switching scenes
                     setAnnouncementDuration(null);
+                    setSubstitution(null);
+                    setCard(null);
                     setSavedScene(null); // Explicit scene change clears restore path
                 }
 

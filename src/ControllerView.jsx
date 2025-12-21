@@ -4,7 +4,7 @@ import OutputView from './OutputView';
 import { BsFloppy } from "react-icons/bs";
 
 // Helper Component defined outside to prevent re-mounting on parent re-renders
-const PlaylistSelect = ({ label, value, onChange, playlists }) => (
+const PlaylistSelect = ({ label, value, onChange, playlists, showStandard = false }) => (
   <div className="mb-2">
     <label className="form-label text-muted small ms-1 mb-1">{label}</label>
     <select
@@ -13,6 +13,7 @@ const PlaylistSelect = ({ label, value, onChange, playlists }) => (
       onChange={e => onChange(e.target.value)}
     >
       <option value="">- Ignorieren -</option>
+      {showStandard && <option value="STANDARD">- Standard -</option>}
       {playlists.map(p => <option key={p.id} value={p.id}>{p.title}</option>)}
     </select>
   </div>
@@ -434,36 +435,65 @@ function ControllerView() {
   };
 
   const handleSubstitution = () => {
-    let bgPl = null;
-    if (gameState.plSub) {
-      bgPl = playlists.find(p => p.id === gameState.plSub) || null;
+    const plId = gameState.plSub;
+
+    // 1. Ignorieren
+    if (!plId) {
+      setShowSubstitutionModal(false);
+      return;
     }
 
+    // 2. Playlist Selected
+    if (plId !== 'STANDARD') {
+      const pl = playlists.find(p => p.id === plId);
+      if (pl) {
+        console.log('[Controller] Substitution -> Playing Scene:', pl.title);
+        window.electronAPI.sendControlCommand('SHOW_SCENE', pl);
+      }
+      setShowSubstitutionModal(false);
+      return;
+    }
+
+    // 3. Standard
     const payload = {
       inNr: subIn,
       outNr: subOut,
       duration: subDuration ? parseInt(subDuration, 10) : null,
-      backgroundPlaylist: bgPl
+      backgroundPlaylist: null
     };
-    console.log('[Controller] Sending Substitution:', payload);
+    console.log('[Controller] Sending Substitution (Standard):', payload);
     window.electronAPI.sendControlCommand('SHOW_SUBSTITUTION', payload);
     setShowSubstitutionModal(false);
   };
 
   const handleCard = () => {
-    let bgPl = null;
     const plId = cardType === 'red' ? gameState.plRed : gameState.plYellow;
-    if (plId) {
-      bgPl = playlists.find(p => p.id === plId) || null;
+
+    // 1. Ignorieren
+    if (!plId) {
+      setShowCardModal(false);
+      return;
     }
 
+    // 2. Playlist
+    if (plId !== 'STANDARD') {
+      const pl = playlists.find(p => p.id === plId);
+      if (pl) {
+        console.log(`[Controller] ${cardType} Card -> Playing Scene:`, pl.title);
+        window.electronAPI.sendControlCommand('SHOW_SCENE', pl);
+      }
+      setShowCardModal(false);
+      return;
+    }
+
+    // 3. Standard
     const payload = {
       type: cardType,
       playerNr: cardPlayerNr,
       duration: cardDuration ? parseInt(cardDuration, 10) : null,
-      backgroundPlaylist: bgPl
+      backgroundPlaylist: null
     };
-    console.log(`[Controller] Sending ${cardType} Card:`, payload);
+    console.log(`[Controller] Sending ${cardType} Card (Standard):`, payload);
     window.electronAPI.sendControlCommand('SHOW_CARD', payload);
     setShowCardModal(false);
   };
@@ -550,9 +580,9 @@ function ControllerView() {
           </div>
 
           <div className="mb-4">
-            {visibility.sub && <PlaylistSelect label="Wechsel" value={gameState.plSub} onChange={v => updateState('plSub', v)} playlists={playlists} />}
-            {visibility.yellow && <PlaylistSelect label="Gelbe Karte" value={gameState.plYellow} onChange={v => updateState('plYellow', v)} playlists={playlists} />}
-            {visibility.red && <PlaylistSelect label="Rote Karte" value={gameState.plRed} onChange={v => updateState('plRed', v)} playlists={playlists} />}
+            {visibility.sub && <PlaylistSelect label="Wechsel" value={gameState.plSub} onChange={v => updateState('plSub', v)} playlists={playlists} showStandard={true} />}
+            {visibility.yellow && <PlaylistSelect label="Gelbe Karte" value={gameState.plYellow} onChange={v => updateState('plYellow', v)} playlists={playlists} showStandard={true} />}
+            {visibility.red && <PlaylistSelect label="Rote Karte" value={gameState.plRed} onChange={v => updateState('plRed', v)} playlists={playlists} showStandard={true} />}
             {visibility.var && <PlaylistSelect label="VAR Check" value={gameState.plVar} onChange={v => updateState('plVar', v)} playlists={playlists} />}
             {visibility.corner && <PlaylistSelect label="Eckstoß" value={gameState.plCorner} onChange={v => updateState('plCorner', v)} playlists={playlists} />}
           </div>
@@ -706,6 +736,10 @@ function ControllerView() {
 
             {visibility.sub && (
               <button className="btn btn-outline-primary" onClick={() => {
+                if (!gameState.plSub) {
+                  toast.warn("Keine Playlist für diese Szene ausgewählt!");
+                  return;
+                }
                 setSubIn('');
                 setSubOut('');
                 setSubDuration('10');
@@ -721,6 +755,10 @@ function ControllerView() {
 
             {visibility.yellow && (
               <button className="btn btn-outline-primary" onClick={() => {
+                if (!gameState.plYellow) {
+                  toast.warn("Keine Playlist für diese Szene ausgewählt!");
+                  return;
+                }
                 setCardType('yellow');
                 setCardPlayerNr('');
                 setCardDuration('10');
@@ -730,6 +768,10 @@ function ControllerView() {
 
             {visibility.red && (
               <button className="btn btn-outline-primary" onClick={() => {
+                if (!gameState.plRed) {
+                  toast.warn("Keine Playlist für diese Szene ausgewählt!");
+                  return;
+                }
                 setCardType('red');
                 setCardPlayerNr('');
                 setCardDuration('10');
