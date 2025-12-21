@@ -167,6 +167,11 @@ function ControllerView() {
   const [subOut, setSubOut] = useState("");
   const [subDuration, setSubDuration] = useState("10"); // Default 10s?
 
+  const [showCardModal, setShowCardModal] = useState(false);
+  const [cardType, setCardType] = useState('yellow'); // 'yellow' or 'red'
+  const [cardPlayerNr, setCardPlayerNr] = useState("");
+  const [cardDuration, setCardDuration] = useState("10");
+
   const [showOvertimeModal, setShowOvertimeModal] = useState(false);
   const [overtimeInput, setOvertimeInput] = useState("");
 
@@ -445,6 +450,24 @@ function ControllerView() {
     setShowSubstitutionModal(false);
   };
 
+  const handleCard = () => {
+    let bgPl = null;
+    const plId = cardType === 'red' ? gameState.plRed : gameState.plYellow;
+    if (plId) {
+      bgPl = playlists.find(p => p.id === plId) || null;
+    }
+
+    const payload = {
+      type: cardType,
+      playerNr: cardPlayerNr,
+      duration: cardDuration ? parseInt(cardDuration, 10) : null,
+      backgroundPlaylist: bgPl
+    };
+    console.log(`[Controller] Sending ${cardType} Card:`, payload);
+    window.electronAPI.sendControlCommand('SHOW_CARD', payload);
+    setShowCardModal(false);
+  };
+
   // Generic Control Command Sender (Live Game State)
   useEffect(() => {
     if (currentPresetId !== 'new' || gameState.homeScore > 0) {
@@ -697,15 +720,21 @@ function ControllerView() {
             )}
 
             {visibility.yellow && (
-              <button className="btn btn-outline-primary" onClick={() => triggerScene(gameState.plYellow, 'Gelbe Karte')}>
-                Gelbe Karte
-              </button>
+              <button className="btn btn-outline-primary" onClick={() => {
+                setCardType('yellow');
+                setCardPlayerNr('');
+                setCardDuration('10');
+                setShowCardModal(true);
+              }}>Gelbe Karte</button>
             )}
 
             {visibility.red && (
-              <button className="btn btn-outline-primary" onClick={() => triggerScene(gameState.plRed, 'Rote Karte')}>
-                Rote Karte
-              </button>
+              <button className="btn btn-outline-primary" onClick={() => {
+                setCardType('red');
+                setCardPlayerNr('');
+                setCardDuration('10');
+                setShowCardModal(true);
+              }}>Rote Karte</button>
             )}
 
             {visibility.var && (
@@ -904,6 +933,44 @@ function ControllerView() {
               <div className="modal-footer">
                 <button type="button" className="btn btn-secondary" onClick={() => setShowSubstitutionModal(false)}>Abbrechen</button>
                 <button type="button" className="btn btn-primary" onClick={handleSubstitution}>Übernehmen</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* CARD MODAL */}
+      {showCardModal && (
+        <div className="modal d-block" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
+          <div className="modal-dialog modal-dialog-centered">
+            <div className="modal-content">
+              <div className="modal-header">
+                <h5 className="modal-title">{cardType === 'red' ? 'Rote Karte' : 'Gelbe Karte'} anzeigen</h5>
+                <button type="button" className="btn-close" onClick={() => setShowCardModal(false)}></button>
+              </div>
+              <div className="modal-body">
+                <label className="form-label">Spieler (Nummer)</label>
+                <input
+                  type="text"
+                  className="form-control"
+                  value={cardPlayerNr}
+                  onChange={e => setCardPlayerNr(e.target.value)}
+                  autoFocus
+                  placeholder="#"
+                />
+
+                <label className="form-label mt-3">Dauer (Sekunden)</label>
+                <input
+                  type="number"
+                  className="form-control"
+                  placeholder="10"
+                  value={cardDuration}
+                  onChange={e => setCardDuration(e.target.value)}
+                />
+              </div>
+              <div className="modal-footer">
+                <button type="button" className="btn btn-secondary" onClick={() => setShowCardModal(false)}>Abbrechen</button>
+                <button type="button" className="btn btn-primary" onClick={handleCard}>Übernehmen</button>
               </div>
             </div>
           </div>

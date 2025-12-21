@@ -4,6 +4,7 @@ import PlaylistScene from './components/output/PlaylistScene';
 import ScoreboardScene from './components/output/ScoreboardScene';
 import AnnouncementScene from './components/output/AnnouncementScene';
 import SubstitutionScene from './components/output/SubstitutionScene';
+import CardScene from './components/output/CardScene';
 
 function OutputView({ preview = false }) {
     useEffect(() => {
@@ -17,6 +18,7 @@ function OutputView({ preview = false }) {
     const [announcement, setAnnouncement] = useState(null);
     const [announcementDuration, setAnnouncementDuration] = useState(null);
     const [substitution, setSubstitution] = useState(null);
+    const [card, setCard] = useState(null);
     const [savedScene, setSavedScene] = useState(null); // Snapshot of scenePlaylist to restore
     const [showScoreboard, setShowScoreboard] = useState(false);
 
@@ -165,6 +167,29 @@ function OutputView({ preview = false }) {
                     // Clear announcement
                     setAnnouncement(null);
                     setAnnouncementDuration(null);
+                    setCard(null); // Clear card
+
+                    if (payload.backgroundPlaylist) {
+                        setSavedScene(prev => prev !== null ? prev : { playlist: scenePlaylist });
+                        setScenePlaylist(payload.backgroundPlaylist);
+                        setCurrentPlaylist(payload.backgroundPlaylist);
+                        setCurrentIndex(0);
+                    }
+                }
+
+                if (command === 'SHOW_CARD') {
+                    console.log('CMD: SHOW_CARD', payload);
+                    const d = parseInt(payload.duration, 10);
+                    setCard({
+                        type: payload.type,
+                        playerNr: payload.playerNr,
+                        duration: (!isNaN(d) && d > 0) ? d : null
+                    });
+
+                    // Clear others
+                    setAnnouncement(null);
+                    setAnnouncementDuration(null);
+                    setSubstitution(null);
 
                     if (payload.backgroundPlaylist) {
                         setSavedScene(prev => prev !== null ? prev : { playlist: scenePlaylist });
@@ -178,6 +203,8 @@ function OutputView({ preview = false }) {
                     setScenePlaylist(null);
                     setAnnouncement(null);
                     setAnnouncementDuration(null);
+                    setSubstitution(null);
+                    setCard(null);
                     setSavedScene(null);
                     // Always reset to standard playlist (even if null) to stop any running scene
                     setCurrentPlaylist(standardPlaylist);
@@ -195,7 +222,8 @@ function OutputView({ preview = false }) {
                     setStandardMode('BACKGROUND');
                     setAnnouncement(null);
                     setAnnouncementDuration(null);
-                    setSubstitution(null); // Clear substitution
+                    setSubstitution(null);
+                    setCard(null);
                     setSavedScene(null);
                     setShowScoreboard(false);
                 }
@@ -269,7 +297,7 @@ function OutputView({ preview = false }) {
                 console.log('[OutputView] Sub Timer finished. Clearing.');
                 setSubstitution(null);
 
-                // Restore previous scene logic (shared with announcement)
+                // Restore previous scene logic
                 if (savedScene) {
                     console.log('[OutputView] Restoring saved scene:', savedScene);
                     setScenePlaylist(savedScene.playlist);
@@ -282,6 +310,28 @@ function OutputView({ preview = false }) {
             return () => clearTimeout(timer);
         }
     }, [substitution, savedScene, standardPlaylist]);
+
+    // --- CARD TIMEOUT ---
+    useEffect(() => {
+        if (card && card.duration) {
+            console.log(`[OutputView] Card Timer started for ${card.duration}s`);
+            const timer = setTimeout(() => {
+                console.log('[OutputView] Card Timer finished. Clearing.');
+                setCard(null);
+
+                // Restore previous scene logic (shared)
+                if (savedScene) {
+                    console.log('[OutputView] Restoring saved scene:', savedScene);
+                    setScenePlaylist(savedScene.playlist);
+                    setCurrentPlaylist(savedScene.playlist || standardPlaylist);
+                    setCurrentIndex(0);
+                    setSavedScene(null);
+                }
+
+            }, card.duration * 1000);
+            return () => clearTimeout(timer);
+        }
+    }, [card, savedScene, standardPlaylist]);
 
     // --- TIMER LOGIC ---
     useEffect(() => {
@@ -412,10 +462,12 @@ function OutputView({ preview = false }) {
                     flexDirection: 'column',
                     justifyContent: 'center', // Centered vertically
                     alignItems: 'center',     // Centered horizontally
-                    opacity: (showOverlay || announcement || substitution) ? 1 : 0,
+                    opacity: (showOverlay || announcement || substitution || card) ? 1 : 0,
                 }}>
 
-                    {substitution ? (
+                    {card ? (
+                        <CardScene type={card.type} playerNr={card.playerNr} />
+                    ) : substitution ? (
                         <SubstitutionScene inNr={substitution.inNr} outNr={substitution.outNr} />
                     ) : announcement ? (
                         <AnnouncementScene message={announcement} />
