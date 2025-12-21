@@ -1,5 +1,9 @@
 import { useState, useEffect, useRef } from 'react';
 import testImage from '../assets/testbild.png';
+import PlaylistScene from './components/output/PlaylistScene';
+import ScoreboardScene from './components/output/ScoreboardScene';
+import AnnouncementScene from './components/output/AnnouncementScene';
+import DefaultScene from './components/output/DefaultScene';
 
 function OutputView({ preview = false }) {
     useEffect(() => {
@@ -346,48 +350,16 @@ function OutputView({ preview = false }) {
 
                 {/* MEDIA LAYER */}
                 <div style={{ width: '100%', height: '100%' }}>
-                    {activeMedia ? (
-                        activeMedia.type === 'video' ? (
-                            <video
-                                key={activeMedia.id}
-                                src={`file://${activeMedia.path}`}
-                                autoPlay
-                                muted={preview ? true : false}
-                                style={{ width: '100%', height: '100%', objectFit: 'contain' }}
-                                onEnded={handleMediaEnd}
-                            />
-                        ) : (
-                            <img
-                                src={`file://${activeMedia.path}`}
-                                alt="Content"
-                                style={{ width: '100%', height: '100%', objectFit: 'contain' }}
-                            />
-                        )
+                    {(scenePlaylist && scenePlaylist.type === 'DEFAULT') ? (
+                        <DefaultScene title={scenePlaylist.title} />
                     ) : (
-                        <>
-                            <img
-                                src={currentTestImage}
-                                alt="Testbild"
-                                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                            />
-                            {/* Schnittmarken (Crop Marks) */}
-                            {showCropMarks && (
-                                <>
-                                    {/* Top Left */}
-                                    <div style={{ position: 'absolute', top: 0, left: 0, width: '40px', height: '40px', borderTop: '6px solid #f00', borderLeft: '6px solid #f00', zIndex: 100 }} />
-                                    {/* Top Right */}
-                                    <div style={{ position: 'absolute', top: 0, right: 0, width: '40px', height: '40px', borderTop: '6px solid #f00', borderRight: '6px solid #f00', zIndex: 100 }} />
-                                    {/* Bottom Left */}
-                                    <div style={{ position: 'absolute', bottom: 0, left: 0, width: '40px', height: '40px', borderBottom: '6px solid #f00', borderLeft: '6px solid #f00', zIndex: 100 }} />
-                                    {/* Bottom Right */}
-                                    <div style={{ position: 'absolute', bottom: 0, right: 0, width: '40px', height: '40px', borderBottom: '6px solid #f00', borderRight: '6px solid #f00', zIndex: 100 }} />
-
-                                    {/* Center Cross */}
-                                    <div style={{ position: 'absolute', top: '50%', left: '50%', width: '40px', height: '2px', backgroundColor: '#f00', transform: 'translate(-50%, -50%)', zIndex: 100 }} />
-                                    <div style={{ position: 'absolute', top: '50%', left: '50%', width: '2px', height: '40px', backgroundColor: '#f00', transform: 'translate(-50%, -50%)', zIndex: 100 }} />
-                                </>
-                            )}
-                        </>
+                        <PlaylistScene
+                            activeMedia={activeMedia}
+                            currentTestImage={currentTestImage}
+                            showCropMarks={showCropMarks}
+                            onMediaEnd={handleMediaEnd}
+                            preview={preview}
+                        />
                     )}
                 </div>
 
@@ -403,90 +375,10 @@ function OutputView({ preview = false }) {
                 }}>
 
                     {announcement ? (
-                        <div style={{
-                            width: '80%',
-                            padding: '40px',
-                            backgroundColor: 'rgba(0,0,0,0.7)',
-                            color: '#fff',
-                            fontSize: '6cqw',
-                            fontWeight: 'bold',
-                            textAlign: 'center',
-                            borderRadius: '20px',
-                            whiteSpace: 'pre-wrap',
-                            letterSpacing: '0.1em',
-                        }}>
-                            {announcement}
-                        </div>
+                        <AnnouncementScene message={announcement} />
                     ) : (
                         /* Default Scoreboard Design */
-                        <div style={{
-                            width: '40cqw', // Changed vw to cqw
-                            height: '100%',
-                            display: 'flex',
-                            flexDirection: 'column',
-                            justifyContent: 'center',
-                            alignItems: 'center',
-                        }}>
-
-                            {/* Timer Only */}
-                            <div style={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                color: '#fff',
-                                fontSize: '8cqh',
-                                fontWeight: 'bold',
-                                fontFamily: 'monospace',
-                                letterSpacing: '0.1em',
-                                position: 'absolute',
-                                top: '0.1em',
-                            }}>
-
-                                <div style={{
-                                    backgroundColor: 'rgba(0,0,0,0.7)',
-                                    fontSize: '8cqh',
-                                    padding: '0.2em 0.5em',
-                                }}>
-                                    {timerDisplay}
-                                </div>
-
-
-                                {gameState.overtime > 0 && (
-                                    <div style={{
-                                        backgroundColor: '#ff0000',
-                                        fontSize: '6cqh',
-                                        marginLeft: '0.2em',
-                                        padding: '0.2em 0.5em',
-                                    }}>
-                                        +{gameState.overtime}
-                                    </div>
-                                )}
-
-                            </div>
-
-                            {/* Teams & Score */}
-                            <div style={{
-                                display: 'flex',
-                                justifyContent: 'space-around',
-                                width: '100%',
-                                alignItems: 'center',
-                                marginBottom: '15cqh' // Changed vh to cqh
-                            }}>
-                                <div style={{ textAlign: 'center', flex: 1 }}>
-                                    <div style={{ fontSize: '30cqh', fontWeight: 'bold', lineHeight: 1, color: 'white' }}>
-                                        {gameState.homeScore}
-                                    </div>
-                                </div>
-
-                                <div style={{ color: '#fff', fontSize: '20cqh', marginTop: '10cqh' }}>:</div>
-
-                                <div style={{ textAlign: 'center', flex: 1 }}>
-                                    <div style={{ fontSize: '30cqh', fontWeight: 'bold', lineHeight: 1, color: 'white' }}>
-                                        {gameState.guestScore}
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+                        <ScoreboardScene gameState={gameState} timerDisplay={timerDisplay} />
                     )}
 
                 </div>

@@ -13,6 +13,7 @@ const PlaylistSelect = ({ label, value, onChange, playlists }) => (
       onChange={e => onChange(e.target.value)}
     >
       <option value="">-- Ignorieren --</option>
+      <option value="DEFAULT">-- Default Szene --</option>
       {playlists.map(p => <option key={p.id} value={p.id}>{p.title}</option>)}
     </select>
   </div>
@@ -147,7 +148,7 @@ function ControllerView() {
         overtime: val
       }));
       // Trigger scene if playlist is set
-      triggerScene(gameState.plOvertime);
+      triggerScene(gameState.plOvertime, 'Nachspielzeit');
     }
     setShowOvertimeModal(false);
   };
@@ -262,21 +263,37 @@ function ControllerView() {
 
     // Trigger Playlist if configured
     if (plToPlay) {
-      const pl = playlists.find(p => p.id === plToPlay);
-      if (pl) {
+      if (plToPlay === 'DEFAULT') {
         window.electronAPI.sendControlCommand('PLAY_PLAYLIST', {
-          playlist: pl,
-          mode: (state === 'FIRST_HALF' || state === 'SECOND_HALF') ? 'BACKGROUND' : 'FULL' // Background during game
+          playlist: { type: 'DEFAULT', title: state === 'HALF_TIME' ? 'Halbzeit' : (state === 'POST_GAME' ? 'Abpfiff' : 'Spielstand') },
+          mode: (state === 'FIRST_HALF' || state === 'SECOND_HALF') ? 'BACKGROUND' : 'FULL'
         });
+      } else {
+        const pl = playlists.find(p => p.id === plToPlay);
+        if (pl) {
+          window.electronAPI.sendControlCommand('PLAY_PLAYLIST', {
+            playlist: pl,
+            mode: (state === 'FIRST_HALF' || state === 'SECOND_HALF') ? 'BACKGROUND' : 'FULL'
+          });
+        }
       }
     }
   };
 
-  const triggerScene = (plId) => {
+  const triggerScene = (plId, title) => {
     if (!plId) {
       toast.warn("Keine Playlist für diese Szene ausgewählt!");
       return;
     }
+
+    if (plId === 'DEFAULT') {
+      window.electronAPI.sendControlCommand('SHOW_SCENE', {
+        type: 'DEFAULT',
+        title: title || 'Szene'
+      });
+      return;
+    }
+
     const pl = playlists.find(p => p.id === plId);
     if (pl) {
       window.electronAPI.sendControlCommand('SHOW_SCENE', pl);
@@ -482,15 +499,20 @@ function ControllerView() {
 
             {visibility.warmup && (
               <button className="btn btn-outline-primary" onClick={() => {
-                const pl = playlists.find(p => p.id === gameState.plWarmup);
-                if (pl) window.electronAPI.sendControlCommand('PLAY_PLAYLIST', { playlist: pl, mode: 'FULL' });
+                const plId = gameState.plWarmup;
+                if (plId === 'DEFAULT') {
+                  window.electronAPI.sendControlCommand('PLAY_PLAYLIST', { playlist: { type: 'DEFAULT', title: 'Warmup' }, mode: 'FULL' });
+                } else {
+                  const pl = playlists.find(p => p.id === plId);
+                  if (pl) window.electronAPI.sendControlCommand('PLAY_PLAYLIST', { playlist: pl, mode: 'FULL' });
+                }
               }}>
                 Warmup
               </button>
             )}
 
             {visibility.lineup && (
-              <button className="btn btn-outline-primary" onClick={() => triggerScene(gameState.plLineup)}>
+              <button className="btn btn-outline-primary" onClick={() => triggerScene(gameState.plLineup, 'Aufstellung')}>
                 Aufstellung
               </button>
             )}
@@ -520,44 +542,44 @@ function ControllerView() {
 
             {visibility.goalHome && (
               <button className="btn btn-outline-primary" onClick={() => {
-                triggerScene(gameState.plGoalHome);
+                triggerScene(gameState.plGoalHome, 'Tor Heim');
                 setGameState(prev => ({ ...prev, homeScore: prev.homeScore + 1 }));
               }}>Tor Heim</button>
             )}
 
             {visibility.goalGuest && (
               <button className="btn btn-outline-primary" onClick={() => {
-                triggerScene(gameState.plGoalGuest);
+                triggerScene(gameState.plGoalGuest, 'Tor Gast');
                 setGameState(prev => ({ ...prev, guestScore: prev.guestScore + 1 }));
               }}>Tor Gast</button>
             )}
 
             {visibility.sub && (
-              <button className="btn btn-outline-primary" onClick={() => triggerScene(gameState.plSub)}>
+              <button className="btn btn-outline-primary" onClick={() => triggerScene(gameState.plSub, 'Wechsel')}>
                 Wechsel
               </button>
             )}
 
             {visibility.corner && (
-              <button className="btn btn-outline-primary" onClick={() => triggerScene(gameState.plCorner)}>
+              <button className="btn btn-outline-primary" onClick={() => triggerScene(gameState.plCorner, 'Eckstoß')}>
                 Eckstoß
               </button>
             )}
 
             {visibility.yellow && (
-              <button className="btn btn-outline-primary" onClick={() => triggerScene(gameState.plYellow)}>
+              <button className="btn btn-outline-primary" onClick={() => triggerScene(gameState.plYellow, 'Gelbe Karte')}>
                 Gelbe Karte
               </button>
             )}
 
             {visibility.red && (
-              <button className="btn btn-outline-primary" onClick={() => triggerScene(gameState.plRed)}>
+              <button className="btn btn-outline-primary" onClick={() => triggerScene(gameState.plRed, 'Rote Karte')}>
                 Rote Karte
               </button>
             )}
 
             {visibility.var && (
-              <button className="btn btn-outline-primary" onClick={() => triggerScene(gameState.plVar)}>
+              <button className="btn btn-outline-primary" onClick={() => triggerScene(gameState.plVar, 'VAR Check')}>
                 VAR Check
               </button>
             )}
@@ -571,10 +593,16 @@ function ControllerView() {
                 // 1. Show standard scoreboard
                 window.electronAPI.sendControlCommand('SHOW_SCOREBOARD');
                 // 2. Restart background playlist if available, to be safe
-                const pl = playlists.find(p => p.id === gameState.plScoreboard);
-                if (pl) {
+                const plId = gameState.plScoreboard;
+                const pl = playlists.find(p => p.id === plId);
+                if (pl && pl !== 'DEFAULT') {
                   window.electronAPI.sendControlCommand('PLAY_PLAYLIST', {
                     playlist: pl,
+                    mode: 'BACKGROUND'
+                  });
+                } else if (plId === 'DEFAULT') {
+                  window.electronAPI.sendControlCommand('PLAY_PLAYLIST', {
+                    playlist: { type: 'DEFAULT', title: 'Spielstand' },
                     mode: 'BACKGROUND'
                   });
                 }
@@ -592,7 +620,7 @@ function ControllerView() {
             )}
 
             {visibility.special && (
-              <button className="btn btn-outline-primary" onClick={() => triggerScene(gameState.plSpecial)}>
+              <button className="btn btn-outline-primary" onClick={() => triggerScene(gameState.plSpecial, 'Special')}>
                 Special
               </button>
             )}
