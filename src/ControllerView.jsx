@@ -80,17 +80,30 @@ function ControllerView() {
       const pl = await window.electronAPI.loadPlaylists();
       setPlaylists(pl);
 
-      const pr = await window.electronAPI.loadPresets();
-      setPresets(pr);
+      // Load or Create Default Preset
+      let pr = await window.electronAPI.loadPresets();
 
-      // Load Settings to get Visibility
-      const settings = await window.electronAPI.loadSettings();
-      if (settings && settings.controllerVisibility) {
-        setVisibility(prev => ({ ...prev, ...settings.controllerVisibility }));
+      // Ensure "Default" preset always exists if list is empty or we want to reset
+      let defaultPreset = pr.find(p => p.name === 'Standard');
+
+      if (!defaultPreset) {
+        // Create initial default preset if missing
+        defaultPreset = {
+          id: 'default',
+          name: 'Standard',
+          plWarmup: '', plLineup: '', plScoreboard: '', plHalfTime: '', plEnd: '',
+          plGoalHome: '', plGoalGuest: '', plSub: '', plYellow: '', plRed: '', plVar: '', plSpecial: '', plCorner: '', plOvertime: '', plAnnouncement: ''
+        };
+        await window.electronAPI.savePreset(defaultPreset);
+        pr.push(defaultPreset);
       }
 
-      if (pr.length > 0) {
-        // Load first preset by default
+      setPresets(pr);
+
+      // Select "Default" or First
+      if (defaultPreset) {
+        loadPreset(defaultPreset);
+      } else if (pr.length > 0) {
         loadPreset(pr[0]);
       }
     };
@@ -99,18 +112,18 @@ function ControllerView() {
 
   const loadPreset = (preset) => {
     setCurrentPresetId(preset.id);
+
+    // Only load Playlist Mappings from preset, keep current Game State (scores, timer) or reset them manually if needed?
+    // User requested to ONLY save playlist mappings. So when loading, we ONLY update playlist mappings.
+    // Scores and Match State remain untouched or could be reset if desired. 
+    // Assuming we just map playlists:
+
     setGameState(prev => ({
       ...prev,
-      ...preset,
-      // Always reset volatile timer state on load
-      timerRunning: false,
-      timerStart: null,
-      timerOffset: 0,
-
-      // Ensure we keep defaults if preset misses new fields
-      plWarmup: preset.plWarmup || preset.plDefault || preset.plSponsors || '',
+      // Update Playlist IDs from Preset
+      plWarmup: preset.plWarmup || '',
       plLineup: preset.plLineup || '',
-      plScoreboard: preset.plScoreboard || preset.plBackground || preset.plKickoff || '',
+      plScoreboard: preset.plScoreboard || '',
       plHalfTime: preset.plHalfTime || '',
       plEnd: preset.plEnd || '',
       plGoalHome: preset.plGoalHome || '',
@@ -121,10 +134,10 @@ function ControllerView() {
       plVar: preset.plVar || '',
       plSpecial: preset.plSpecial || '',
       plCorner: preset.plCorner || '',
-      plCorner: preset.plCorner || '',
       plOvertime: preset.plOvertime || '',
       plAnnouncement: preset.plAnnouncement || '',
-      overtime: preset.overtime || null
+
+      // Explicitly NOT loading scores, timer, matchState, overtime from preset anymore
     }));
   };
 
@@ -152,55 +165,130 @@ function ControllerView() {
     setShowOvertimeModal(false);
   };
 
-  const handleSaveClick = () => {
-    // Pre-fill name
-    if (currentPresetId !== 'new') {
-      const current = presets.find(p => p.id === currentPresetId);
-      if (current) setPresetName(current.name);
+  const handlePresetChange = (value) => {
+    if (value === 'new') {
+      setPresetName("");
+      setShowSaveModal(true);
     } else {
-      setPresetName("Standard Fußball");
+      const p = presets.find(pr => pr.id === value);
+      if (p) loadPreset(p);
     }
-    setShowSaveModal(true);
   };
 
-  const confirmSave = async () => {
-    if (!presetName) return;
+  /* REMOVED handleSaveClick usage from UI, but kept logic for internal saves */
 
-    const id = currentPresetId === 'new' ? crypto.randomUUID() : currentPresetId;
+  const deleteCurrentPreset = async () => {
+    if (currentPresetId === 'new') return;
 
+    // Check if it is the Default preset (by name or ID if we knew it, here checking name safely)
+    const current = presets.find(p => p.id === currentPresetId);
+    if (current && (current.name === 'Standard' || current.id === 'default')) {
+      toast.error("Das Standard-Preset kann nicht gelöscht werden.");
+      return;
+    }
+
+    if (!window.confirm(`Preset "${current?.name}" wirklich löschen?`)) return;
+
+    // Send delete command to backend (assuming we have one, or we just filter and save list?)
+    // Checking electronAPI... usually we might need a deletePreset method.
+    // If not available, we have to save the list without this item?
+    // Looking at file content, there is no `deletePreset` in the visible `window.electronAPI` usage.
+    // Wait, I should check if `deletePreset` exists. 
+    // In step 288 (main.js view), I see `ipcMain.handle('save-preset', ...)` but NO `delete-preset`.
+    // Wait, I see `load-presets`.
+    // I can implement `delete-preset` in main.js, OR I can just simulate it?
+    // Actually, looking at main.js again...
+    // 365: ipcMain.handle('save-preset', ...)
+    // 361: ipcMain.handle('load-presets', ...)
+    // It seems there is NO `delete-preset` handler in main.js. 
+    // I must add it to main.js first? Or can I assume `savePreset` with deleted flag?
+    // main.js line 362: return loadPresetsList().filter(p => !p.deleted);
+    // So if I save it with `deleted: true`, it should work!
+
+    try {
+      await window.electronAPI.savePreset({ ...current, deleted: true });
+
+      const newPresets = presets.filter(p => p.id !== currentPresetId);
+      setPresets(newPresets);
+
+      // Switch to Default or first available
+      const def = newPresets.find(p => p.name === 'Standard') || newPresets[0];
+      if (def) loadPreset(def);
+      else setCurrentPresetId('new'); // Fallback
+
+      toast.success("Preset gelöscht");
+    } catch (e) {
+      console.error(e);
+      toast.error("Fehler beim Löschen");
+    }
+  };
+
+  const updateState = (field, value) => {
+    setGameState(prev => {
+      const newState = { ...prev, [field]: value };
+
+      // Auto-Save if we have a valid preset selected (and it's not "new")
+      if (currentPresetId !== 'new') {
+        // Debounce or just save? For dropdowns it's fine to save immediately usually.
+        // But we must be careful not to save 'score' changes if we used updateState for them.
+        // Check if field is a playlist field
+        if (field.startsWith('pl')) {
+          savePresetInternal(currentPresetId, presets.find(p => p.id === currentPresetId)?.name, newState);
+        }
+      }
+      return newState;
+    });
+  };
+
+  // Adjusted savePresetInternal to accept optional stateOverride
+  const savePresetInternal = async (id, name, stateOverride = null) => {
+    const stateToUse = stateOverride || gameState;
+
+    // Only save Playlist IDs
     const newPreset = {
       id,
-      name: presetName,
-      ...gameState,
-      // Do not save timer running state (prevents huge timer on reload)
-      timerRunning: false,
-      timerStart: null,
-      timerOffset: 0
+      name,
+      plWarmup: stateToUse.plWarmup,
+      plLineup: stateToUse.plLineup,
+      plScoreboard: stateToUse.plScoreboard,
+      plHalfTime: stateToUse.plHalfTime,
+      plEnd: stateToUse.plEnd,
+      plGoalHome: stateToUse.plGoalHome,
+      plGoalGuest: stateToUse.plGoalGuest,
+      plSub: stateToUse.plSub,
+      plYellow: stateToUse.plYellow,
+      plRed: stateToUse.plRed,
+      plVar: stateToUse.plVar,
+      plSpecial: stateToUse.plSpecial,
+      plCorner: stateToUse.plCorner,
+      plOvertime: stateToUse.plOvertime,
+      plAnnouncement: stateToUse.plAnnouncement
     };
 
     try {
       await window.electronAPI.savePreset(newPreset);
 
+      // Update local list
       setPresets(prev => {
         const idx = prev.findIndex(p => p.id === id);
         if (idx !== -1) {
           const copy = [...prev];
-          copy[idx] = newPreset;
+          // preserve existing fields if needed, but here we just replace with what we saved (plus valid internal flags if any)
+          copy[idx] = { ...copy[idx], ...newPreset };
           return copy;
         }
         return [...prev, newPreset];
       });
-      setCurrentPresetId(id);
-      toast.success(`Preset "${presetName}" gespeichert`);
-      setShowSaveModal(false);
+
+      if (!stateOverride) {
+        setCurrentPresetId(id);
+        toast.success(`Preset "${name}" gespeichert`);
+        setShowSaveModal(false);
+      }
     } catch (e) {
       console.error(e);
-      toast.error("Fehler beim Speichern");
+      if (!stateOverride) toast.error("Fehler beim Speichern");
     }
-  };
-
-  const updateState = (field, value) => {
-    setGameState(prev => ({ ...prev, [field]: value }));
   };
 
   const commitScore = () => {
@@ -416,28 +504,28 @@ function ControllerView() {
           <div className="mb-4">
             <label className="form-label text-muted small ms-1 mb-1">Preset</label>
             <div className="d-flex gap-1">
-              <select className="form-select form-select-sm" value={currentPresetId} onChange={(e) => {
-                if (e.target.value === 'new') {
-                  setCurrentPresetId('new');
-                  // Reset to defaults
-                  setGameState(prev => ({
-                    homeScore: 0, guestScore: 0,
-                    homeScore: 0, guestScore: 0,
-                    matchState: 'PRE_GAME', timerStart: null, timerOffset: 0, timerRunning: false,
-                    plWarmup: '', plLineup: '', plScoreboard: '', plHalfTime: '', plEnd: '',
-                    plWarmup: '', plLineup: '', plScoreboard: '', plHalfTime: '', plEnd: '',
-                    plGoalHome: '', plGoalGuest: '', plSub: '', plYellow: '', plRed: '', plVar: '', plSpecial: '', plCorner: '', plOvertime: '', plAnnouncement: '',
-                    overtime: null
-                  }));
-                } else {
-                  const p = presets.find(pr => pr.id === e.target.value);
-                  if (p) loadPreset(p);
-                }
-              }}>
+              <select className="form-select form-select-sm" value={currentPresetId} onChange={(e) => handlePresetChange(e.target.value)}>
                 <option value="new">Neues Preset...</option>
                 {presets.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
               </select>
-              <button className="btn btn-link" onClick={handleSaveClick}><BsFloppy /></button>
+            </div>
+            <div className="mt-1 d-flex justify-content-between align-items-center">
+              <button className="btn btn-sm btn-link text-muted p-0" style={{ fontSize: '0.85rem' }} onClick={() => {
+                setGameState(prev => ({
+                  ...prev,
+                  plWarmup: '', plLineup: '', plScoreboard: '', plHalfTime: '', plEnd: '',
+                  plGoalHome: '', plGoalGuest: '', plSub: '', plYellow: '', plRed: '', plVar: '', plSpecial: '', plCorner: '', plOvertime: '', plAnnouncement: ''
+                }));
+                toast.info("Playlists zurückgesetzt");
+              }}>
+                Zurücksetzen
+              </button>
+
+              {currentPresetId !== 'new' && presets.find(p => p.id === currentPresetId)?.name !== 'Standard' && (
+                <button className="btn btn-sm btn-link text-danger p-0" style={{ fontSize: '0.85rem' }} onClick={deleteCurrentPreset} title="Preset löschen">
+                  Löschen
+                </button>
+              )}
             </div>
           </div>
         </div>
