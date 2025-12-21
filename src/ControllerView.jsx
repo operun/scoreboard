@@ -162,6 +162,11 @@ function ControllerView() {
   const [announcementText, setAnnouncementText] = useState("");
   const [announcementDuration, setAnnouncementDuration] = useState("");
 
+  const [showSubstitutionModal, setShowSubstitutionModal] = useState(false);
+  const [subIn, setSubIn] = useState("");
+  const [subOut, setSubOut] = useState("");
+  const [subDuration, setSubDuration] = useState("10"); // Default 10s?
+
   const [showOvertimeModal, setShowOvertimeModal] = useState(false);
   const [overtimeInput, setOvertimeInput] = useState("");
 
@@ -423,6 +428,23 @@ function ControllerView() {
     setShowAnnouncementModal(false);
   };
 
+  const handleSubstitution = () => {
+    let bgPl = null;
+    if (gameState.plSub) {
+      bgPl = playlists.find(p => p.id === gameState.plSub) || null;
+    }
+
+    const payload = {
+      inNr: subIn,
+      outNr: subOut,
+      duration: subDuration ? parseInt(subDuration, 10) : null,
+      backgroundPlaylist: bgPl
+    };
+    console.log('[Controller] Sending Substitution:', payload);
+    window.electronAPI.sendControlCommand('SHOW_SUBSTITUTION', payload);
+    setShowSubstitutionModal(false);
+  };
+
   // Generic Control Command Sender (Live Game State)
   useEffect(() => {
     if (currentPresetId !== 'new' || gameState.homeScore > 0) {
@@ -660,9 +682,12 @@ function ControllerView() {
             )}
 
             {visibility.sub && (
-              <button className="btn btn-outline-primary" onClick={() => triggerScene(gameState.plSub, 'Wechsel')}>
-                Wechsel
-              </button>
+              <button className="btn btn-outline-primary" onClick={() => {
+                setSubIn('');
+                setSubOut('');
+                setSubDuration('10');
+                setShowSubstitutionModal(true);
+              }}>Wechsel</button>
             )}
 
             {visibility.corner && (
@@ -827,6 +852,58 @@ function ControllerView() {
               <div className="modal-footer">
                 <button type="button" className="btn btn-secondary" onClick={() => setShowAnnouncementModal(false)}>Abbrechen</button>
                 <button type="button" className="btn btn-primary" onClick={handleAnnouncement}>Übernehmen</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* SUBSTITUTION MODAL */}
+      {showSubstitutionModal && (
+        <div className="modal d-block" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
+          <div className="modal-dialog modal-dialog-centered">
+            <div className="modal-content">
+              <div className="modal-header">
+                <h5 className="modal-title">Wechsel anzeigen</h5>
+                <button type="button" className="btn-close" onClick={() => setShowSubstitutionModal(false)}></button>
+              </div>
+              <div className="modal-body">
+                <div className="row">
+                  <div className="col">
+                    <label className="form-label">Rein (Nummer)</label>
+                    <input
+                      type="text"
+                      className="form-control"
+                      value={subIn}
+                      onChange={e => setSubIn(e.target.value)}
+                      autoFocus
+                      placeholder="#"
+                    />
+                  </div>
+                  <div className="col">
+                    <label className="form-label">Raus (Nummer)</label>
+                    <input
+                      type="text"
+                      className="form-control"
+                      value={subOut}
+                      onChange={e => setSubOut(e.target.value)}
+                      placeholder="#"
+                    />
+                  </div>
+                </div>
+
+                <label className="form-label mt-3">Dauer (Sekunden)</label>
+                <input
+                  type="number"
+                  className="form-control"
+                  placeholder="20"
+                  value={subDuration}
+                  onChange={e => setSubDuration(e.target.value)}
+                />
+              </div>
+              <div className="modal-footer">
+                <button type="button" className="btn btn-secondary" onClick={() => setShowSubstitutionModal(false)}>Abbrechen</button>
+                <button type="button" className="btn btn-primary" onClick={handleSubstitution}>Übernehmen</button>
               </div>
             </div>
           </div>

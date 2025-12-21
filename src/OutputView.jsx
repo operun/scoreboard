@@ -3,6 +3,7 @@ import testImage from './assets/testbild.png';
 import PlaylistScene from './components/output/PlaylistScene';
 import ScoreboardScene from './components/output/ScoreboardScene';
 import AnnouncementScene from './components/output/AnnouncementScene';
+import SubstitutionScene from './components/output/SubstitutionScene';
 
 function OutputView({ preview = false }) {
     useEffect(() => {
@@ -15,6 +16,7 @@ function OutputView({ preview = false }) {
     const [scenePlaylist, setScenePlaylist] = useState(null);
     const [announcement, setAnnouncement] = useState(null);
     const [announcementDuration, setAnnouncementDuration] = useState(null);
+    const [substitution, setSubstitution] = useState(null);
     const [savedScene, setSavedScene] = useState(null); // Snapshot of scenePlaylist to restore
     const [showScoreboard, setShowScoreboard] = useState(false);
 
@@ -151,6 +153,27 @@ function OutputView({ preview = false }) {
                     }
                 }
 
+                if (command === 'SHOW_SUBSTITUTION') {
+                    console.log('CMD: SHOW_SUBSTITUTION', payload);
+                    const d = parseInt(payload.duration, 10);
+                    setSubstitution({
+                        inNr: payload.inNr,
+                        outNr: payload.outNr,
+                        duration: (!isNaN(d) && d > 0) ? d : null
+                    });
+
+                    // Clear announcement
+                    setAnnouncement(null);
+                    setAnnouncementDuration(null);
+
+                    if (payload.backgroundPlaylist) {
+                        setSavedScene(prev => prev !== null ? prev : { playlist: scenePlaylist });
+                        setScenePlaylist(payload.backgroundPlaylist);
+                        setCurrentPlaylist(payload.backgroundPlaylist);
+                        setCurrentIndex(0);
+                    }
+                }
+
                 if (command === 'SHOW_SCOREBOARD') {
                     setScenePlaylist(null);
                     setAnnouncement(null);
@@ -172,6 +195,7 @@ function OutputView({ preview = false }) {
                     setStandardMode('BACKGROUND');
                     setAnnouncement(null);
                     setAnnouncementDuration(null);
+                    setSubstitution(null); // Clear substitution
                     setSavedScene(null);
                     setShowScoreboard(false);
                 }
@@ -236,6 +260,28 @@ function OutputView({ preview = false }) {
             return () => clearTimeout(timer);
         }
     }, [announcement, announcementDuration, savedScene, standardPlaylist]);
+
+    // --- SUBSTITUTION TIMEOUT ---
+    useEffect(() => {
+        if (substitution && substitution.duration) {
+            console.log(`[OutputView] Sub Timer started for ${substitution.duration}s`);
+            const timer = setTimeout(() => {
+                console.log('[OutputView] Sub Timer finished. Clearing.');
+                setSubstitution(null);
+
+                // Restore previous scene logic (shared with announcement)
+                if (savedScene) {
+                    console.log('[OutputView] Restoring saved scene:', savedScene);
+                    setScenePlaylist(savedScene.playlist);
+                    setCurrentPlaylist(savedScene.playlist || standardPlaylist);
+                    setCurrentIndex(0);
+                    setSavedScene(null);
+                }
+
+            }, substitution.duration * 1000);
+            return () => clearTimeout(timer);
+        }
+    }, [substitution, savedScene, standardPlaylist]);
 
     // --- TIMER LOGIC ---
     useEffect(() => {
@@ -366,10 +412,12 @@ function OutputView({ preview = false }) {
                     flexDirection: 'column',
                     justifyContent: 'center', // Centered vertically
                     alignItems: 'center',     // Centered horizontally
-                    opacity: (showOverlay || announcement) ? 1 : 0,
+                    opacity: (showOverlay || announcement || substitution) ? 1 : 0,
                 }}>
 
-                    {announcement ? (
+                    {substitution ? (
+                        <SubstitutionScene inNr={substitution.inNr} outNr={substitution.outNr} />
+                    ) : announcement ? (
                         <AnnouncementScene message={announcement} />
                     ) : (
                         /* Default Scoreboard Design */
