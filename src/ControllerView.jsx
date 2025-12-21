@@ -55,6 +55,8 @@ function ControllerView() {
     plVar: '',
     plSpecial: '',
     plCorner: '',
+    plCorner: '',
+    plOvertime: '',
     plAnnouncement: ''
   });
 
@@ -70,7 +72,7 @@ function ControllerView() {
   // Visibility Settings
   const [visibility, setVisibility] = useState({
     warmup: true, lineup: true, scoreboard: true, halftime: true, end: true,
-    goalHome: true, goalGuest: true, sub: true, yellow: true, red: true, var: true, special: true, corner: true, announcement: true
+    goalHome: true, goalGuest: true, sub: true, yellow: true, red: true, var: true, special: true, corner: true, overtime: true, announcement: true
   });
 
   useEffect(() => {
@@ -119,7 +121,10 @@ function ControllerView() {
       plVar: preset.plVar || '',
       plSpecial: preset.plSpecial || '',
       plCorner: preset.plCorner || '',
-      plAnnouncement: preset.plAnnouncement || ''
+      plCorner: preset.plCorner || '',
+      plOvertime: preset.plOvertime || '',
+      plAnnouncement: preset.plAnnouncement || '',
+      overtime: preset.overtime || null
     }));
   };
 
@@ -130,6 +135,22 @@ function ControllerView() {
   const [showAnnouncementModal, setShowAnnouncementModal] = useState(false);
   const [announcementText, setAnnouncementText] = useState("");
   const [announcementDuration, setAnnouncementDuration] = useState("");
+
+  const [showOvertimeModal, setShowOvertimeModal] = useState(false);
+  const [overtimeInput, setOvertimeInput] = useState("");
+
+  const handleOvertime = () => {
+    const val = parseInt(overtimeInput, 10);
+    if (!isNaN(val)) {
+      setGameState(prev => ({
+        ...prev,
+        overtime: val
+      }));
+      // Trigger scene if playlist is set
+      triggerScene(gameState.plOvertime);
+    }
+    setShowOvertimeModal(false);
+  };
 
   const handleSaveClick = () => {
     // Pre-fill name
@@ -371,6 +392,7 @@ function ControllerView() {
 
           <div className="mb-4">
             {visibility.special && <PlaylistSelect label="Special" value={gameState.plSpecial} onChange={v => updateState('plSpecial', v)} playlists={playlists} />}
+            {visibility.overtime && <PlaylistSelect label="Nachspielzeit" value={gameState.plOvertime} onChange={v => updateState('plOvertime', v)} playlists={playlists} />}
             {visibility.announcement && <PlaylistSelect label="Durchsage" value={gameState.plAnnouncement} onChange={v => updateState('plAnnouncement', v)} playlists={playlists} />}
           </div>
 
@@ -387,7 +409,9 @@ function ControllerView() {
                     homeScore: 0, guestScore: 0,
                     matchState: 'PRE_GAME', timerStart: null, timerOffset: 0, timerRunning: false,
                     plWarmup: '', plLineup: '', plScoreboard: '', plHalfTime: '', plEnd: '',
-                    plGoalHome: '', plGoalGuest: '', plSub: '', plYellow: '', plRed: '', plVar: '', plSpecial: '', plCorner: '', plAnnouncement: ''
+                    plWarmup: '', plLineup: '', plScoreboard: '', plHalfTime: '', plEnd: '',
+                    plGoalHome: '', plGoalGuest: '', plSub: '', plYellow: '', plRed: '', plVar: '', plSpecial: '', plCorner: '', plOvertime: '', plAnnouncement: '',
+                    overtime: null
                   }));
                 } else {
                   const p = presets.find(pr => pr.id === e.target.value);
@@ -484,6 +508,14 @@ function ControllerView() {
               <button className="btn btn-outline-primary w-100" onClick={() => startMatchState('POST_GAME')}>
                 Abpfiff 2. Halbzeit
               </button>
+              {visibility.overtime && (
+                <button className="btn btn-outline-primary" onClick={() => {
+                  setOvertimeInput("");
+                  setShowOvertimeModal(true);
+                }}>
+                  Nachspielzeit
+                </button>
+              )}
             </div>
 
             {visibility.goalHome && (
@@ -602,6 +634,35 @@ function ControllerView() {
         </div>
       )}
 
+      {/* OVERTIME MODAL */}
+      {showOvertimeModal && (
+        <div className="modal d-block" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
+          <div className="modal-dialog modal-dialog-centered">
+            <div className="modal-content">
+              <div className="modal-header">
+                <h5 className="modal-title">Nachspielzeit eingeben</h5>
+                <button type="button" className="btn-close" onClick={() => setShowOvertimeModal(false)}></button>
+              </div>
+              <div className="modal-body">
+                <label className="form-label">Minuten</label>
+                <input
+                  type="number"
+                  className="form-control"
+                  value={overtimeInput}
+                  onChange={e => setOvertimeInput(e.target.value)}
+                  autoFocus
+                  onKeyDown={e => { if (e.key === 'Enter') handleOvertime(); }}
+                />
+              </div>
+              <div className="modal-footer">
+                <button type="button" className="btn btn-secondary" onClick={() => setShowOvertimeModal(false)}>Abbrechen</button>
+                <button type="button" className="btn btn-primary" onClick={handleOvertime}>Übernehmen</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* ANNOUNCEMENT MODAL */}
       {showAnnouncementModal && (
         <div className="modal d-block" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
@@ -632,7 +693,7 @@ function ControllerView() {
               </div>
               <div className="modal-footer">
                 <button type="button" className="btn btn-secondary" onClick={() => setShowAnnouncementModal(false)}>Abbrechen</button>
-                <button type="button" className="btn btn-primary" onClick={handleAnnouncement}>Senden</button>
+                <button type="button" className="btn btn-primary" onClick={handleAnnouncement}>Übernehmen</button>
               </div>
             </div>
           </div>

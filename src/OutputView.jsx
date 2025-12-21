@@ -31,7 +31,9 @@ function OutputView({ preview = false }) {
         matchState: 'PRE_GAME',
         timerStart: null,
         timerOffset: 0,
-        timerRunning: false
+        timerOffset: 0,
+        timerRunning: false,
+        overtime: 0
     });
 
     const [timerDisplay, setTimerDisplay] = useState("00:00");
@@ -428,19 +430,38 @@ function OutputView({ preview = false }) {
 
                             {/* Timer Only */}
                             <div style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
                                 color: '#fff',
-                                backgroundColor: 'rgba(0,0,0,0.7)',
                                 fontSize: '8cqh',
                                 fontWeight: 'bold',
                                 fontFamily: 'monospace',
                                 letterSpacing: '0.1em',
                                 position: 'absolute',
-                                top: '-0.1em',
-                                padding: '0.2em 0.5em 0.1em 0.5em',
-                                borderBottomLeftRadius: '0.1em',
-                                borderBottomRightRadius: '0.1em',
+                                top: '0.1em',
                             }}>
-                                {timerDisplay}
+
+                                <div style={{
+                                    backgroundColor: 'rgba(0,0,0,0.7)',
+                                    fontSize: '8cqh',
+                                    padding: '0.2em 0.5em',
+                                }}>
+                                    {timerDisplay}
+                                </div>
+
+
+                                {gameState.overtime > 0 && (
+                                    <div style={{
+                                        backgroundColor: '#ff0000',
+                                        fontSize: '6cqh',
+                                        marginLeft: '0.2em',
+                                        padding: '0.2em 0.5em',
+                                    }}>
+                                        +{gameState.overtime}
+                                    </div>
+                                )}
+
                             </div>
 
                             {/* Teams & Score */}

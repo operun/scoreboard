@@ -26,6 +26,7 @@ function SettingsView() {
     var: true,
     special: true,
     corner: true,
+    overtime: true,
     announcement: true
   });
 
@@ -307,6 +308,7 @@ function SettingsView() {
                     { key: 'var', label: 'VAR Check' },
                     { key: 'special', label: 'Special' },
                     { key: 'corner', label: 'Eckstoß' },
+                    { key: 'overtime', label: 'Nachspielzeit' },
                     { key: 'announcement', label: 'Durchsage' },
                   ].map(({ key, label }) => (
                     <div className="form-check" key={key}>
