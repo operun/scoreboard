@@ -1,4 +1,4 @@
-import bgImage from '../../../assets/szene.png';
+import bgImage from '../../assets/szene.png';
 
 function AnnouncementScene({ message }) {
     if (!message) return null;

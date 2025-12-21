@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import testImage from '../assets/testbild.png';
+import testImage from './assets/testbild.png';
 import PlaylistScene from './components/output/PlaylistScene';
 import ScoreboardScene from './components/output/ScoreboardScene';
 import AnnouncementScene from './components/output/AnnouncementScene';

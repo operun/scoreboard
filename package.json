@@ -7,7 +7,7 @@
     "dev": "vite",
     "electron": "electronmon .",
     "start": "concurrently -k -n VITE,ELECTRON -c cyan,magenta \"npm run dev\" \"npm run electron\"",
-    "generate:icons": "electron-icon-builder --input=assets/icons/icon.png --output=assets --flatten",
+    "generate:icons": "electron-icon-builder --input=src/assets/icons/icon.png --output=src/assets --flatten",
     "build:renderer": "vite build",
     "build:electron": "electron-builder",
     "build": "npm run build:renderer && npm run build:electron"
@@ -48,21 +48,21 @@
       "dist/**/*",
       "main.js",
       "preload.js",
-      "assets/icons/*"
+      "src/assets/icons/*"
     ],
     "extraResources": [
-      "assets/**/*"
+      "src/assets/**/*"
     ],
     "mac": {
-      "icon": "assets/icons/icon.icns",
+      "icon": "src/assets/icons/icon.icns",
       "target": "dmg"
     },
     "win": {
-      "icon": "assets/icons/icon.ico",
+      "icon": "src/assets/icons/icon.ico",
       "target": "nsis"
     },
     "linux": {
-      "icon": "assets/icons/icon.png",
+      "icon": "src/assets/icons/icon.png",
       "target": [
         "AppImage",
         "deb"
