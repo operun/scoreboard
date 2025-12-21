@@ -3,7 +3,6 @@ import testImage from '../assets/testbild.png';
 import PlaylistScene from './components/output/PlaylistScene';
 import ScoreboardScene from './components/output/ScoreboardScene';
 import AnnouncementScene from './components/output/AnnouncementScene';
-import DefaultScene from './components/output/DefaultScene';
 
 function OutputView({ preview = false }) {
     useEffect(() => {
@@ -350,17 +349,13 @@ function OutputView({ preview = false }) {
 
                 {/* MEDIA LAYER */}
                 <div style={{ width: '100%', height: '100%' }}>
-                    {(scenePlaylist && scenePlaylist.type === 'DEFAULT') ? (
-                        <DefaultScene title={scenePlaylist.title} />
-                    ) : (
-                        <PlaylistScene
-                            activeMedia={activeMedia}
-                            currentTestImage={currentTestImage}
-                            showCropMarks={showCropMarks}
-                            onMediaEnd={handleMediaEnd}
-                            preview={preview}
-                        />
-                    )}
+                    <PlaylistScene
+                        activeMedia={activeMedia}
+                        currentTestImage={currentTestImage}
+                        showCropMarks={showCropMarks}
+                        onMediaEnd={handleMediaEnd}
+                        preview={preview}
+                    />
                 </div>
 
                 <div style={{

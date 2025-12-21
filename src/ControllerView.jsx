@@ -12,8 +12,7 @@ const PlaylistSelect = ({ label, value, onChange, playlists }) => (
       value={value}
       onChange={e => onChange(e.target.value)}
     >
-      <option value="">-- Ignorieren --</option>
-      <option value="DEFAULT">-- Default Szene --</option>
+      <option value="">- Ignorieren -</option>
       {playlists.map(p => <option key={p.id} value={p.id}>{p.title}</option>)}
     </select>
   </div>
