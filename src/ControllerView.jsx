@@ -188,6 +188,31 @@ function ControllerView() {
     toast.info("Spielstand aktualisiert");
   };
 
+  const handleStartTimer = () => {
+    setGameState(prev => {
+      if (prev.timerRunning) return prev;
+      return {
+        ...prev,
+        timerRunning: true,
+        timerStart: Date.now()
+      };
+    });
+  };
+
+  const handleStopTimer = () => {
+    setGameState(prev => {
+      if (!prev.timerRunning) return prev;
+      const now = Date.now();
+      const diffSec = prev.timerStart ? Math.floor((now - prev.timerStart) / 1000) : 0;
+      return {
+        ...prev,
+        timerRunning: false,
+        timerStart: null,
+        timerOffset: prev.timerOffset + diffSec
+      };
+    });
+  };
+
   // --- MATCH CONTROL LOGIC ---
   // --- MATCH CONTROL LOGIC ---
   const startMatchState = (state) => {
@@ -414,7 +439,9 @@ function ControllerView() {
               onChange={(e) => setTimerString(e.target.value)}
             />
 
-            <div className="text-center mt-3 mb-4">
+            <div className="d-flex justify-content-center gap-2 mt-3 mb-4">
+              <button className="btn btn-outline-success px-4" onClick={handleStartTimer}>Start</button>
+              <button className="btn btn-outline-danger px-4" onClick={handleStopTimer}>Stopp</button>
               <button className="btn btn-outline-primary px-5" onClick={commitScore}>Übernehmen</button>
             </div>
           </div>
