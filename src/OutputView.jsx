@@ -38,7 +38,6 @@ function OutputView({ preview = false }) {
         matchState: 'PRE_GAME',
         timerStart: null,
         timerOffset: 0,
-        timerOffset: 0,
         timerRunning: false,
         overtime: 0
     });
@@ -218,8 +217,6 @@ function OutputView({ preview = false }) {
                     setScenePlaylist(null);
                     setStandardPlaylist(null);
                     setCurrentPlaylist(null);
-                    setActiveMedia(null);
-                    setStandardMode('BACKGROUND');
                     setActiveMedia(null);
                     setStandardMode('BACKGROUND');
                     setAnnouncement(null);
