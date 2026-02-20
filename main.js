@@ -4,6 +4,7 @@ const { saveEncryptedSettings, loadEncryptedSettings } = require('./settingsStor
 const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
+const ffprobePath = require('ffprobe-static').path;
 
 app.setName('Scoreboard');
 
@@ -103,6 +104,7 @@ ipcMain.handle('load-media', async () => {
   // Check for missing durations and enrich (Migration logic)
   // We process this sequentially to avoid spawning 100 ffmpeg processes at boot
   const ffmpeg = require('fluent-ffmpeg');
+  ffmpeg.setFfprobePath(ffprobePath);
 
   for (const item of mediaList) {
     if (item.type === 'video' && !item.duration) {
@@ -189,8 +191,7 @@ ipcMain.handle('add-media', async (event, filePath) => {
   if (mediaType === 'video') {
     try {
       const ffmpeg = require('fluent-ffmpeg');
-      // fluent-ffmpeg needs ffmpeg path. On Mac with Brew it's usually in path.
-      // If not, we might need: ffmpeg.setFfmpegPath('/opt/homebrew/bin/ffmpeg');
+      ffmpeg.setFfprobePath(ffprobePath);
 
       await new Promise((resolve) => {
         ffmpeg.ffprobe(targetPath, (err, metadata) => {
