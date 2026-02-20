@@ -240,7 +240,7 @@ function OutputView({ preview = false }) {
                     setSubstitution(null);
                     setCard(null);
                     setSavedScene(null);
-                    // Always reset to standard playlist (even if null) to stop any running scene
+                    setStandardMode('BACKGROUND'); // ensure overlay condition is met
                     setCurrentPlaylist(standardPlaylist);
                     setCurrentIndex(0);
                     setShowScoreboard(true);
