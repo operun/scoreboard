@@ -188,7 +188,7 @@ function MediaView() {
             tabIndex="-1"
             style={{ visibility: 'visible', zIndex: 1045, width: '600px' }}
           >
-            <div className="offcanvas-header pt-4">
+            <div className="offcanvas-header" style={{ paddingTop: '60px' }}>
               <button type="button" className="btn-close" onClick={handleClose}></button>
             </div>
             <div className="offcanvas-body">
