@@ -12,22 +12,14 @@ function SettingsView() {
   const [showCropMarks, setShowCropMarks] = useState(true);
   const [customTestImageName, setCustomTestImageName] = useState(null);
   const [themeMode, setThemeMode] = useState('system');
+  const [scoreboardBgId, setScoreboardBgId] = useState(null);
+  const [scoreboardBgName, setScoreboardBgName] = useState(null);
+  const [scoreboardSponsorId, setScoreboardSponsorId] = useState(null);
+  const [scoreboardSponsorName, setScoreboardSponsorName] = useState(null);
+  const [mediaImages, setMediaImages] = useState([]); // for picker dropdowns
   const [controllerVisibility, setControllerVisibility] = useState({
-    warmup: true,
-    lineup: true,
-    scoreboard: true,
-    halftime: true,
-    end: true,
-    goalHome: true,
-    goalGuest: true,
-    sub: true,
-    yellow: true,
-    red: true,
-    var: true,
-    special: true,
-    corner: true,
-    overtime: true,
-    announcement: true
+    warmup: true, lineup: true, halftime: true, end: true,
+    goalHome: true, goalGuest: true, sub: true, yellow: true, red: true, var: true, special: true, corner: true, overtime: true, announcement: true
   });
 
   const [activeTab, setActiveTab] = useState('output');
@@ -40,7 +32,7 @@ function SettingsView() {
     const loadSettings = async () => {
       const settings = await window.electronAPI.loadSettings();
       if (settings) {
-        Object.assign(settingsRef, settings); // Sync ref
+        Object.assign(settingsRef, settings);
         setServer(settings.server || '');
         setUsername(settings.username || '');
         setPassword(settings.password || '');
@@ -50,7 +42,14 @@ function SettingsView() {
         if (settings.customTestImageName) setCustomTestImageName(settings.customTestImageName);
         if (settings.themeMode) setThemeMode(settings.themeMode);
         if (settings.controllerVisibility) setControllerVisibility(prev => ({ ...prev, ...settings.controllerVisibility }));
+        if (settings.scoreboardBgId) setScoreboardBgId(settings.scoreboardBgId);
+        if (settings.scoreboardBgName) setScoreboardBgName(settings.scoreboardBgName);
+        if (settings.scoreboardSponsorId) setScoreboardSponsorId(settings.scoreboardSponsorId);
+        if (settings.scoreboardSponsorName) setScoreboardSponsorName(settings.scoreboardSponsorName);
       }
+      // Load image list for pickers
+      const allMedia = await window.electronAPI.loadMedia();
+      setMediaImages(allMedia.filter(m => m.type === 'image'));
     };
     loadSettings();
   }, []);
@@ -66,6 +65,10 @@ function SettingsView() {
       showCropMarks,
       themeMode,
       controllerVisibility,
+      scoreboardBgId,
+      scoreboardBgName,
+      scoreboardSponsorId,
+      scoreboardSponsorName,
       ...overrides
     };
     Object.assign(settingsRef, newSettings);
@@ -144,6 +147,14 @@ function SettingsView() {
               Aussehen
             </button>
           </li>
+          <li className="nav-item">
+            <button
+              className={`nav-link ${activeTab === 'reset' ? 'active' : ''}`}
+              onClick={() => setActiveTab('reset')}
+            >
+              Reset
+            </button>
+          </li>
         </ul>
 
       </div >
@@ -212,6 +223,70 @@ function SettingsView() {
                   }}>
                     Testbild hochladen
                   </button>
+                )}
+              </div>
+
+              {/* Scoreboard Background */}
+              <div className="mb-4">
+                <label className="form-label">Hintergrund (Spielstand)</label>
+                {scoreboardBgId ? (
+                  <div className="d-flex align-items-center gap-3">
+                    <span className="text-success fw-bold">{scoreboardBgName || scoreboardBgId}</span>
+                    <button className="btn btn-link text-danger p-0" onClick={() => {
+                      setScoreboardBgId(null);
+                      setScoreboardBgName(null);
+                      saveAllSettings({ scoreboardBgId: null, scoreboardBgName: null });
+                      toast.info("Hintergrund entfernt");
+                    }}><BsXCircle /></button>
+                  </div>
+                ) : (
+                  <select
+                    className="form-select"
+                    value=""
+                    onChange={(e) => {
+                      const img = mediaImages.find(m => m.id === e.target.value);
+                      if (!img) return;
+                      setScoreboardBgId(img.id);
+                      setScoreboardBgName(img.fileName);
+                      saveAllSettings({ scoreboardBgId: img.id, scoreboardBgName: img.fileName });
+                      toast.success('Hintergrund gespeichert');
+                    }}
+                  >
+                    <option value="">-- Bild auswählen --</option>
+                    {mediaImages.map(m => <option key={m.id} value={m.id}>{m.fileName}</option>)}
+                  </select>
+                )}
+              </div>
+
+              {/* Sponsor */}
+              <div className="mb-4">
+                <label className="form-label">Hauptsponsor</label>
+                {scoreboardSponsorId ? (
+                  <div className="d-flex align-items-center gap-3">
+                    <span className="text-success fw-bold">{scoreboardSponsorName || scoreboardSponsorId}</span>
+                    <button className="btn btn-link text-danger p-0" onClick={() => {
+                      setScoreboardSponsorId(null);
+                      setScoreboardSponsorName(null);
+                      saveAllSettings({ scoreboardSponsorId: null, scoreboardSponsorName: null });
+                      toast.info("Sponsor entfernt");
+                    }}><BsXCircle /></button>
+                  </div>
+                ) : (
+                  <select
+                    className="form-select"
+                    value=""
+                    onChange={(e) => {
+                      const img = mediaImages.find(m => m.id === e.target.value);
+                      if (!img) return;
+                      setScoreboardSponsorId(img.id);
+                      setScoreboardSponsorName(img.fileName);
+                      saveAllSettings({ scoreboardSponsorId: img.id, scoreboardSponsorName: img.fileName });
+                      toast.success('Sponsor gespeichert');
+                    }}
+                  >
+                    <option value="">-- Bild auswählen --</option>
+                    {mediaImages.map(m => <option key={m.id} value={m.id}>{m.fileName}</option>)}
+                  </select>
                 )}
               </div>
             </>
@@ -297,7 +372,6 @@ function SettingsView() {
                   {[
                     { key: 'warmup', label: 'Warmup' },
                     { key: 'lineup', label: 'Aufstellung' },
-                    { key: 'scoreboard', label: 'Spielstand' },
                     { key: 'halftime', label: 'Halbzeit' },
                     { key: 'end', label: 'Abpfiff' },
                     { key: 'goalHome', label: 'Tor Heim' },
@@ -329,9 +403,25 @@ function SettingsView() {
             </>
           )}
 
+          {activeTab === 'reset' && (
+            <>
+              <p className="text-muted small mb-4">Löscht alle Einstellungen und Presets. Mediendateien bleiben erhalten. Die App wird danach neu gestartet.</p>
+              <button
+                className="btn btn-danger"
+                onClick={async () => {
+                  if (!window.confirm('Alle Einstellungen und Presets wirklich zurücksetzen? Die App wird neu gestartet.')) return;
+                  await window.electronAPI.resetApp();
+                }}
+              >
+                App zurücksetzen
+              </button>
+            </>
+          )}
+
         </div>
       </div>
-    </div >
+
+    </div>
   );
 }
 

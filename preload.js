@@ -61,5 +61,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
   closeWindow: () => ipcRenderer.invoke('window-close'),
 
   // Environment
-  platform: process.platform
+  platform: process.platform,
+
+  // Reset (wipes settings + presets, keeps media)
+  resetApp: () => ipcRenderer.invoke('reset-app'),
 });

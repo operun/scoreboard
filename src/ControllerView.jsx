@@ -29,6 +29,12 @@ function ControllerView() {
   const [presets, setPresets] = useState([]);
   const [currentPresetId, setCurrentPresetId] = useState('new');
 
+  // Team logos (stored in preset)
+  const [logoHomeId, setLogoHomeId] = useState('');
+  const [logoGuestId, setLogoGuestId] = useState('');
+  const [mediaImages, setMediaImages] = useState([]); // image-only list for logo picker
+  const [showLogoModal, setShowLogoModal] = useState(null); // 'home' | 'guest' | null
+
   // Game State (part of preset)
   const [gameState, setGameState] = useState({
     // Scores (Live)
@@ -44,9 +50,8 @@ function ControllerView() {
     // Playlist Mappings (IDs)
     plWarmup: '',
     plLineup: '',
-    plScoreboard: '', // Hintergrund (Spielstand)
     plHalfTime: '',
-    plEnd: '',     // Abpfiff
+    plEnd: '',
     plGoalHome: '',
     plGoalGuest: '',
     plSub: '',
@@ -70,7 +75,7 @@ function ControllerView() {
 
   // Visibility Settings
   const [visibility, setVisibility] = useState({
-    warmup: true, lineup: true, scoreboard: true, halftime: true, end: true,
+    warmup: true, lineup: true, halftime: true, end: true,
     goalHome: true, goalGuest: true, sub: true, yellow: true, red: true, var: true, special: true, corner: true, overtime: true, announcement: true
   });
 
@@ -94,19 +99,22 @@ function ControllerView() {
       const pl = await window.electronAPI.loadPlaylists();
       setPlaylists(pl);
 
+      // Load images for logo picker
+      const allMedia = await window.electronAPI.loadMedia();
+      setMediaImages(allMedia.filter(m => m.type === 'image'));
+
       // Load or Create Default Preset
       let pr = await window.electronAPI.loadPresets();
 
-      // Ensure "Default" preset always exists if list is empty or we want to reset
       let defaultPreset = pr.find(p => p.name === 'Standard');
 
       if (!defaultPreset) {
-        // Create initial default preset if missing
         defaultPreset = {
           id: 'default',
           name: 'Standard',
-          plWarmup: '', plLineup: '', plScoreboard: '', plHalfTime: '', plEnd: '',
-          plGoalHome: '', plGoalGuest: '', plSub: '', plYellow: '', plRed: '', plVar: '', plSpecial: '', plCorner: '', plOvertime: '', plAnnouncement: ''
+          plWarmup: '', plLineup: '', plHalfTime: '', plEnd: '',
+          plGoalHome: '', plGoalGuest: '', plSub: '', plYellow: '', plRed: '', plVar: '', plSpecial: '', plCorner: '', plOvertime: '', plAnnouncement: '',
+          logoHomeId: '', logoGuestId: ''
         };
         await window.electronAPI.savePreset(defaultPreset);
         pr.push(defaultPreset);
@@ -114,7 +122,6 @@ function ControllerView() {
 
       setPresets(pr);
 
-      // Select "Default" or First
       if (defaultPreset) {
         loadPreset(defaultPreset);
       } else if (pr.length > 0) {
@@ -127,17 +134,10 @@ function ControllerView() {
   const loadPreset = (preset) => {
     setCurrentPresetId(preset.id);
 
-    // Only load Playlist Mappings from preset, keep current Game State (scores, timer) or reset them manually if needed?
-    // User requested to ONLY save playlist mappings. So when loading, we ONLY update playlist mappings.
-    // Scores and Match State remain untouched or could be reset if desired. 
-    // Assuming we just map playlists:
-
     setGameState(prev => ({
       ...prev,
-      // Update Playlist IDs from Preset
       plWarmup: preset.plWarmup || '',
       plLineup: preset.plLineup || '',
-      plScoreboard: preset.plScoreboard || '',
       plHalfTime: preset.plHalfTime || '',
       plEnd: preset.plEnd || '',
       plGoalHome: preset.plGoalHome || '',
@@ -150,9 +150,14 @@ function ControllerView() {
       plCorner: preset.plCorner || '',
       plOvertime: preset.plOvertime || '',
       plAnnouncement: preset.plAnnouncement || '',
-
-      // Explicitly NOT loading scores, timer, matchState, overtime from preset anymore
     }));
+
+    // Restore logos and send to output
+    const homeId = preset.logoHomeId || '';
+    const guestId = preset.logoGuestId || '';
+    setLogoHomeId(homeId);
+    setLogoGuestId(guestId);
+    window.electronAPI.sendControlCommand('SET_TEAM_LOGOS', { homeId, guestId });
   };
 
   // Modal State
@@ -183,8 +188,10 @@ function ControllerView() {
         ...prev,
         overtime: val
       }));
-      // Trigger scene if playlist is set
-      triggerScene(gameState.plOvertime, 'Nachspielzeit');
+      // Only trigger a scene if a playlist is explicitly configured
+      if (gameState.plOvertime) {
+        triggerScene(gameState.plOvertime, 'Nachspielzeit');
+      }
     }
     setShowOvertimeModal(false);
   };
@@ -273,13 +280,11 @@ function ControllerView() {
   const savePresetInternal = async (id, name, stateOverride = null) => {
     const stateToUse = stateOverride || gameState;
 
-    // Only save Playlist IDs
     const newPreset = {
       id,
       name,
       plWarmup: stateToUse.plWarmup,
       plLineup: stateToUse.plLineup,
-      plScoreboard: stateToUse.plScoreboard,
       plHalfTime: stateToUse.plHalfTime,
       plEnd: stateToUse.plEnd,
       plGoalHome: stateToUse.plGoalHome,
@@ -291,7 +296,9 @@ function ControllerView() {
       plSpecial: stateToUse.plSpecial,
       plCorner: stateToUse.plCorner,
       plOvertime: stateToUse.plOvertime,
-      plAnnouncement: stateToUse.plAnnouncement
+      plAnnouncement: stateToUse.plAnnouncement,
+      logoHomeId,
+      logoGuestId,
     };
 
     try {
@@ -355,45 +362,36 @@ function ControllerView() {
   // --- MATCH CONTROL LOGIC ---
   const startMatchState = (state) => {
     const updates = { matchState: state };
-    let plToPlay = null;
 
     if (state === 'FIRST_HALF') {
       updates.timerRunning = true;
       updates.timerStart = Date.now();
       updates.timerOffset = 0;
-      plToPlay = gameState.plScoreboard;
+      // Show static scoreboard (no playlist needed)
+      window.electronAPI.sendControlCommand('SHOW_SCOREBOARD');
     } else if (state === 'HALF_TIME') {
       updates.timerRunning = false;
-      plToPlay = gameState.plHalfTime;
+      updates.timerOffset = 45 * 60;
+      updates.timerStart = null;
+      if (gameState.plHalfTime) {
+        const pl = playlists.find(p => p.id === gameState.plHalfTime);
+        if (pl) window.electronAPI.sendControlCommand('PLAY_PLAYLIST', { playlist: pl, mode: 'FULL' });
+      }
     } else if (state === 'SECOND_HALF') {
       updates.timerRunning = true;
       updates.timerStart = Date.now();
-      updates.timerOffset = 45 * 60; // 45 min
-      plToPlay = gameState.plScoreboard;
+      updates.timerOffset = 45 * 60;
+      // Show static scoreboard (no playlist needed)
+      window.electronAPI.sendControlCommand('SHOW_SCOREBOARD');
     } else if (state === 'POST_GAME') {
       updates.timerRunning = false;
-      plToPlay = gameState.plEnd;
+      if (gameState.plEnd) {
+        const pl = playlists.find(p => p.id === gameState.plEnd);
+        if (pl) window.electronAPI.sendControlCommand('PLAY_PLAYLIST', { playlist: pl, mode: 'FULL' });
+      }
     }
 
     setGameState(prev => ({ ...prev, ...updates }));
-
-    // Trigger Playlist if configured
-    if (plToPlay) {
-      if (plToPlay === 'DEFAULT') {
-        window.electronAPI.sendControlCommand('PLAY_PLAYLIST', {
-          playlist: { type: 'DEFAULT', title: state === 'HALF_TIME' ? 'Halbzeit' : (state === 'POST_GAME' ? 'Abpfiff' : 'Spielstand') },
-          mode: (state === 'FIRST_HALF' || state === 'SECOND_HALF') ? 'BACKGROUND' : 'FULL'
-        });
-      } else {
-        const pl = playlists.find(p => p.id === plToPlay);
-        if (pl) {
-          window.electronAPI.sendControlCommand('PLAY_PLAYLIST', {
-            playlist: pl,
-            mode: (state === 'FIRST_HALF' || state === 'SECOND_HALF') ? 'BACKGROUND' : 'FULL'
-          });
-        }
-      }
-    }
   };
 
   const triggerScene = (plId, title) => {
@@ -569,7 +567,6 @@ function ControllerView() {
           <div className="mb-4">
             {visibility.warmup && <PlaylistSelect label="Warmup" value={gameState.plWarmup} onChange={v => updateState('plWarmup', v)} playlists={playlists} />}
             {visibility.lineup && <PlaylistSelect label="Aufstellung" value={gameState.plLineup} onChange={v => updateState('plLineup', v)} playlists={playlists} />}
-            {visibility.scoreboard && <PlaylistSelect label="Spielstand" value={gameState.plScoreboard} onChange={v => updateState('plScoreboard', v)} playlists={playlists} />}
             {visibility.halftime && <PlaylistSelect label="Halbzeit" value={gameState.plHalfTime} onChange={v => updateState('plHalfTime', v)} playlists={playlists} />}
             {visibility.end && <PlaylistSelect label="Abpfiff" value={gameState.plEnd} onChange={v => updateState('plEnd', v)} playlists={playlists} />}
           </div>
@@ -606,7 +603,7 @@ function ControllerView() {
               <button className="btn btn-sm btn-link text-muted p-0" style={{ fontSize: '0.85rem' }} onClick={() => {
                 setGameState(prev => ({
                   ...prev,
-                  plWarmup: '', plLineup: '', plScoreboard: '', plHalfTime: '', plEnd: '',
+                  plWarmup: '', plLineup: '', plHalfTime: '', plEnd: '',
                   plGoalHome: '', plGoalGuest: '', plSub: '', plYellow: '', plRed: '', plVar: '', plSpecial: '', plCorner: '', plOvertime: '', plAnnouncement: ''
                 }));
                 toast.info("Playlists zurückgesetzt");
@@ -669,6 +666,32 @@ function ControllerView() {
 
           <div style={{ width: '100%', overflow: 'hidden' }}>
             <OutputView preview={true} />
+          </div>
+
+          {/* TEAM LOGO PICKER */}
+          <div className="d-flex gap-3 mt-3 justify-content-center">
+            {['home', 'guest'].map(side => {
+              const id = side === 'home' ? logoHomeId : logoGuestId;
+              const label = side === 'home' ? 'Heim Logo' : 'Gast Logo';
+              const img = mediaImages.find(m => m.id === id);
+              return (
+                <div key={side} style={{ flex: 1, textAlign: 'center' }}>
+                  <div
+                    className="border rounded d-flex flex-column align-items-center justify-content-center p-1"
+                    style={{ minHeight: 64, cursor: 'pointer', fontSize: '0.8rem' }}
+                    onClick={() => setShowLogoModal(side)}
+                  >
+                    {img ? (
+                      <>
+                        <img src={`file://${img.path}`} alt={img.fileName} style={{ maxHeight: 48, maxWidth: '100%', objectFit: 'contain' }} />
+                      </>
+                    ) : (
+                      <span className="text-muted">{label}</span>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
           </div>
 
         </div>
@@ -789,28 +812,9 @@ function ControllerView() {
               {/* Spacer */}
             </div>
 
-            {visibility.scoreboard && (
-              <button className="btn btn-outline-primary" onClick={() => {
-                // 1. Show standard scoreboard
-                window.electronAPI.sendControlCommand('SHOW_SCOREBOARD');
-                // 2. Restart background playlist if available, to be safe
-                const plId = gameState.plScoreboard;
-                const pl = playlists.find(p => p.id === plId);
-                if (pl && pl !== 'DEFAULT') {
-                  window.electronAPI.sendControlCommand('PLAY_PLAYLIST', {
-                    playlist: pl,
-                    mode: 'BACKGROUND'
-                  });
-                } else if (plId === 'DEFAULT') {
-                  window.electronAPI.sendControlCommand('PLAY_PLAYLIST', {
-                    playlist: { type: 'DEFAULT', title: 'Spielstand' },
-                    mode: 'BACKGROUND'
-                  });
-                }
-              }}>
-                Spielstand
-              </button>
-            )}
+            <button className="btn btn-outline-primary" onClick={() => window.electronAPI.sendControlCommand('SHOW_SCOREBOARD')}>
+              Spielstand
+            </button>
 
             {visibility.announcement && (
               <button className="btn btn-outline-primary" onClick={() => {
@@ -834,6 +838,57 @@ function ControllerView() {
         </div>
 
       </div>
+
+      {/* LOGO PICKER MODAL */}
+      {showLogoModal && (
+        <div className="modal d-block" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
+          <div className="modal-dialog modal-dialog-centered">
+            <div className="modal-content">
+              <div className="modal-header">
+                <h5 className="modal-title">{showLogoModal === 'home' ? 'Heim Logo' : 'Gast Logo'} auswählen</h5>
+                <button type="button" className="btn-close" onClick={() => setShowLogoModal(null)} />
+              </div>
+              <div className="modal-body" style={{ maxHeight: 400, overflowY: 'auto' }}>
+                <div className="d-grid gap-2">
+                  <button
+                    className="btn btn-outline-secondary btn-sm text-start"
+                    onClick={() => {
+                      if (showLogoModal === 'home') setLogoHomeId('');
+                      else setLogoGuestId('');
+                      const homeId = showLogoModal === 'home' ? '' : logoHomeId;
+                      const guestId = showLogoModal === 'guest' ? '' : logoGuestId;
+                      window.electronAPI.sendControlCommand('SET_TEAM_LOGOS', { homeId, guestId });
+                      setShowLogoModal(null);
+                    }}
+                  >
+                    - Kein Logo -
+                  </button>
+                  {mediaImages.map(img => (
+                    <button
+                      key={img.id}
+                      className="btn btn-outline-primary btn-sm text-start d-flex align-items-center gap-2"
+                      onClick={() => {
+                        const homeId = showLogoModal === 'home' ? img.id : logoHomeId;
+                        const guestId = showLogoModal === 'guest' ? img.id : logoGuestId;
+                        if (showLogoModal === 'home') setLogoHomeId(img.id);
+                        else setLogoGuestId(img.id);
+                        window.electronAPI.sendControlCommand('SET_TEAM_LOGOS', { homeId, guestId });
+                        setShowLogoModal(null);
+                      }}
+                    >
+                      <img src={`file://${img.path}`} alt={img.fileName} style={{ width: 32, height: 32, objectFit: 'contain' }} />
+                      {img.fileName}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div className="modal-footer">
+                <button className="btn btn-secondary" onClick={() => setShowLogoModal(null)}>Abbrechen</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* SAVE PRESET MODAL */}
       {showSaveModal && (
@@ -884,6 +939,7 @@ function ControllerView() {
                 />
               </div>
               <div className="modal-footer">
+                <button type="button" className="btn btn-outline-danger me-auto" onClick={() => { setGameState(prev => ({ ...prev, overtime: 0 })); setShowOvertimeModal(false); }}>Zurücksetzen</button>
                 <button type="button" className="btn btn-secondary" onClick={() => setShowOvertimeModal(false)}>Abbrechen</button>
                 <button type="button" className="btn btn-primary" onClick={handleOvertime}>Übernehmen</button>
               </div>

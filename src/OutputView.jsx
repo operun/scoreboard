@@ -31,6 +31,12 @@ function OutputView({ preview = false }) {
     const [outputSize, setOutputSize] = useState({ width: 1280, height: 720 });
     const [showCropMarks, setShowCropMarks] = useState(true);
 
+    // -- SCOREBOARD ASSETS --
+    const [homeLogoPath, setHomeLogoPath] = useState(null);
+    const [guestLogoPath, setGuestLogoPath] = useState(null);
+    const [scoreboardBgPath, setScoreboardBgPath] = useState(null);
+    const [scoreboardSponsorPath, setScoreboardSponsorPath] = useState(null);
+
     // -- GAME STATE --
     const [gameState, setGameState] = useState({
         homeScore: 0,
@@ -51,16 +57,31 @@ function OutputView({ preview = false }) {
 
     // --- LOAD SETTINGS & LISTEN FOR UPDATES ---
     useEffect(() => {
-        const applySettings = (settings) => {
+        const resolveMediaId = async (id, allMedia) => {
+            if (!id) return null;
+            const found = allMedia.find(m => m.id === id);
+            return found ? `file://${found.path}` : null;
+        };
+
+        const applySettings = async (settings) => {
             if (settings) {
                 const w = parseInt(settings.outputWidth) || 1280;
                 const h = parseInt(settings.outputHeight) || 720;
                 setOutputSize({ width: w, height: h });
-                setShowCropMarks(settings.showCropMarks !== false); // Default true
+                setShowCropMarks(settings.showCropMarks !== false);
 
-                // If settings include a test image path (added in backend), use it
                 if (settings.customTestImage) {
                     setCurrentTestImage(settings.customTestImage);
+                }
+
+                // Resolve scoreboard bg + sponsor from media IDs
+                if (settings.scoreboardBgId || settings.scoreboardSponsorId) {
+                    const allMedia = await window.electronAPI.loadMedia();
+                    setScoreboardBgPath(await resolveMediaId(settings.scoreboardBgId, allMedia));
+                    setScoreboardSponsorPath(await resolveMediaId(settings.scoreboardSponsorId, allMedia));
+                } else {
+                    if (!settings.scoreboardBgId) setScoreboardBgPath(null);
+                    if (!settings.scoreboardSponsorId) setScoreboardSponsorPath(null);
                 }
             }
         };
@@ -102,11 +123,23 @@ function OutputView({ preview = false }) {
     // --- COMMAND LISTENER ---
     useEffect(() => {
         if (window.electronAPI.onControlCommand) {
-            const remove = window.electronAPI.onControlCommand((event, { command, payload }) => {
+            const remove = window.electronAPI.onControlCommand(async (event, { command, payload }) => {
                 console.log("CMD:", command, payload);
 
                 if (command === 'UPDATE_GAME_STATE') {
                     setGameState(prev => ({ ...prev, ...payload }));
+                }
+
+                if (command === 'SET_TEAM_LOGOS') {
+                    const { homeId, guestId } = payload;
+                    const allMedia = await window.electronAPI.loadMedia();
+                    const resolve = (id) => {
+                        if (!id) return null;
+                        const found = allMedia.find(m => m.id === id);
+                        return found ? `file://${found.path}` : null;
+                    };
+                    setHomeLogoPath(resolve(homeId));
+                    setGuestLogoPath(resolve(guestId));
                 }
 
                 if (command === 'PLAY_PLAYLIST') {
@@ -238,11 +271,12 @@ function OutputView({ preview = false }) {
                         announcementDuration,
                         showScoreboard,
                         currentPlaylist,
-                        // For currentIndex, we send the current one.
-                        // Ideally we might want to sync start timestamps to overlap video perfectly,
-                        // but simple index sync is often "good enough" for preview.
                         currentIndex,
-                        gameState
+                        gameState,
+                        homeLogoPath,
+                        guestLogoPath,
+                        scoreboardBgPath,
+                        scoreboardSponsorPath,
                     });
                 }
 
@@ -258,6 +292,10 @@ function OutputView({ preview = false }) {
                     setCurrentPlaylist(s.currentPlaylist);
                     setCurrentIndex(s.currentIndex);
                     setGameState(s.gameState);
+                    if (s.homeLogoPath !== undefined) setHomeLogoPath(s.homeLogoPath);
+                    if (s.guestLogoPath !== undefined) setGuestLogoPath(s.guestLogoPath);
+                    if (s.scoreboardBgPath !== undefined) setScoreboardBgPath(s.scoreboardBgPath);
+                    if (s.scoreboardSponsorPath !== undefined) setScoreboardSponsorPath(s.scoreboardSponsorPath);
                 }
             });
             return () => remove();
@@ -471,8 +509,14 @@ function OutputView({ preview = false }) {
                     ) : announcement ? (
                         <AnnouncementScene message={announcement} />
                     ) : (
-                        /* Default Scoreboard Design */
-                        <ScoreboardScene gameState={gameState} timerDisplay={timerDisplay} />
+                        <ScoreboardScene
+                            gameState={gameState}
+                            timerDisplay={timerDisplay}
+                            homeLogoPath={homeLogoPath}
+                            guestLogoPath={guestLogoPath}
+                            bgPath={scoreboardBgPath}
+                            sponsorPath={scoreboardSponsorPath}
+                        />
                     )}
 
                 </div>

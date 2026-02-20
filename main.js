@@ -36,13 +36,12 @@ function getMediaType(fileName) {
 
 ipcMain.handle('load-settings', async () => {
   const filePath = path.join(app.getPath('userData'), 'settings.json');
-  const settings = loadEncryptedSettings(filePath);
+  const settings = loadEncryptedSettings(filePath) || {};
 
   // Check for custom test image
   const customImagePath = path.join(app.getPath('userData'), 'custom_test_image.png');
   if (fs.existsSync(customImagePath)) {
     settings.customTestImage = `file://${customImagePath}?t=${Date.now()}`;
-    // Ensure name is present, default to generic if missing but file exists
     if (!settings.customTestImageName) settings.customTestImageName = 'Eigenes Testbild';
   } else {
     settings.customTestImage = null;
@@ -51,6 +50,7 @@ ipcMain.handle('load-settings', async () => {
 
   return settings;
 });
+
 
 ipcMain.handle('save-settings', async (event, settings) => {
   const filePath = path.join(app.getPath('userData'), 'settings.json');
@@ -622,6 +622,24 @@ ipcMain.handle('sync-to-remote', async () => {
       readyTimeout: 10000
     });
   });
+});
+
+ipcMain.handle('reset-app', async () => {
+  const filesToDelete = [
+    path.join(app.getPath('userData'), 'settings.json'),
+    path.join(app.getPath('userData'), 'presets.json'),
+  ];
+
+  for (const f of filesToDelete) {
+    try {
+      if (fs.existsSync(f)) fs.unlinkSync(f);
+    } catch (e) {
+      console.error('[Reset] Failed to delete:', f, e);
+    }
+  }
+
+  app.relaunch();
+  app.quit();
 });
 
 let outputWindow = null;

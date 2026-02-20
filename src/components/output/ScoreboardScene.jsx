@@ -1,71 +1,146 @@
-function ScoreboardScene({ gameState, timerDisplay }) {
+function ScoreboardScene({ gameState, timerDisplay, homeLogoPath, guestLogoPath, bgPath, sponsorPath }) {
     return (
-        <div style={{
-            width: '40cqw', // Changed vw to cqw
-            height: '100%',
-            display: 'flex',
-            flexDirection: 'column',
-            justifyContent: 'center',
-            alignItems: 'center',
-        }}>
+        <div style={{ position: 'relative', width: '100%', height: '100%', overflow: 'hidden' }}>
 
-            {/* Timer Only */}
+            {/* Background layer */}
+            {bgPath ? (
+                <img
+                    src={bgPath}
+                    alt=""
+                    style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', zIndex: 0 }}
+                />
+            ) : (
+                <div style={{ position: 'absolute', inset: 0, backgroundColor: '#111', zIndex: 0 }} />
+            )}
+
+            {/* Grid overlay */}
             <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                color: '#fff',
-                fontSize: '8cqh',
-                fontWeight: 'bold',
-                fontFamily: 'monospace',
-                letterSpacing: '0.1em',
                 position: 'absolute',
-                top: '0.1em',
+                inset: 0,
+                zIndex: 1,
+                display: 'grid',
+                gridTemplateRows: '1fr 2fr 1fr',
+                padding: '3cqh 4cqw',
+                boxSizing: 'border-box',
             }}>
 
+                {/* Row 1: Timer */}
                 <div style={{
-                    backgroundColor: 'rgba(0,0,0,0.7)',
-                    fontSize: '8cqh',
-                    padding: '0.2em 0.5em',
+                    display: 'flex',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    gap: '0.3em',
                 }}>
-                    {timerDisplay}
+                    <div style={{
+                        backgroundColor: 'rgba(0,0,0,0.7)',
+                        color: '#fff',
+                        fontSize: '8cqh',
+                        fontWeight: 'bold',
+                        fontFamily: 'monospace',
+                        letterSpacing: '0.05em',
+                        padding: '0.15em 0.5em',
+                        borderRadius: '0.2em',
+                    }}>
+                        {gameState.matchState === 'POST_GAME' ? 'Endstand' : timerDisplay}
+                    </div>
+
+                    {gameState.matchState !== 'POST_GAME' && gameState.overtime > 0 && (
+
+                        <div style={{
+                            backgroundColor: '#e00',
+                            color: '#fff',
+                            fontSize: '6cqh',
+                            fontWeight: 'bold',
+                            fontFamily: 'monospace',
+                            padding: '0.15em 0.5em',
+                            borderRadius: '0.2em',
+                        }}>
+                            +{gameState.overtime}
+                        </div>
+                    )}
                 </div>
 
-
-                {gameState.overtime > 0 && (
-                    <div style={{
-                        backgroundColor: '#ff0000',
-                        fontSize: '6cqh',
-                        marginLeft: '0.2em',
-                        padding: '0.2em 0.5em',
-                    }}>
-                        +{gameState.overtime}
+                {/* Row 2: Home Logo | Home Score | : | Away Score | Away Logo */}
+                <div style={{
+                    display: 'flex',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    gap: '3cqw',
+                }}>
+                    {/* Home Logo */}
+                    <div style={{ flex: 1, display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }}>
+                        {homeLogoPath && (
+                            <img
+                                src={homeLogoPath}
+                                alt="Home"
+                                style={{ maxHeight: '35cqh', maxWidth: '35cqw', objectFit: 'contain' }}
+                            />
+                        )}
                     </div>
-                )}
 
-            </div>
-
-            {/* Teams & Score */}
-            <div style={{
-                display: 'flex',
-                justifyContent: 'space-around',
-                width: '100%',
-                alignItems: 'center',
-                marginBottom: '15cqh' // Changed vh to cqh
-            }}>
-                <div style={{ textAlign: 'center', flex: 1 }}>
-                    <div style={{ fontSize: '30cqh', fontWeight: 'bold', lineHeight: 1, color: 'white' }}>
+                    {/* Home Score */}
+                    <div style={{
+                        color: '#fff',
+                        fontSize: '28cqh',
+                        fontWeight: 'bold',
+                        fontFamily: 'monospace',
+                        lineHeight: 1,
+                        textShadow: '0 2px 8px rgba(0,0,0,0.8)',
+                        minWidth: '1.2em',
+                        textAlign: 'center',
+                    }}>
                         {gameState.homeScore}
                     </div>
-                </div>
 
-                <div style={{ color: '#fff', fontSize: '20cqh', marginTop: '10cqh' }}>:</div>
+                    {/* Divider */}
+                    <div style={{
+                        color: 'rgba(255,255,255,0.7)',
+                        fontSize: '20cqh',
+                        fontWeight: 'bold',
+                        fontFamily: 'monospace',
+                        lineHeight: 1,
+                        textShadow: '0 2px 8px rgba(0,0,0,0.8)',
+                    }}>
+                        :
+                    </div>
 
-                <div style={{ textAlign: 'center', flex: 1 }}>
-                    <div style={{ fontSize: '30cqh', fontWeight: 'bold', lineHeight: 1, color: 'white' }}>
+                    {/* Away Score */}
+                    <div style={{
+                        color: '#fff',
+                        fontSize: '28cqh',
+                        fontWeight: 'bold',
+                        fontFamily: 'monospace',
+                        lineHeight: 1,
+                        textShadow: '0 2px 8px rgba(0,0,0,0.8)',
+                        minWidth: '1.2em',
+                        textAlign: 'center',
+                    }}>
                         {gameState.guestScore}
                     </div>
+
+                    {/* Away Logo */}
+                    <div style={{ flex: 1, display: 'flex', justifyContent: 'flex-start', alignItems: 'center' }}>
+                        {guestLogoPath && (
+                            <img
+                                src={guestLogoPath}
+                                alt="Away"
+                                style={{ maxHeight: '35cqh', maxWidth: '35cqw', objectFit: 'contain' }}
+                            />
+                        )}
+                    </div>
                 </div>
+
+                {/* Row 3: Sponsor */}
+                <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+                    {sponsorPath && (
+                        <img
+                            src={sponsorPath}
+                            alt="Sponsor"
+                            style={{ maxHeight: '15cqh', maxWidth: '30cqw', objectFit: 'contain' }}
+                        />
+                    )}
+                </div>
+
             </div>
         </div>
     );
