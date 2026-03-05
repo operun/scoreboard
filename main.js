@@ -145,7 +145,8 @@ ipcMain.handle('load-media', async () => {
       thumbnailPath: item.thumbnailStoredName
         ? path.join(mediaDir, 'thumbnails', item.thumbnailStoredName)
         : null
-    }));
+    }))
+    .sort((a, b) => a.fileName.localeCompare(b.fileName, 'de', { sensitivity: 'base' }));
 });
 
 ipcMain.handle('add-media', async (event, filePath) => {
