@@ -96,7 +96,8 @@ function MediaView() {
 
   return (
     <div
-      className="container"
+      className="d-flex flex-column h-100"
+      style={{ padding: '0 3rem' }}
       onDragOver={(e) => e.preventDefault()}
       onDrop={handleDrop}
     >
@@ -140,7 +141,7 @@ function MediaView() {
         </button>
       </div>
 
-      <div className="row">
+      <div className="row flex-fill overflow-auto">
         <div className="col">
           <table className="table">
             <thead>
