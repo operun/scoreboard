@@ -141,7 +141,10 @@ ipcMain.handle('load-media', async () => {
     .filter(item => !item.deleted)
     .map((item) => ({
       ...item,
-      path: path.join(mediaDir, item.storedName)
+      path: path.join(mediaDir, item.storedName),
+      thumbnailPath: item.thumbnailStoredName
+        ? path.join(mediaDir, 'thumbnails', item.thumbnailStoredName)
+        : null
     }));
 });
 
@@ -187,12 +190,13 @@ ipcMain.handle('add-media', async (event, filePath) => {
     duration: 0 // Default
   };
 
-  // Extract duration for videos
+  // Extract duration + generate thumbnail for videos
   if (mediaType === 'video') {
-    try {
-      const ffmpeg = require('fluent-ffmpeg');
-      ffmpeg.setFfprobePath(ffprobePath);
+    const ffmpeg = require('fluent-ffmpeg');
+    ffmpeg.setFfprobePath(ffprobePath);
 
+    // Duration
+    try {
       await new Promise((resolve) => {
         ffmpeg.ffprobe(targetPath, (err, metadata) => {
           if (!err && metadata && metadata.format && metadata.format.duration) {
@@ -203,6 +207,37 @@ ipcMain.handle('add-media', async (event, filePath) => {
       });
     } catch (e) {
       console.error('FFprobe error:', e);
+    }
+
+    // Thumbnail
+    try {
+      const thumbDir = path.join(mediaDir, 'thumbnails');
+      if (!fs.existsSync(thumbDir)) fs.mkdirSync(thumbDir, { recursive: true });
+
+      const thumbName = `${id}.jpg`;
+      const thumbPath = path.join(thumbDir, thumbName);
+
+      await new Promise((resolve) => {
+        ffmpeg(targetPath)
+          .on('end', resolve)
+          .on('error', (err) => {
+            console.warn('[Media] Thumbnail generation failed:', err.message);
+            resolve();
+          })
+          .screenshots({
+            timestamps: ['00:00:01'],
+            filename: thumbName,
+            folder: thumbDir,
+            size: '160x90'
+          });
+      });
+
+      if (fs.existsSync(thumbPath)) {
+        newEntry.thumbnailStoredName = thumbName;
+        console.log(`[Media] Thumbnail generated: ${thumbName}`);
+      }
+    } catch (e) {
+      console.warn('[Media] Thumbnail error:', e);
     }
   }
 

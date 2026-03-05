@@ -38,6 +38,18 @@ function SortableItem(props) {
         <span {...listeners} className="text-muted me-3" style={{ cursor: 'grab', flexShrink: 0 }}>
           <BsGripVertical size={20} />
         </span>
+        {/* Preview */}
+        {(props.media?.type === 'image' && props.media?.path) || (props.media?.type === 'video' && props.media?.thumbnailPath) ? (
+          <img
+            src={`file://${encodeURI(props.media.type === 'image' ? props.media.path : props.media.thumbnailPath)}`}
+            alt=""
+            style={{ width: 40, height: 40, objectFit: 'cover', borderRadius: 4, flexShrink: 0, marginRight: 10 }}
+          />
+        ) : (
+          <div style={{ width: 40, height: 40, borderRadius: 4, flexShrink: 0, marginRight: 10, background: 'rgba(0,0,0,0.07)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, color: '#999' }}>
+            ▶
+          </div>
+        )}
         <div className="flex-fill" style={{ minWidth: 0 }}>
           <h6 className="mb-0 text-truncate" title={props.media?.fileName || ''}>
             {props.media?.fileName || 'Unbekannte Datei'}
@@ -232,21 +244,35 @@ function EditPlaylistView({ playlistId, onBack }) {
                 return (
                   <button
                     key={media.id}
-                    className="list-group-item list-group-item-action d-flex align-items-center justify-content-between"
+                    className="list-group-item list-group-item-action d-flex align-items-center gap-2"
                     onClick={() => handleAdd(media)}
                   >
-                    <div className="text-truncate me-2">
+                    {/* Preview */}
+                    {(media.type === 'image' && media.path) || (media.type === 'video' && media.thumbnailPath) ? (
+                      <img
+                        src={`file://${encodeURI(media.type === 'image' ? media.path : media.thumbnailPath)}`}
+                        alt=""
+                        style={{ width: 40, height: 40, objectFit: 'cover', borderRadius: 4, flexShrink: 0 }}
+                      />
+                    ) : (
+                      <div style={{ width: 40, height: 40, borderRadius: 4, flexShrink: 0, background: 'rgba(0,0,0,0.07)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, color: '#999' }}>
+                        ▶
+                      </div>
+                    )}
+                    <div className="text-truncate flex-fill">
                       <div className="fw-bold text-truncate">{media.fileName}</div>
                       <small className="text-muted">
                         {media.type === 'video' ? 'Video' : 'Bild'} • {new Date(media.addedAt).toLocaleDateString('de-DE')}
                       </small>
                     </div>
 
-                    {inPlaylist ? (
-                      <span className="badge bg-secondary">Hinzugefügt</span>
-                    ) : (
-                      <BsPlusCircle className="text-primary fs-5" />
-                    )}
+                    <div className="ms-auto flex-shrink-0">
+                      {inPlaylist ? (
+                        <span className="badge bg-secondary">Hinzugefügt</span>
+                      ) : (
+                        <BsPlusCircle className="text-primary fs-5" />
+                      )}
+                    </div>
                   </button>
                 );
               })}

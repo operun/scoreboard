@@ -145,26 +145,39 @@ function MediaView() {
           <table className="table">
             <thead>
               <tr>
+                <th scope="col" style={{ width: 56 }}></th>
                 <th scope="col">Name</th>
                 <th scope="col">Datum</th>
                 <th scope="col"></th>
               </tr>
             </thead>
             <tbody>
-              {filteredMedia.map((file, idx) => (
-                <tr>
-                  <td className="w-75">{file.fileName}</td>
+              {filteredMedia.map((file) => (
+                <tr key={file.id} style={{ verticalAlign: 'middle' }}>
+                  <td style={{ padding: '4px 8px', width: 56 }}>
+                    {(file.type === 'image' && file.path) || (file.type === 'video' && file.thumbnailPath) ? (
+                      <img
+                        src={`file://${encodeURI(file.type === 'image' ? file.path : file.thumbnailPath)}`}
+                        alt=""
+                        onClick={() => handleShow(file)}
+                        style={{ width: 48, height: 48, objectFit: 'cover', borderRadius: 4, cursor: 'pointer', display: 'block' }}
+                      />
+                    ) : (
+                      <div
+                        onClick={() => handleShow(file)}
+                        style={{ width: 48, height: 48, borderRadius: 4, background: 'rgba(0,0,0,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: 22, color: '#666' }}
+                      >
+                        <BsPlayCircle />
+                      </div>
+                    )}
+                  </td>
+                  <td>{file.fileName}</td>
                   <td>{new Date(file.addedAt).toLocaleString('de-DE')}</td>
                   <td>
-                    <span
-                      className="me-2"
-                      onClick={() => handleShow(file)}
-                    >
+                    <span className="me-2" onClick={() => handleShow(file)} style={{ cursor: 'pointer' }}>
                       <BsPlayCircle />
                     </span>
-                    <span
-                      onClick={() => handleDeleteMedia(file.id)}
-                    >
+                    <span onClick={() => handleDeleteMedia(file.id)} style={{ cursor: 'pointer' }}>
                       <BsXCircle />
                     </span>
                   </td>
