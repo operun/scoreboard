@@ -35,6 +35,14 @@ function getMediaType(fileName) {
   return 'unknown';
 }
 
+ipcMain.handle('get-versions', () => ({
+  app: app.getVersion(),
+  electron: process.versions.electron,
+  chrome: process.versions.chrome,
+  node: process.versions.node,
+  v8: process.versions.v8,
+}));
+
 ipcMain.handle('load-settings', async () => {
   const filePath = path.join(app.getPath('userData'), 'settings.json');
   const settings = loadEncryptedSettings(filePath) || {};
@@ -759,7 +767,7 @@ const menuTemplate = [
           dialog.showMessageBox({
             title: `About ${app.getName()}`,
             message: `${app.getName()} v${app.getVersion()}`,
-            detail: '© 2025 by operun Digital Solutions',
+            detail: 'powered by operun Digital Solutions',
             buttons: ['OK'],
           });
         },

@@ -23,10 +23,8 @@ function SettingsView() {
   });
 
   const [activeTab, setActiveTab] = useState('output');
-  const settingsRef = useState({})[0]; // Need a ref to hold full settings for partial updates if needed, or just re-read. Simpler: just reload on mount. 
-  // Actually, let's keep it simple. We read all, set state. On save, we write state. 
-  // BUT the tab "appearance" saves immediately in my previous snippet. 
-  // Let's make sure loadSettings populates themeMode.
+  const [versions, setVersions] = useState(null);
+  const settingsRef = useState({})[0];
 
   useEffect(() => {
     const loadSettings = async () => {
@@ -52,6 +50,9 @@ function SettingsView() {
       setMediaImages(allMedia.filter(m => m.type === 'image'));
     };
     loadSettings();
+
+    // Load version info
+    window.electronAPI.getVersions().then(setVersions);
   }, []);
 
   // Helper to save current state
@@ -153,6 +154,14 @@ function SettingsView() {
               onClick={() => setActiveTab('reset')}
             >
               Reset
+            </button>
+          </li>
+          <li className="nav-item">
+            <button
+              className={`nav-link ${activeTab === 'about' ? 'active' : ''}`}
+              onClick={() => setActiveTab('about')}
+            >
+              Über
             </button>
           </li>
         </ul>
@@ -294,6 +303,8 @@ function SettingsView() {
 
           {activeTab === 'connection' && (
             <>
+              <p className="lead mb-4">Die Verbindungseinstellungen werden für die Synchronisation der Medien genutzt.</p>
+
               <div className="mb-4">
                 <label className="form-label">Server</label>
                 <input
@@ -403,9 +414,42 @@ function SettingsView() {
             </>
           )}
 
+          {activeTab === 'about' && (
+            <>
+              <p className="lead mb-4">Die Scoreboard App wurde für den TSV 1880 Wasserburg entwickelt und wird bereitgestellt von <a href="https://www.operun.de">operun Digital Solutions</a>.</p>
+              <div className="mb-4">
+                <label className="form-label">Versionshinweise</label>
+                <table className="table table-sm" style={{ fontSize: '0.88rem' }}>
+                  <tbody>
+                    <tr>
+                      <td className="text-muted" style={{ width: 160 }}>Version</td>
+                      <td className="font-monospace">{versions?.app ?? '—'}</td>
+                    </tr>
+                    <tr>
+                      <td className="text-muted">Electron</td>
+                      <td className="font-monospace">{versions?.electron ?? '—'}</td>
+                    </tr>
+                    <tr>
+                      <td className="text-muted">Chromium</td>
+                      <td className="font-monospace">{versions?.chrome ?? '—'}</td>
+                    </tr>
+                    <tr>
+                      <td className="text-muted">Node.js</td>
+                      <td className="font-monospace">{versions?.node ?? '—'}</td>
+                    </tr>
+                    <tr>
+                      <td className="text-muted">V8</td>
+                      <td className="font-monospace">{versions?.v8 ?? '—'}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </>
+          )}
+
           {activeTab === 'reset' && (
             <>
-              <p className="text-muted small mb-4">Löscht alle Einstellungen und Presets. Mediendateien bleiben erhalten. Die App wird danach neu gestartet.</p>
+              <p className="lead mb-4">Löscht alle Einstellungen und Presets. Mediendateien bleiben erhalten. Die App wird danach neu gestartet.</p>
               <button
                 className="btn btn-danger"
                 onClick={async () => {
