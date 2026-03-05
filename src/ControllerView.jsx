@@ -103,6 +103,12 @@ function ControllerView() {
       const allMedia = await window.electronAPI.loadMedia();
       setMediaImages(allMedia.filter(m => m.type === 'image'));
 
+      // Load visibility settings
+      const settings = await window.electronAPI.loadSettings();
+      if (settings && settings.controllerVisibility) {
+        setVisibility(prev => ({ ...prev, ...settings.controllerVisibility }));
+      }
+
       // Load or Create Default Preset
       let pr = await window.electronAPI.loadPresets();
 
