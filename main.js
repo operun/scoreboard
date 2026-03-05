@@ -1,12 +1,22 @@
-const { app, BrowserWindow, ipcMain, Menu, dialog } = require('electron');
+const { app, BrowserWindow, ipcMain, Menu, dialog, nativeImage } = require('electron');
 const { Client } = require('ssh2');
 const { saveEncryptedSettings, loadEncryptedSettings } = require('./settingsStore');
 const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
-const ffprobePath = require('ffprobe-static').path;
+// ffprobe-static path must be remapped in packaged builds:
+// Electron packages everything into app.asar, but executables can't run from inside an archive.
+// electron-builder's asarUnpack extracts ffprobe-static, so we redirect the path accordingly.
+const ffprobeRaw = require('ffprobe-static').path;
+const ffprobePath = app.isPackaged
+  ? ffprobeRaw.replace('app.asar', 'app.asar.unpacked')
+  : ffprobeRaw;
 
 app.setName('Scoreboard');
+// Required on Windows for correct taskbar grouping, notifications and Start-Menu pinning
+if (process.platform === 'win32') {
+  app.setAppUserModelId('com.operun.scoreboard');
+}
 
 const mediaListPath = path.join(app.getPath('userData'), 'media.json');
 const playlistsPath = path.join(app.getPath('userData'), 'playlists.json');
@@ -689,27 +699,38 @@ ipcMain.handle('reset-app', async () => {
 
 let outputWindow = null;
 
+// Resolve app icon path depending on platform
+function getAppIcon() {
+  const base = app.isPackaged
+    ? path.join(process.resourcesPath, 'src', 'assets', 'icons')
+    : path.join(__dirname, 'src', 'assets', 'icons');
+  if (process.platform === 'darwin') return path.join(base, 'icon.icns');
+  if (process.platform === 'win32') return path.join(base, 'icon.ico');
+  return path.join(base, 'icon.png'); // Linux
+}
+
 // --- CREATE OUTPUT WINDOW ---
 function createOutputWindow() {
   outputWindow = new BrowserWindow({
     width: 1280,
     height: 720,
     show: false,
-    frame: true,
+    frame: false,           // Frameless on all platforms — Output window has its own TitleBar
     autoHideMenuBar: true,
+    icon: getAppIcon(),
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
       nodeIntegration: false,
       webSecurity: false
     },
-    title: "Output - Scoreboard",
+    title: 'Output - Scoreboard',
     titleBarStyle: 'hidden',
-    trafficLightPosition: { x: 10, y: 10 } // Optional tweak
+    ...(process.platform === 'darwin' ? { trafficLightPosition: { x: 10, y: 10 } } : {}),
   });
 
   if (app.isPackaged) {
-    outputWindow.loadFile(path.join(__dirname, 'dist', 'index.html'), { hash: 'output' });
+    outputWindow.loadFile(path.join(__dirname, 'dist', 'index.html'), { hash: '/output' });
   } else {
     outputWindow.loadURL('http://localhost:5173/#/output');
   }
@@ -729,17 +750,19 @@ function createWindow() {
     width: 1280,
     height: 820,
     show: false,
+    frame: false,           // Frameless on all platforms — custom TitleBar handles controls
     minWidth: 1024,
     minHeight: 768,
+    icon: getAppIcon(),
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
       nodeIntegration: false,
       webSecurity: false
     },
-    title: "Controller - Scoreboard",
+    title: 'Controller - Scoreboard',
     titleBarStyle: 'hidden',
-    trafficLightPosition: { x: 10, y: 10 }
+    ...(process.platform === 'darwin' ? { trafficLightPosition: { x: 10, y: 10 } } : {}),
   });
 
   if (app.isPackaged) {
