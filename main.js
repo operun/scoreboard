@@ -726,7 +726,8 @@ function createOutputWindow() {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
       nodeIntegration: false,
-      webSecurity: false
+      webSecurity: false,
+      autoplayPolicy: 'no-user-gesture-required'
     },
     title: 'Output - Scoreboard',
     titleBarStyle: 'hidden',
@@ -762,7 +763,8 @@ function createWindow() {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
       nodeIntegration: false,
-      webSecurity: false
+      webSecurity: false,
+      autoplayPolicy: 'no-user-gesture-required'
     },
     title: 'Controller - Scoreboard',
     titleBarStyle: 'hidden',

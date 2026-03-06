@@ -42,6 +42,7 @@
     "npmRebuild": false,
     "appId": "com.operun.scoreboard",
     "productName": "Scoreboard",
+    "afterPack": "./afterPack.js",
     "directories": {
       "output": "dist-electron"
     },
