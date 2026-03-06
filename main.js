@@ -18,6 +18,10 @@ if (process.platform === 'win32') {
   app.setAppUserModelId('com.operun.scoreboard');
 }
 
+// Disable Chromium's autoplay policy so that videos with audio play automatically
+// without requiring prior user interaction (needed for the output window on Windows)
+app.commandLine.appendSwitch('autoplay-policy', 'no-user-gesture-required');
+
 const mediaListPath = path.join(app.getPath('userData'), 'media.json');
 const playlistsPath = path.join(app.getPath('userData'), 'playlists.json');
 const presetsPath = path.join(app.getPath('userData'), 'presets.json');
