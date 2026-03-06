@@ -39,6 +39,7 @@
     "ssh2": "^1.17.0"
   },
   "build": {
+    "npmRebuild": false,
     "appId": "com.operun.scoreboard",
     "productName": "Scoreboard",
     "directories": {
