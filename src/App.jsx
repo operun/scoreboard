@@ -110,7 +110,10 @@ function App() {
         </div>
 
         <div className="main flex-fill p-5" style={{ height: '100%', overflow: 'hidden' }}>
-          {view === 'controller' && <ControllerView />}
+          {/* ControllerView is always mounted to preserve game state across navigation */}
+          <div style={{ display: view === 'controller' ? 'block' : 'none', height: '100%' }}>
+            <ControllerView />
+          </div>
           {view === 'playlists' && (
             <PlaylistsView
               onEdit={(id) => {
