@@ -32,7 +32,7 @@ jobs:
         run: npm run build:renderer
 
       - name: Build Electron (NSIS Installer)
-        run: npm run build:electron
+        run: npx electron-builder --publish never
 
       - name: List dist-electron contents (debug)
         run: Get-ChildItem -Recurse dist-electron | Select-Object FullName
