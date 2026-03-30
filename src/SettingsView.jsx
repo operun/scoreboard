@@ -1,12 +1,10 @@
 import { useState, useEffect } from 'react';
 import { toast } from 'react-toastify';
-import { BsEye, BsEyeSlash, BsXCircle } from 'react-icons/bs';
+import { BsClipboard, BsXCircle } from 'react-icons/bs';
 
 function SettingsView() {
-  const [server, setServer] = useState('');
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
+  const [sshKeyInfo, setSshKeyInfo] = useState({ exists: false, publicKey: null, fingerprint: null });
+  const [testingConnection, setTestingConnection] = useState(false);
   const [outputWidth, setOutputWidth] = useState(1280);
   const [outputHeight, setOutputHeight] = useState(720);
   const [showCropMarks, setShowCropMarks] = useState(true);
@@ -31,9 +29,6 @@ function SettingsView() {
       const settings = await window.electronAPI.loadSettings();
       if (settings) {
         Object.assign(settingsRef, settings);
-        setServer(settings.server || '');
-        setUsername(settings.username || '');
-        setPassword(settings.password || '');
         if (settings.outputWidth) setOutputWidth(settings.outputWidth);
         if (settings.outputHeight) setOutputHeight(settings.outputHeight);
         setShowCropMarks(settings.showCropMarks !== false);
@@ -53,14 +48,14 @@ function SettingsView() {
 
     // Load version info
     window.electronAPI.getVersions().then(setVersions);
+
+    // Load SSH key info
+    window.electronAPI.getSSHKeyInfo().then(setSshKeyInfo);
   }, []);
 
   // Helper to save current state
   const saveAllSettings = (overrides = {}) => {
     const newSettings = {
-      server,
-      username,
-      password,
       outputWidth,
       outputHeight,
       showCropMarks,
@@ -91,14 +86,6 @@ function SettingsView() {
     saveAllSettings(saveObj);
   };
 
-  const handleConnectionChange = (changes) => {
-    if ('server' in changes) setServer(changes.server);
-    if ('username' in changes) setUsername(changes.username);
-    if ('password' in changes) setPassword(changes.password);
-
-    saveAllSettings(changes);
-  }
-
   const handleVisibilityChange = (key, value) => {
     const newVisibility = { ...controllerVisibility, [key]: value };
     setControllerVisibility(newVisibility);
@@ -106,11 +93,18 @@ function SettingsView() {
   };
 
   const handleTestConnection = async () => {
-    const result = await window.electronAPI.testConnection();
-    if (result.status === 'ok') {
-      toast.success(result.message);
-    } else {
-      toast.error(`${result.message}`);
+    setTestingConnection(true);
+    try {
+      const result = await window.electronAPI.testConnection();
+      if (result.status === 'ok') {
+        toast.success(result.message, { autoClose: 5000 });
+      } else {
+        toast.error(result.message, { autoClose: 8000 });
+      }
+    } catch (e) {
+      toast.error('Unbekannter Fehler: ' + e.message, { autoClose: 8000 });
+    } finally {
+      setTestingConnection(false);
     }
   };
 
@@ -303,52 +297,83 @@ function SettingsView() {
 
           {activeTab === 'connection' && (
             <>
-              <p className="lead mb-4">Die Verbindungseinstellungen werden für die Synchronisation der Medien genutzt.</p>
-
               <div className="mb-4">
-                <label className="form-label">Server</label>
-                <input
-                  type="text"
-                  className="form-control"
-                  value={server}
-                  onChange={(e) => handleConnectionChange({ server: e.target.value })}
-                />
-              </div>
-
-              <div className="mb-4">
-                <label className="form-label">Benutzername</label>
-                <input
-                  type="text"
-                  className="form-control"
-                  value={username}
-                  onChange={(e) => handleConnectionChange({ username: e.target.value })}
-                />
-              </div>
-
-              <div className="mb-4">
-                <label className="form-label">Passwort</label>
-                <div className="input-group">
-                  <input
-                    type={showPassword ? 'text' : 'password'}
-                    className="form-control"
-                    value={password}
-                    onChange={(e) => handleConnectionChange({ password: e.target.value })}
-                  />
-                  <span
-                    className="input-group-text"
-                    role="button"
-                    style={{ cursor: 'pointer' }}
-                    onClick={() => setShowPassword(!showPassword)}
-                  >
-                    {showPassword ? <BsEye /> : <BsEyeSlash />}
-                  </span>
-                </div>
-              </div>
-
-              <div className="d-flex mt-4 gap-2">
-                <button className="btn btn-outline-primary" onClick={handleTestConnection}>
-                  Verbindung testen
-                </button>
+                <label className="form-label">Verbindungseinstellungen</label>
+                <table className="table table-sm" style={{ fontSize: '0.88rem' }}>
+                  <tbody>
+                    <tr>
+                      <td className="text-muted" style={{ width: 160 }}>Sync Server</td>
+                      <td className="font-monospace">sync.operun.de</td>
+                    </tr>
+                    <tr>
+                      <td className="text-muted">Benutzer</td>
+                      <td className="font-monospace">scoreboard</td>
+                    </tr>
+                    <tr>
+                      <td className="text-muted">SSH-Schlüssel</td>
+                      <td>
+                        {sshKeyInfo.exists ? (
+                          <span className="d-flex align-items-start gap-2">
+                            <span className="font-monospace" style={{ fontSize: '0.75rem', wordBreak: 'break-all' }}>
+                              {sshKeyInfo.publicKey}
+                            </span>
+                            <span
+                              style={{ cursor: 'pointer', flexShrink: 0 }}
+                              title="Schlüssel kopieren"
+                              onClick={() => {
+                                navigator.clipboard.writeText(sshKeyInfo.publicKey);
+                                toast.success('Schlüssel kopiert');
+                              }}
+                            >
+                              <BsClipboard className="text-muted" />
+                            </span>
+                          </span>
+                        ) : (
+                          <button className="btn btn-sm btn-outline-primary" onClick={async () => {
+                            const result = await window.electronAPI.generateSSHKey();
+                            if (result.status === 'ok') {
+                              setSshKeyInfo({ exists: true, publicKey: result.publicKey, fingerprint: result.fingerprint });
+                              toast.success('SSH-Schlüssel erzeugt');
+                            } else {
+                              toast.error(result.message);
+                            }
+                          }}>
+                            Schlüssel generieren
+                          </button>
+                        )}
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+                {sshKeyInfo.exists && (
+                  <p className="text-muted small">Bitte senden Sie den Schlüssel an Ihren Administrator, um die Synchronisation zu aktivieren.</p>
+                )}
+                {sshKeyInfo.exists && (
+                  <div className="d-flex gap-2">
+                    <button
+                      className="btn btn-outline-primary btn-sm"
+                      onClick={handleTestConnection}
+                      disabled={testingConnection}
+                    >
+                      {testingConnection ? 'Verbinde...' : 'Verbindung testen'}
+                    </button>
+                    <button
+                      className="btn btn-outline-danger btn-sm"
+                      onClick={async () => {
+                        if (!confirm('Neuen SSH-Schlüssel erstellen? Der bisherige verliert den Zugang zum Server.')) return;
+                        const result = await window.electronAPI.regenerateSSHKey();
+                        if (result.status === 'ok') {
+                          setSshKeyInfo({ exists: true, publicKey: result.publicKey, fingerprint: result.fingerprint });
+                          toast.success('Neuer SSH-Schlüssel erstellt');
+                        } else {
+                          toast.error(result.message);
+                        }
+                      }}
+                    >
+                      Schlüssel erneuern
+                    </button>
+                  </div>
+                )}
               </div>
             </>
           )}

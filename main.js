@@ -26,6 +26,46 @@ const mediaListPath = path.join(app.getPath('userData'), 'media.json');
 const playlistsPath = path.join(app.getPath('userData'), 'playlists.json');
 const presetsPath = path.join(app.getPath('userData'), 'presets.json');
 
+// --- Sync Configuration (hardcoded) ---
+const SYNC_HOST = 'sync.operun.de';
+const SYNC_USER = 'scoreboard';
+const SYNC_REMOTE_BASE = 'scoreboard';
+const SSH_KEY_PATH = path.join(app.getPath('userData'), 'id_ed25519');
+const SSH_PUBKEY_PATH = SSH_KEY_PATH + '.pub';
+
+// --- SSH Key Management ---
+function uint32BE(n) {
+  const b = Buffer.alloc(4);
+  b.writeUInt32BE(n);
+  return b;
+}
+
+function getSSHKeyInfo() {
+  if (fs.existsSync(SSH_KEY_PATH) && fs.existsSync(SSH_PUBKEY_PATH)) {
+    const publicKey = fs.readFileSync(SSH_PUBKEY_PATH, 'utf8').trim();
+    // Fingerprint is SHA256 of the raw key blob (the base64 part of authorized_keys)
+    const parts = publicKey.split(' ');
+    const keyBlob = Buffer.from(parts[1], 'base64');
+    const fingerprint = 'SHA256:' + crypto.createHash('sha256').update(keyBlob).digest('base64').replace(/=+$/, '');
+    return { exists: true, publicKey, fingerprint };
+  }
+  return { exists: false, publicKey: null, fingerprint: null };
+}
+
+function generateSSHKeyPair() {
+  const { execSync } = require('child_process');
+  const hostname = require('os').hostname();
+  const comment = `${SYNC_USER}@${hostname}`;
+
+  // ssh-keygen is available on Windows 10 1809+, macOS, Linux out of the box
+  execSync(`ssh-keygen -t ed25519 -C "${comment}" -f "${SSH_KEY_PATH}" -N ""`, {
+    windowsHide: true,
+  });
+
+  return getSSHKeyInfo();
+}
+
+
 function loadMediaList() {
   if (fs.existsSync(mediaListPath)) {
     return JSON.parse(fs.readFileSync(mediaListPath, 'utf-8'));
@@ -88,15 +128,45 @@ ipcMain.handle('save-settings', async (event, settings) => {
   event.sender.send('settings-updated', settings);
 });
 
+// --- SSH Key IPC Handlers ---
+ipcMain.handle('get-ssh-key-info', async () => {
+  return getSSHKeyInfo();
+});
+
+ipcMain.handle('generate-ssh-key', async () => {
+  if (fs.existsSync(SSH_KEY_PATH)) {
+    return { status: 'error', message: 'SSH-Schlüssel existiert bereits.' };
+  }
+  try {
+    const info = generateSSHKeyPair();
+    return { status: 'ok', ...info };
+  } catch (e) {
+    console.error('[SSH] Key generation failed:', e);
+    return { status: 'error', message: 'Schlüssel konnte nicht erzeugt werden: ' + e.message };
+  }
+});
+
+ipcMain.handle('regenerate-ssh-key', async () => {
+  try {
+    // Remove old keys first
+    if (fs.existsSync(SSH_KEY_PATH))     fs.unlinkSync(SSH_KEY_PATH);
+    if (fs.existsSync(SSH_PUBKEY_PATH))  fs.unlinkSync(SSH_PUBKEY_PATH);
+    const info = generateSSHKeyPair();
+    return { status: 'ok', ...info };
+  } catch (e) {
+    console.error('[SSH] Key regeneration failed:', e);
+    return { status: 'error', message: 'Schlüssel konnte nicht erneuert werden: ' + e.message };
+  }
+});
+
+
 ipcMain.handle('test-connection', async () => {
-  const filePath = path.join(app.getPath('userData'), 'settings.json');
-  const settings = loadEncryptedSettings(filePath);
+  const keyInfo = getSSHKeyInfo();
+  if (!keyInfo.exists) {
+    return { status: 'error', message: 'Kein SSH-Schlüssel vorhanden.' };
+  }
 
   return new Promise((resolve) => {
-    if (!settings || !settings.server || !settings.username || !settings.password) {
-      return resolve({ status: 'error', message: 'Unvollständige Einstellungen' });
-    }
-
     const conn = new Client();
 
     conn
@@ -106,13 +176,13 @@ ipcMain.handle('test-connection', async () => {
       })
       .on('error', (err) => {
         console.error('[SSH] Connection error:', err.message);
-        resolve({ status: 'error', message: 'Verbindung fehlgeschlagen' });
+        resolve({ status: 'error', message: 'Verbindung fehlgeschlagen: ' + err.message });
       })
       .connect({
-        host: settings.server,
+        host: SYNC_HOST,
         port: 22,
-        username: settings.username,
-        password: settings.password,
+        username: SYNC_USER,
+        privateKey: fs.readFileSync(SSH_KEY_PATH, 'utf8'),
         readyTimeout: 5000
       });
   });
@@ -485,18 +555,17 @@ ipcMain.handle('window-close', (event) => {
 // --- SYNC TO REMOTE (BIDIRECTIONAL) ---
 ipcMain.handle('sync-to-remote', async () => {
   console.log('[Sync] Starting sync request...');
-  const settingsPath = path.join(app.getPath('userData'), 'settings.json');
-  const settings = loadEncryptedSettings(settingsPath);
 
-  if (!settings || !settings.server || !settings.username || !settings.password) {
-    console.warn('[Sync] Settings missing');
-    return { status: 'error', message: 'Einstellungen fehlen!' };
+  const keyInfo = getSSHKeyInfo();
+  if (!keyInfo.exists) {
+    console.warn('[Sync] No SSH key found');
+    return { status: 'error', message: 'Kein SSH-Schlüssel vorhanden. Bitte zuerst in den Einstellungen generieren.' };
   }
 
-  console.log(`[Sync] Connecting to ${settings.server} as ${settings.username}...`);
+  console.log(`[Sync] Connecting to ${SYNC_HOST} as ${SYNC_USER}...`);
 
   const conn = new Client();
-  const remoteBase = 'scoreboard';
+  const remoteBase = SYNC_REMOTE_BASE;
 
   return new Promise((resolve) => {
     // Safety timeout
@@ -674,10 +743,10 @@ ipcMain.handle('sync-to-remote', async () => {
     });
 
     conn.connect({
-      host: settings.server,
+      host: SYNC_HOST,
       port: 22,
-      username: settings.username,
-      password: settings.password,
+      username: SYNC_USER,
+      privateKey: fs.readFileSync(SSH_KEY_PATH, 'utf8'),
       readyTimeout: 10000
     });
   });
