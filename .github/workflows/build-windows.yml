@@ -8,6 +8,9 @@ on:
 permissions:
   contents: write
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 jobs:
   build-windows:
     runs-on: windows-latest
@@ -31,16 +34,20 @@ jobs:
       - name: Build Electron (NSIS Installer)
         run: npm run build:electron
 
+      - name: List dist-electron contents (debug)
+        run: Get-ChildItem -Recurse dist-electron | Select-Object FullName
+        shell: pwsh
+
       - name: Upload Installer as artifact
         uses: actions/upload-artifact@v4
         with:
           name: scoreboard-windows-installer
-          path: dist-electron/*.exe
+          path: dist-electron/**/*.exe
           retention-days: 30
 
       - name: Create GitHub Release with Installer
         uses: softprops/action-gh-release@v2
         with:
-          files: dist-electron/*.exe
+          files: dist-electron/**/*.exe
           generate_release_notes: true
           draft: false
