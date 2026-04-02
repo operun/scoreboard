@@ -42,7 +42,7 @@
     "ssh2": "^1.17.0"
   },
   "build": {
-    "npmRebuild": false,
+    "npmRebuild": true,
     "appId": "com.operun.scoreboard",
     "productName": "Scoreboard",
     "afterPack": "./afterPack.js",

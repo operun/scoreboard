@@ -1,16 +1,39 @@
 const { app, BrowserWindow, ipcMain, Menu, dialog, nativeImage } = require('electron');
-const { Client } = require('ssh2');
 const { saveEncryptedSettings, loadEncryptedSettings } = require('./settingsStore');
 const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
-// ffprobe-static path must be remapped in packaged builds:
-// Electron packages everything into app.asar, but executables can't run from inside an archive.
-// electron-builder's asarUnpack extracts ffprobe-static, so we redirect the path accordingly.
-const ffprobeRaw = require('ffprobe-static').path;
-const ffprobePath = app.isPackaged
-  ? ffprobeRaw.replace('app.asar', 'app.asar.unpacked')
-  : ffprobeRaw;
+
+// --- Crash safety: write to log and show dialog instead of silently dying ---
+// This must be registered before any other code that might throw.
+process.on('uncaughtException', (error) => {
+  try {
+    const logPath = path.join(app.getPath('userData'), 'crash.log');
+    fs.appendFileSync(logPath, `[${new Date().toISOString()}] UNCAUGHT EXCEPTION\n${error.stack}\n\n`);
+  } catch (_) { /* ignore log errors */ }
+  try {
+    dialog.showErrorBox('Scoreboard – Fehler beim Start', `${error.message}\n\nDetails: ${error.stack}`);
+  } catch (_) { /* dialog may not be available yet */ }
+  app.quit();
+});
+
+// --- ssh2 is lazy-loaded to avoid startup crash if native module (cpu-features) fails ---
+// If ssh2 fails to load, only sync/connection features are broken — the app still opens.
+function getSSHClient() {
+  const { Client } = require('ssh2');
+  return new Client();
+}
+
+// --- ffprobe-static path (remapped for ASAR packaging) ---
+let ffprobePath = null;
+try {
+  const ffprobeRaw = require('ffprobe-static').path;
+  ffprobePath = app.isPackaged
+    ? ffprobeRaw.replace('app.asar', 'app.asar.unpacked')
+    : ffprobeRaw;
+} catch (e) {
+  console.error('[FFprobe] Failed to load ffprobe-static:', e.message);
+}
 
 app.setName('Scoreboard');
 // Required on Windows for correct taskbar grouping, notifications and Start-Menu pinning
@@ -166,9 +189,15 @@ ipcMain.handle('test-connection', async () => {
     return { status: 'error', message: 'Kein SSH-Schlüssel vorhanden.' };
   }
 
-  return new Promise((resolve) => {
-    const conn = new Client();
+  let conn;
+  try {
+    conn = getSSHClient();
+  } catch (e) {
+    console.error('[SSH] ssh2 module not available:', e.message);
+    return { status: 'error', message: 'SSH-Modul nicht verfügbar: ' + e.message };
+  }
 
+  return new Promise((resolve) => {
     conn
       .on('ready', () => {
         conn.end();
@@ -562,9 +591,16 @@ ipcMain.handle('sync-to-remote', async () => {
     return { status: 'error', message: 'Kein SSH-Schlüssel vorhanden. Bitte zuerst in den Einstellungen generieren.' };
   }
 
+  let conn;
+  try {
+    conn = getSSHClient();
+  } catch (e) {
+    console.error('[Sync] ssh2 module not available:', e.message);
+    return { status: 'error', message: 'SSH-Modul nicht verfügbar: ' + e.message };
+  }
+
   console.log(`[Sync] Connecting to ${SYNC_HOST} as ${SYNC_USER}...`);
 
-  const conn = new Client();
   const remoteBase = SYNC_REMOTE_BASE;
 
   return new Promise((resolve) => {
@@ -911,6 +947,22 @@ const menuTemplate = [
 ];
 
 app.whenReady().then(() => {
+  // Startup diagnostic log — helps diagnose issues on Windows where no terminal is visible
+  try {
+    const logPath = path.join(app.getPath('userData'), 'startup.log');
+    fs.writeFileSync(logPath,
+      `[${new Date().toISOString()}] App started\n` +
+      `Version: ${app.getVersion()}\n` +
+      `Platform: ${process.platform} ${process.arch}\n` +
+      `Electron: ${process.versions.electron}\n` +
+      `Node: ${process.versions.node}\n` +
+      `Packaged: ${app.isPackaged}\n` +
+      `UserData: ${app.getPath('userData')}\n`
+    );
+  } catch (e) {
+    console.error('[Startup] Could not write startup.log:', e.message);
+  }
+
   createWindow();
   createOutputWindow(); // Auto-open output window on start as requested
 
