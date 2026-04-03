@@ -1,6 +1,6 @@
 {
   "name": "scoreboard",
-  "version": "1.0.5",
+  "version": "1.1.0",
   "description": "Scoreboard App für den TSV 1880 Wasserburg.",
   "main": "main.js",
   "scripts": {
