@@ -12,7 +12,6 @@ contextBridge.exposeInMainWorld('electronAPI', {
   loadMedia: () => ipcRenderer.invoke('load-media'),
   addMedia: (filePath) => ipcRenderer.invoke('add-media', filePath),
   deleteMedia: (id) => ipcRenderer.invoke('delete-media', id),
-  updateMediaMeta: (data) => ipcRenderer.invoke('update-media-meta', data),
   openFileDialog: () => ipcRenderer.invoke('open-file-dialog'),
   loadPlaylists: () => ipcRenderer.invoke('load-playlists'),
   savePlaylist: (playlist) => ipcRenderer.invoke('save-playlist', playlist),

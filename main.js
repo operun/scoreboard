@@ -83,12 +83,13 @@ function getSSHKeyInfo() {
 }
 
 function generateSSHKeyPair() {
-  const { execSync } = require('child_process');
+  const { execFileSync } = require('child_process');
   const hostname = require('os').hostname();
   const comment = `${getSyncConfig().user}@${hostname}`;
 
   // ssh-keygen is available on Windows 10 1809+, macOS, Linux out of the box
-  execSync(`ssh-keygen -t ed25519 -C "${comment}" -f "${SSH_KEY_PATH}" -N ""`, {
+  // execFileSync avoids shell interpolation → no command injection via username/hostname
+  execFileSync('ssh-keygen', ['-t', 'ed25519', '-C', comment, '-f', SSH_KEY_PATH, '-N', ''], {
     windowsHide: true,
   });
 
@@ -132,9 +133,10 @@ ipcMain.handle('load-settings', async () => {
   const settings = loadEncryptedSettings(filePath) || {};
 
   // Check for custom test image
+  const { pathToFileURL } = require('url');
   const customImagePath = path.join(app.getPath('userData'), 'custom_test_image.png');
   if (fs.existsSync(customImagePath)) {
-    settings.customTestImage = `file://${customImagePath}?t=${Date.now()}`;
+    settings.customTestImage = `${pathToFileURL(customImagePath).href}?t=${Date.now()}`;
     if (!settings.customTestImageName) settings.customTestImageName = 'Eigenes Testbild';
   } else {
     settings.customTestImage = null;
@@ -438,10 +440,11 @@ ipcMain.handle('select-test-image', async () => {
 
     // Notify output window to reload the image
     if (outputWindow && !outputWindow.isDestroyed()) {
-      outputWindow.webContents.send('test-image-updated', `file://${destPath}?t=${Date.now()}`);
+      const { pathToFileURL } = require('url');
+      outputWindow.webContents.send('test-image-updated', `${pathToFileURL(destPath).href}?t=${Date.now()}`);
     }
 
-    return { path: `file://${destPath}?t=${Date.now()}`, name: settings.customTestImageName };
+    return { path: `${require('url').pathToFileURL(destPath).href}?t=${Date.now()}`, name: settings.customTestImageName };
   } catch (error) {
     console.error('Error saving test image:', error);
     return null;

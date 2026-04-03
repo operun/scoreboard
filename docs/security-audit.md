@@ -1,8 +1,9 @@
 # Security Audit Report — Scoreboard (TSV 1880 Wasserburg)
 
-**Date:** 2026-03-30  
+**Date:** 2026-04-03 (Updated)  
+**Previous Audit:** 2026-03-30  
 **Auditor:** Automated Deep Review  
-**Scope:** Full codebase (`main`, `HEAD = 39252bb`)  
+**Scope:** Full codebase (`main`, `HEAD = 6181ba5`)  
 **Application Type:** Electron Desktop App (offline, single-user/operator)
 
 ---
@@ -12,14 +13,16 @@
 | Severity | Count |
 |----------|-------|
 | 🔴 Critical | 0 |
-| 🟠 High | 3 |
-| 🟡 Medium | 5 |
-| 🔵 Low | 2 |
-| **Total** | **10** |
+| 🟠 High | 2 |
+| 🟡 Medium | 3 |
+| 🔵 Low | 3 |
+| **Total** | **8** | |
 
-**Overall Risk Rating: MEDIUM**
+**Overall Risk Rating: MEDIUM** (unchanged)
 
-This is an offline, single-operator Electron desktop app with no web-facing attack surface, no authentication system, and no user-submitted content from untrusted parties. The operator is the sole user. This significantly reduces exploitability for most findings. The highest-severity issues relate to **cryptographic weakness** in local credential storage and **Electron misconfiguration** that unnecessarily broadens the renderer's capability surface.
+This is an offline, single-operator Electron desktop app with no web-facing attack surface, no authentication system, and no user-submitted content from untrusted parties. The operator is the sole user.
+
+
 
 ### Must-Fix Before Production
 
@@ -31,13 +34,13 @@ This is an offline, single-operator Electron desktop app with no web-facing atta
 | Priority | Items | Effort | Timeline |
 |----------|-------|--------|----------|
 | P0 (Must-fix) | SEC-01, SEC-02 | ~2h | Before next release |
-| P1 (Should-fix) | SEC-03, SEC-04, SEC-06 | ~3h | Within 2 weeks |
+| P1 (Should-fix) | SEC-04, SEC-11 | ~2h | Within 2 weeks |
 | P2 (Nice-to-have) | SEC-05, SEC-07, SEC-08 | ~2h | Within 1 month |
 | P3 (Informational) | SEC-09, SEC-10 | ~1h | Backlog |
 
 ---
 
-## Findings
+## Active Findings
 
 ### SEC-01 — Static Initialization Vector in AES-256-CBC
 
@@ -46,6 +49,9 @@ This is an offline, single-operator Electron desktop app with no web-facing atta
 | **File** | [settingsStore.js:6](file:///Users/stefan/Development/scoreboard/settingsStore.js#L6) |
 | **Type** | CWE-329: Generation of Predictable IV with CBC Mode |
 | **Severity** | 🟠 High — CVSS 7.1 `AV:L/AC:L/PR:L/UI:N/S:U/C:H/I:H/A:N` |
+| **Status** | ✅ Resolved (2026-04-03) |
+
+**Resolution:** Encryption completely removed. `settingsStore.js` now uses plain `JSON.parse`/`JSON.stringify`. Since SSH passwords were already migrated to key-pair authentication, `settings.json` no longer contains any sensitive credentials — only sync host/user config and UI preferences. The `encryption-key.bin` is no longer created or used.
 
 **Problem:**
 ```js
@@ -53,11 +59,13 @@ const IV = Buffer.alloc(16, 0); // All-zeros IV — reused for every encryption
 ```
 
 With a static IV, identical plaintexts always produce identical ciphertexts. An attacker with access to the `settings.json` file can:
-- Detect when passwords haven't changed (unchanged ciphertext)
+- Detect when settings haven't changed (unchanged ciphertext)
 - Mount chosen-plaintext attacks if they can influence the plaintext
-- Trivially decrypt credentials if they also obtain the key file (stored adjacent in `userData`)
+- Trivially decrypt settings if they also obtain the key file (stored adjacent in `userData`)
 
 **PoC:** Read `settings.json` + `encryption-key.bin` from `%APPDATA%\Scoreboard\`. Decrypt with `openssl aes-256-cbc -d -K <hex_key> -iv 00000000000000000000000000000000`.
+
+**Note:** Since SSH password authentication has been replaced with key-pair auth (see SEC-03 Resolved), the encrypted settings no longer contain passwords. The remaining encrypted data includes sync host/user configuration and UI preferences. The impact is reduced but the cryptographic weakness remains.
 
 **Remediation:**
 ```js
@@ -77,13 +85,14 @@ function encrypt(data) {
 
 | Field | Value |
 |---|---|
-| **File** | [main.js:729](file:///Users/stefan/Development/scoreboard/main.js#L729), [main.js:766](file:///Users/stefan/Development/scoreboard/main.js#L766) |
+| **File** | [main.js:883](file:///Users/stefan/Development/scoreboard/main.js#L883), [main.js:920](file:///Users/stefan/Development/scoreboard/main.js#L920) |
 | **Type** | CWE-16: Configuration (Electron Security Misconfiguration) |
 | **Severity** | 🟠 High — CVSS 6.5 `AV:L/AC:L/PR:N/UI:R/S:C/C:H/I:N/A:N` |
+| **Status** | ⚠️ Open (unchanged since last audit) |
 
 **Problem:**
 ```js
-webSecurity: false  // both mainWindow and outputWindow
+webSecurity: false  // both mainWindow (line 920) and outputWindow (line 883)
 ```
 
 This disables the same-origin policy in Chromium, allowing the renderer to:
@@ -91,17 +100,21 @@ This disables the same-origin policy in Chromium, allowing the renderer to:
 - Bypass CORS restrictions entirely
 - If combined with any future code that loads external content or user-supplied HTML, this becomes an arbitrary file read primitive
 
-**Why it exists:** The app uses `file://` protocol to load local media. Disabling web security was a shortcut.
+**Why it exists:** The app uses `file://` protocol to load local media. Disabling web security was a shortcut. The recent migration to `pathToFileURL()` in `load-media` (returning proper `file:///` URLs) was a step in the right direction but does not eliminate the need for `webSecurity: false`.
 
 **Remediation:** Register a custom protocol handler via `protocol.handle()` and remove `webSecurity: false`:
 
 ```js
-const { protocol } = require('electron');
+const { protocol, net } = require('electron');
 
 app.whenReady().then(() => {
   protocol.handle('media', (request) => {
-    const filePath = request.url.replace('media://', '');
+    const filePath = decodeURIComponent(request.url.replace('media://', ''));
+    const userData = app.getPath('userData');
     // Validate filePath is within userData/media
+    if (!filePath.startsWith(path.join(userData, 'media'))) {
+      return new Response('Forbidden', { status: 403 });
+    }
     return net.fetch('file://' + filePath);
   });
 });
@@ -111,44 +124,16 @@ Then reference media as `media://path/to/file.mp4` in the renderer.
 
 ---
 
-### SEC-03 — SSH Credentials in Encrypted JSON File
-
-| Field | Value |
-|---|---|
-| **File** | [settingsStore.js](file:///Users/stefan/Development/scoreboard/settingsStore.js), [main.js:115](file:///Users/stefan/Development/scoreboard/main.js#L115) |
-| **Type** | CWE-522: Insufficiently Protected Credentials |
-| **Severity** | 🟠 High — CVSS 6.1 `AV:L/AC:L/PR:L/UI:N/S:U/C:H/I:L/A:N` |
-
-**Problem:**  
-SSH password is stored in an encrypted JSON file alongside its encryption key (`encryption-key.bin`). Both reside in `%APPDATA%\Scoreboard\`. Any local process or user with file access can recover the SSH password.
-
-**Impact:** Compromise of the remote sync server credentials. Given the Electron app runs on a shared venue PC (Windows 11), other users or malware on that PC could extract the credentials.
-
-**Remediation:**  
-Use the OS credential store via [keytar](https://github.com/nicosb/keytar) or [safeStorage](https://www.electronjs.org/docs/latest/api/safe-storage):
-
-```js
-const { safeStorage } = require('electron');
-
-// Encrypt with OS-level DPAPI (Windows) / Keychain (macOS)
-const encrypted = safeStorage.encryptString(password);
-// Store as Buffer, not alongside a plaintext key file
-```
-
-> [!NOTE]
-> `safeStorage` is the Electron-native solution (uses DPAPI on Windows, Keychain on macOS). No additional dependency needed.
-
----
-
 ### SEC-04 — Unvalidated File Paths from Renderer
 
 | Field | Value |
 |---|---|
-| **File** | [main.js:174-201](file:///Users/stefan/Development/scoreboard/main.js#L174-L201) |
+| **File** | [main.js:281-308](file:///Users/stefan/Development/scoreboard/main.js#L281-L308) |
 | **Type** | CWE-22: Path Traversal |
 | **Severity** | 🟡 Medium — CVSS 5.0 `AV:L/AC:L/PR:L/UI:R/S:U/C:N/I:H/A:N` |
+| **Status** | ⚠️ Open (unchanged since last audit) |
 
-**Problem:**  
+**Problem:**
 `ipcMain.handle('add-media', async (event, filePath) => ...)` accepts a raw file path from the renderer and calls `fs.copyFileSync(filePath, targetPath)`. While the renderer itself supplies this via a dialog or drag-and-drop (trusted source), there is no validation that the path:
 - Is within expected locations
 - Is not a system file (e.g. `/etc/shadow`, `C:\Windows\System32\config\SAM`)
@@ -172,9 +157,10 @@ if (!allowedExtensions.includes(ext)) {
 
 | Field | Value |
 |---|---|
-| **File** | [main.js:449-457](file:///Users/stefan/Development/scoreboard/main.js#L449-L457) |
+| **File** | [main.js:559-567](file:///Users/stefan/Development/scoreboard/main.js#L559-L567) |
 | **Type** | CWE-284: Improper Access Control |
 | **Severity** | 🟡 Medium — CVSS 3.5 `AV:L/AC:L/PR:L/UI:N/S:U/C:L/I:N/A:N` |
+| **Status** | ⚠️ Open (unchanged since last audit) |
 
 **Problem:**
 ```js
@@ -185,9 +171,9 @@ BrowserWindow.getAllWindows().forEach(win => {
 });
 ```
 
-Commands including game state and potentially sensitive settings are broadcast to **all** windows (including DevTools if open). The sender window also receives its own commands, which currently has no ill effect but could cause recursive loops with future changes.
+Commands including game state are broadcast to **all** windows (including DevTools if open). The sender window also receives its own commands. Additionally, the new `playlists-updated` and `media-updated` broadcasts (added in this session) follow the same pattern — this is intentional for data synchronization but amplifies the surface.
 
-**Remediation:** Target only the output window explicitly:
+**Remediation:** Target only the output window explicitly for display commands:
 ```js
 if (outputWindow && !outputWindow.isDestroyed()) {
   outputWindow.webContents.send('control-command', { command, payload });
@@ -196,44 +182,25 @@ if (outputWindow && !outputWindow.isDestroyed()) {
 
 ---
 
-### SEC-06 — Dependency Vulnerabilities (npm audit)
-
-| Field | Value |
-|---|---|
-| **File** | [package-lock.json](file:///Users/stefan/Development/scoreboard/package-lock.json) |
-| **Type** | CWE-1395: Dependency on Vulnerable Third-Party Component |
-| **Severity** | 🟡 Medium — Varies by CVE |
-
-**`npm audit` results:** 7 known vulnerabilities (5 high, 2 moderate)
-
-| Package | Severity | Issue | Fix Available |
-|---|---|---|---|
-| `immutable` | 🟠 High | Prototype Pollution (CWE-1321) | ✅ |
-| `minimatch` | 🟠 High | ReDoS (CWE-1333) | ✅ |
-| `picomatch` | 🟠 High | ReDoS | ✅ |
-| `rollup` | 🟠 High | (transitive via vite) | ✅ |
-| `tar` | 🟠 High | (transitive) | ✅ |
-| `ajv` | 🟡 Moderate | ReDoS (CWE-1333) | ✅ |
-| `brace-expansion` | 🟡 Moderate | DoS (CWE-400) | ✅ |
-
-**Impact:** All vulnerable packages are indirect dependencies used at build-time or in the Electron main process. The ReDoS vulnerabilities are low-risk in a single-user desktop context (no untrusted input to glob/match patterns). The prototype pollution in `immutable` is more concerning (used by `sass`).
-
-**Remediation:** `npm audit fix` resolves all issues. For transitive dependencies: `npm update` or override in `package.json`.
-
----
-
 ### SEC-07 — `afterPack.js` Downloads Binary Over HTTPS Without Hash Verification
 
 | Field | Value |
 |---|---|
-| **File** | [afterPack.js:43-69](file:///Users/stefan/Development/scoreboard/afterPack.js#L43-L69) |
+| **File** | [afterPack.js:43-82](file:///Users/stefan/Development/scoreboard/afterPack.js#L43-L82) |
 | **Type** | CWE-494: Download of Code Without Integrity Check |
 | **Severity** | 🟡 Medium — CVSS 4.8 `AV:N/AC:H/PR:N/UI:N/S:U/C:N/I:H/A:N` |
+| **Status** | ⬇️ Improved (redirect bug fixed, hash check still missing) |
 
-**Problem:**  
-The `afterPack` hook downloads the ffmpeg binary from GitHub Releases and replaces the bundled one. The download uses HTTPS (good) but does **not verify a SHA256 checksum** of the downloaded zip.
+**Problem:**
+The `afterPack` hook downloads the ffmpeg binary from GitHub Releases and replaces the bundled one. The download uses HTTPS (good) and properly handles HTTP redirects now (previously crashed on 302 → "write after end" error), but does **not verify a SHA256 checksum** of the downloaded zip.
 
-**Exploit sketch:** A compromised DNS/CDN or MITM on the CI runner could swap the ffmpeg binary with a malicious one that would be included in all distributed builds.
+**What was fixed (2026-04-03):**
+- `downloadFile()` no longer creates a `WriteStream` before redirects are resolved (previously caused `ERR_STREAM_WRITE_AFTER_END` crash on Windows CI)
+- 60s timeout added to prevent indefinite hangs
+- Max 5 redirects enforced
+- Redirect response bodies are properly drained via `res.resume()`
+
+**Remaining risk:** A compromised DNS/CDN or MITM on the CI runner could swap the ffmpeg binary.
 
 **Remediation:** Verify the checksum against the official `SHASUMS256.txt` published alongside each Electron release.
 
@@ -245,12 +212,15 @@ The `afterPack` hook downloads the ffmpeg binary from GitHub Releases and replac
 |---|---|
 | **File** | [package.json:33](file:///Users/stefan/Development/scoreboard/package.json#L33) |
 | **Type** | CWE-1104: Use of Unmaintained Third-Party Components |
-| **Severity** | 🟡 Medium — CVSS 3.7 `AV:L/AC:H/PR:N/UI:N/S:U/C:N/I:N/A:L` |
+| **Severity** | 🔵 Low (downgraded from Medium — single-user app, limited usage) |
+| **Status** | ⚠️ Open |
 
-**Problem:**  
-`fluent-ffmpeg@2.1.3` is officially deprecated ("Package no longer supported"). It spawns child processes with shell options, which triggers Node.js deprecation `DEP0190` (visible in the CI log). The npm install warns explicitly.
+**Problem:**
+`fluent-ffmpeg@2.1.3` is officially deprecated ("Package no longer supported"). It spawns child processes with shell options, which triggers Node.js deprecation `DEP0190`. The npm install warns explicitly.
 
-**Remediation:** Evaluate alternatives (`ffmpeg-static` + direct `child_process.execFile`) or fork the library. The current usage is minimal (ffprobe metadata extraction only).
+**Current usage:** ffprobe metadata extraction (duration) and video thumbnail generation only.
+
+**Remediation:** Evaluate alternatives (`ffmpeg-static` + direct `child_process.execFile`) or fork the library.
 
 ---
 
@@ -261,8 +231,9 @@ The `afterPack` hook downloads the ffmpeg binary from GitHub Releases and replac
 | **File** | [main.js](file:///Users/stefan/Development/scoreboard/main.js) (absent) |
 | **Type** | CWE-1021: Improper Restriction of Rendered UI Layers |
 | **Severity** | 🔵 Low — CVSS 2.0 `AV:L/AC:H/PR:L/UI:R/S:U/C:L/I:N/A:N` |
+| **Status** | ⚠️ Open (unchanged since last audit) |
 
-**Problem:**  
+**Problem:**
 No `Content-Security-Policy` is set on the BrowserWindow. The app could theoretically load external scripts if a future code change introduces dynamic content.
 
 **Remediation:** Set a restrictive CSP via `session.defaultSession.webRequest`:
@@ -283,9 +254,10 @@ session.defaultSession.webRequest.onHeadersReceived((details, callback) => {
 
 | Field | Value |
 |---|---|
-| **File** | [main.js:812-815](file:///Users/stefan/Development/scoreboard/main.js#L812-L815) |
+| **File** | [main.js:966-970](file:///Users/stefan/Development/scoreboard/main.js#L966-L970) |
 | **Type** | CWE-561: Dead Code |
 | **Severity** | 🔵 Low — CVSS 0.0 |
+| **Status** | ⚠️ Open (unchanged since last audit) |
 
 **Problem:**
 ```js
@@ -298,18 +270,59 @@ Dead menu item that does nothing. Harmless, but confusing to users and should be
 
 ---
 
+### SEC-11 — Command Injection in ssh-keygen Call 🆕
+
+| Field | Value |
+|---|---|
+| **File** | [main.js:88-93](file:///Users/stefan/Development/scoreboard/main.js#L88-L93) |
+| **Type** | CWE-78: OS Command Injection |
+| **Severity** | 🔵 Low — CVSS 2.0 `AV:L/AC:H/PR:L/UI:R/S:U/C:N/I:L/A:N` |
+| **Status** | ✅ Resolved (2026-04-03) |
+
+**Resolution:** Replaced `execSync` with `execFileSync` and passes arguments as an array instead of interpolated strings. This prevents shell injection via username or hostname values.
+
+```js
+execFileSync('ssh-keygen', ['-t', 'ed25519', '-C', comment, '-f', SSH_KEY_PATH, '-N', '']);
+```
+
+**Problem:**
+```js
+const comment = `${getSyncConfig().user}@${hostname}`;
+execSync(`ssh-keygen -t ed25519 -C "${comment}" -f "${SSH_KEY_PATH}" -N ""`);
+```
+
+The `comment` value includes `getSyncConfig().user` which is read from the user-editable settings, and `os.hostname()`. These are interpolated directly into a shell command. A user who sets their sync username to `"; rm -rf / #` could achieve command injection.
+
+**Mitigating factors:**
+- Settings are encrypted (SEC-01 makes this weak)
+- Only the app operator can change settings
+- This is a self-attacking scenario (operator injecting commands on their own machine)
+
+**Remediation:** Use `execFileSync` instead of `execSync` to avoid shell interpolation:
+```js
+const { execFileSync } = require('child_process');
+execFileSync('ssh-keygen', ['-t', 'ed25519', '-C', comment, '-f', SSH_KEY_PATH, '-N', '']);
+```
+
+---
+
+
 ## Trust Boundary Analysis
 
 ### Third-Party Services
 
 | Service | Protocol | Credential Handling | Risk |
 |---|---|---|---|
-| **SSH/SFTP Sync Server** | SSH (Port 22) | Password stored in encrypted JSON (see SEC-01, SEC-03) | Medium — credential theft enables server access |
+| **SSH Sync Server** | SSH (Port 22) | Ed25519 key-pair authentication (no passwords) | Low — key file on disk, but no credential theft enables server access without the file |
 | **GitHub Releases** (build time) | HTTPS | No auth needed (public download) | Low — integrity not verified (SEC-07) |
 
 ### External Network Access
 
 The app makes **no HTTP/HTTPS calls at runtime** — it is fully offline except for the SSH sync feature (user-initiated). The `afterPack.js` script downloads ffmpeg at build time only.
+
+### Local File Access
+
+Since 2026-04-03, media file paths are converted to proper `file:///` URLs using Node.js `pathToFileURL()` in the main process. This ensures cross-platform correctness (especially on Windows where backslash paths were previously broken), but does not restrict which files can be accessed — `webSecurity: false` (SEC-02) still allows unrestricted `file://` access.
 
 ---
 
