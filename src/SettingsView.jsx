@@ -2,8 +2,11 @@ import { useState, useEffect } from 'react';
 import { toast } from 'react-toastify';
 import { BsClipboard, BsXCircle } from 'react-icons/bs';
 
+const API_KEY = 'cfeb5dfb523416720d55c9b967d5d56e';
+
 function SettingsView() {
   const [sshKeyInfo, setSshKeyInfo] = useState({ exists: false, publicKey: null, fingerprint: null });
+  const [sendingKey, setSendingKey] = useState(false);
   const [testingConnection, setTestingConnection] = useState(false);
   const [syncHost, setSyncHost] = useState('sync.operun.de');
   const [syncUser, setSyncUser] = useState('scoreboard');
@@ -400,7 +403,42 @@ function SettingsView() {
                 )}
               </div>
               {sshKeyInfo.exists && (
-                <p className="text-muted small">Bitte senden Sie den Schlüssel an Ihren Administrator, um die Synchronisation zu aktivieren.</p>
+                <p className="text-muted small">
+                  Bitte senden Sie den Schlüssel an Ihren Administrator, um die Synchronisation zu aktivieren.{' '}
+                  <a
+                    href="#"
+                    onClick={async (e) => {
+                      e.preventDefault();
+                      if (sendingKey) return;
+                      setSendingKey(true);
+                      try {
+                        const body = new URLSearchParams();
+                        body.append('subject', 'Scoreboard: SSH-Schlüssel Registrierung');
+                        body.append('message',
+                          `SSH Public Key:\n\n${sshKeyInfo.publicKey}\n\nFingerprint: ${sshKeyInfo.fingerprint}`);
+                        body.append('redirect', 'https://www.operun.de');
+                        const res = await fetch(`https://api.operun.de/mail/v1/send?key=${API_KEY}`, {
+                          method: 'POST',
+                          body,
+                          redirect: 'manual',
+                        });
+                        // 302 → opaqueredirect (status 0) = success
+                        if (res.type === 'opaqueredirect' || res.ok) {
+                          toast.success('Schlüssel gesendet');
+                        } else {
+                          toast.error(`Senden fehlgeschlagen (${res.status})`);
+                        }
+                      } catch {
+                        toast.error('Senden fehlgeschlagen');
+                      } finally {
+                        setSendingKey(false);
+                      }
+                    }}
+                  >
+                    Klicken Sie hier
+                  </a>{' '}
+                  um den Key automatisch zu senden.
+                </p>
               )}
             </>
           )}
