@@ -649,15 +649,24 @@ ipcMain.handle('sync-to-remote', async () => {
         });
         console.log('[Sync] SFTP established.');
 
-        // Ensure remote dirs exist via SFTP (safer than exec)
-        console.log('[Sync] Creating remote folders (SFTP)...');
-        try {
-          await new Promise((res, rej) => sftp.mkdir(`${remoteBase}/media`, true, (err) => {
-            // Ignore error if dir already exists (usually code 4 or message)
-            if (err && err.code !== 4) console.warn('[Sync] mkdir warning:', err.message);
-            res();
-          }));
-        } catch (e) { console.warn('[Sync] mkdir failed', e); }
+        // Recursively ensure remote dirs exist (ssh2 has no recursive mkdir).
+        // Creates each path segment individually, ignoring "already exists" errors.
+        const mkdirpSftp = (dirPath) => new Promise((resolve) => {
+          const segments = dirPath.split('/').filter(Boolean);
+          const makeNext = (i) => {
+            if (i > segments.length) return resolve();
+            const partial = segments.slice(0, i).join('/');
+            sftp.mkdir(partial, (err) => {
+              if (err) console.log(`[Sync] mkdir '${partial}': ${err.message} (ignored)`);
+              makeNext(i + 1);
+            });
+          };
+          makeNext(1);
+        });
+
+        console.log('[Sync] Ensuring remote folder structure...');
+        await mkdirpSftp(remoteBase);
+        await mkdirpSftp(`${remoteBase}/media`);
 
         console.log('[Sync] Fetching remote data...');
 
