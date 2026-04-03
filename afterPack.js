@@ -42,29 +42,42 @@ function getDownloadUrl(version, platform, arch) {
 
 function downloadFile(url, destPath) {
     return new Promise((resolve, reject) => {
-        console.log(`[afterPack] Downloading: ${url}`);
-        const file = fs.createWriteStream(destPath);
-        const request = (reqUrl) => {
-            https.get(reqUrl, (response) => {
-                if (response.statusCode === 302 || response.statusCode === 301) {
-                    file.close();
-                    request(response.headers.location);
+        const TIMEOUT_MS = 60000;
+
+        const attempt = (reqUrl, hops = 0) => {
+            if (hops > 5) return reject(new Error('Too many redirects'));
+
+            console.log(`[afterPack] ${hops === 0 ? 'Downloading' : '  → redirect'}: ${reqUrl}`);
+
+            const req = https.get(reqUrl, (res) => {
+                if (res.statusCode === 301 || res.statusCode === 302) {
+                    res.resume(); // drain and ignore redirect response body
+                    attempt(res.headers.location, hops + 1);
                     return;
                 }
-                if (response.statusCode !== 200) {
-                    reject(new Error(`Download failed: HTTP ${response.statusCode} for ${reqUrl}`));
-                    return;
+                if (res.statusCode !== 200) {
+                    res.resume();
+                    return reject(new Error(`HTTP ${res.statusCode} for ${reqUrl}`));
                 }
-                response.pipe(file);
-                file.on('finish', () => {
-                    file.close(resolve);
+                // Only create the WriteStream for the final (non-redirect) response
+                const file = fs.createWriteStream(destPath);
+                res.pipe(file);
+                file.on('finish', () => file.close(resolve));
+                file.on('error', (err) => {
+                    fs.unlink(destPath, () => {});
+                    reject(err);
                 });
-            }).on('error', (err) => {
-                fs.unlink(destPath, () => { });
-                reject(err);
             });
+
+            req.setTimeout(TIMEOUT_MS, () => {
+                req.destroy();
+                reject(new Error(`Download timed out after ${TIMEOUT_MS / 1000}s`));
+            });
+
+            req.on('error', reject);
         };
-        request(url);
+
+        attempt(url);
     });
 }
 
