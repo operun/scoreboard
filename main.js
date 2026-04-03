@@ -373,6 +373,7 @@ ipcMain.handle('add-media', async (event, filePath) => {
 
   mediaList.push(newEntry);
   saveMediaList(mediaList);
+  BrowserWindow.getAllWindows().forEach(w => { if (!w.isDestroyed()) w.webContents.send('media-updated'); });
 
   return {
     status: knownHash ? 'known-hash' : 'ok',
@@ -393,7 +394,7 @@ ipcMain.handle('delete-media', async (event, id) => {
     mediaList[index].deleted = true;
     mediaList[index].updatedAt = Date.now();
     saveMediaList(mediaList);
-
+    BrowserWindow.getAllWindows().forEach(w => { if (!w.isDestroyed()) w.webContents.send('media-updated'); });
     return { status: 'ok' };
   } catch (err) {
     console.error('[Media] Fehler beim Löschen:', err);
@@ -497,6 +498,7 @@ ipcMain.handle('save-playlist', (event, updated) => {
   }
 
   savePlaylists(playlists);
+  BrowserWindow.getAllWindows().forEach(w => { if (!w.isDestroyed()) w.webContents.send('playlists-updated'); });
   return { status: 'ok' };
 });
 
@@ -508,6 +510,7 @@ ipcMain.handle('delete-playlist', (event, id) => {
     playlists[index].deleted = true;
     playlists[index].updatedAt = Date.now();
     savePlaylists(playlists);
+    BrowserWindow.getAllWindows().forEach(w => { if (!w.isDestroyed()) w.webContents.send('playlists-updated'); });
     return { status: 'ok' };
   }
   return { status: 'error', message: 'Not found' };

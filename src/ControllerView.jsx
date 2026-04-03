@@ -128,6 +128,24 @@ function ControllerView({ visibility = {} }) {
     loadData();
   }, []);
 
+  // Reload playlists when PlaylistsView saves/deletes
+  useEffect(() => {
+    const unsub = window.electronAPI.onPlaylistsUpdated(async () => {
+      const pl = await window.electronAPI.loadPlaylists();
+      setPlaylists(pl);
+    });
+    return unsub;
+  }, []);
+
+  // Reload media when MediaView adds/deletes
+  useEffect(() => {
+    const unsub = window.electronAPI.onMediaUpdated(async () => {
+      const allMedia = await window.electronAPI.loadMedia();
+      setMediaImages(allMedia.filter(m => m.type === 'image'));
+    });
+    return unsub;
+  }, []);
+
   const loadPreset = (preset) => {
     setCurrentPresetId(preset.id);
 

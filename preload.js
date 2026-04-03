@@ -43,6 +43,18 @@ contextBridge.exposeInMainWorld('electronAPI', {
     return () => ipcRenderer.removeListener('settings-updated', subscription);
   },
 
+  onPlaylistsUpdated: (callback) => {
+    const subscription = () => callback();
+    ipcRenderer.on('playlists-updated', subscription);
+    return () => ipcRenderer.removeListener('playlists-updated', subscription);
+  },
+
+  onMediaUpdated: (callback) => {
+    const subscription = () => callback();
+    ipcRenderer.on('media-updated', subscription);
+    return () => ipcRenderer.removeListener('media-updated', subscription);
+  },
+
   onTestImageUpdated: (callback) => {
     const subscription = (event, value) => callback(null, value);
     ipcRenderer.on('test-image-updated', subscription);
