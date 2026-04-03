@@ -19,7 +19,7 @@ const PlaylistSelect = ({ label, value, onChange, playlists, showStandard = fals
   </div>
 );
 
-function ControllerView() {
+function ControllerView({ visibility = {} }) {
   useEffect(() => {
     document.title = 'Controller - Scoreboard';
   }, []);
@@ -73,11 +73,6 @@ function ControllerView() {
     setLocalScore({ home: gameState.homeScore, guest: gameState.guestScore });
   }, [gameState.homeScore, gameState.guestScore]);
 
-  // Visibility Settings
-  const [visibility, setVisibility] = useState({
-    warmup: true, lineup: true, halftime: true, end: true,
-    goalHome: true, goalGuest: true, sub: true, yellow: true, red: true, var: true, special: true, corner: true, overtime: true, announcement: true
-  });
 
   const confirmSave = async () => {
     if (!presetName) return;
@@ -103,11 +98,7 @@ function ControllerView() {
       const allMedia = await window.electronAPI.loadMedia();
       setMediaImages(allMedia.filter(m => m.type === 'image'));
 
-      // Load visibility settings
-      const settings = await window.electronAPI.loadSettings();
-      if (settings && settings.controllerVisibility) {
-        setVisibility(prev => ({ ...prev, ...settings.controllerVisibility }));
-      }
+      // Load visibility settings are now passed as prop from App.jsx
 
       // Load or Create Default Preset
       let pr = await window.electronAPI.loadPresets();

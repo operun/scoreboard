@@ -23,16 +23,23 @@ function App() {
   // Default to system
   const [themeMode, setThemeMode] = useState('system');
   const [effectiveTheme, setEffectiveTheme] = useState('light');
+  const [controllerVisibility, setControllerVisibility] = useState({
+    warmup: true, lineup: true, halftime: true, end: true,
+    goalHome: true, goalGuest: true, sub: true, yellow: true, red: true,
+    var: true, special: true, corner: true, overtime: true, announcement: true
+  });
 
   // Load theme setting on mount
   useEffect(() => {
     window.electronAPI.loadSettings().then(s => {
       if (s && s.themeMode) setThemeMode(s.themeMode);
+      if (s && s.controllerVisibility) setControllerVisibility(prev => ({ ...prev, ...s.controllerVisibility }));
     });
 
     // Listen for updates from settings view
     const unsub = window.electronAPI.onSettingsUpdated((err, s) => {
       if (!err && s.themeMode) setThemeMode(s.themeMode);
+      if (!err && s.controllerVisibility) setControllerVisibility(prev => ({ ...prev, ...s.controllerVisibility }));
     });
     return () => { if (unsub) unsub(); };
   }, []);
@@ -112,7 +119,7 @@ function App() {
         <div className="main flex-fill p-5" style={{ height: '100%', overflow: 'hidden' }}>
           {/* ControllerView is always mounted to preserve game state across navigation */}
           <div style={{ display: view === 'controller' ? 'block' : 'none', height: '100%' }}>
-            <ControllerView />
+            <ControllerView visibility={controllerVisibility} />
           </div>
           {view === 'playlists' && (
             <PlaylistsView
