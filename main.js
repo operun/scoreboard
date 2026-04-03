@@ -85,7 +85,7 @@ function getSSHKeyInfo() {
 function generateSSHKeyPair() {
   const { execSync } = require('child_process');
   const hostname = require('os').hostname();
-  const comment = `${SYNC_USER}@${hostname}`;
+  const comment = `${getSyncConfig().user}@${hostname}`;
 
   // ssh-keygen is available on Windows 10 1809+, macOS, Linux out of the box
   execSync(`ssh-keygen -t ed25519 -C "${comment}" -f "${SSH_KEY_PATH}" -N ""`, {
