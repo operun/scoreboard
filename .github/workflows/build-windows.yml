@@ -42,12 +42,12 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: scoreboard-windows-installer
-          path: dist-electron/*Setup*.exe
+          path: dist-electron/*.exe
           retention-days: 30
 
       - name: Create GitHub Release with Installer
         uses: softprops/action-gh-release@v2
         with:
-          files: dist-electron/*Setup*.exe
+          files: dist-electron/*.exe
           generate_release_notes: true
           draft: false
