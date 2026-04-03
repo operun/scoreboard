@@ -42,6 +42,9 @@
   "build": {
     "npmRebuild": true,
     "appId": "com.operun.scoreboard",
+    "publish": {
+      "provider": "github"
+    },
     "productName": "Scoreboard",
     "afterPack": "./afterPack.js",
     "directories": {

@@ -31,23 +31,7 @@ jobs:
       - name: Build renderer (Vite)
         run: npm run build:renderer
 
-      - name: Build Electron (NSIS Installer)
-        run: npx electron-builder --publish never
-
-      - name: List dist-electron contents (debug)
-        run: Get-ChildItem -Recurse dist-electron | Select-Object FullName
-        shell: pwsh
-
-      - name: Upload Installer as artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: scoreboard-windows-installer
-          path: dist-electron/*.exe
-          retention-days: 30
-
-      - name: Create GitHub Release with Installer
-        uses: softprops/action-gh-release@v2
-        with:
-          files: dist-electron/*.exe
-          generate_release_notes: true
-          draft: false
+      - name: Build and publish to GitHub Releases
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: npx electron-builder --publish always
