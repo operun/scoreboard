@@ -5,7 +5,7 @@ function PlaylistScene({ activeMedia, currentTestImage, showCropMarks, onMediaEn
                 activeMedia.type === 'video' ? (
                     <video
                         key={activeMedia.id}
-                        src={`file://${activeMedia.path}`}
+                        src={activeMedia.path}
                         autoPlay
                         muted={preview ? true : false}
                         style={{ width: '100%', height: '100%', objectFit: 'contain' }}
@@ -13,7 +13,7 @@ function PlaylistScene({ activeMedia, currentTestImage, showCropMarks, onMediaEn
                     />
                 ) : (
                     <img
-                        src={`file://${activeMedia.path}`}
+                    src={activeMedia.path}
                         alt="Content"
                         style={{ width: '100%', height: '100%', objectFit: 'contain' }}
                     />
