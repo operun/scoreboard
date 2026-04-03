@@ -158,7 +158,7 @@ function MediaView() {
                   <td style={{ padding: '4px 8px', width: 56 }}>
                     {(file.type === 'image' && file.path) || (file.type === 'video' && file.thumbnailPath) ? (
                       <img
-                        src={`file://${encodeURI(file.type === 'image' ? file.path : file.thumbnailPath)}`}
+                    src={file.type === 'image' ? file.path : file.thumbnailPath}
                         alt=""
                         onClick={() => handleShow(file)}
                         style={{ width: 48, height: 48, objectFit: 'cover', borderRadius: 4, cursor: 'pointer', display: 'block' }}
@@ -210,7 +210,7 @@ function MediaView() {
                 <video
                   key={selectedFile.id}
                   ref={videoRef}
-                  src={`file://${encodeURI(selectedFile.path)}`}
+                  src={selectedFile.path}
                   controls
                   autoPlay
                   style={{ width: '100%', maxHeight: '80vh' }}
@@ -218,7 +218,7 @@ function MediaView() {
               )}
               {selectedFile.type === 'image' && (
                 <img
-                  src={`file://${encodeURI(selectedFile.path)}`}
+                  src={selectedFile.path}
                   alt={selectedFile.fileName}
                   style={{ width: '100%', maxHeight: '80vh', objectFit: 'contain' }}
                 />

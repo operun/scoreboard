@@ -60,7 +60,7 @@ function OutputView({ preview = false }) {
         const resolveMediaId = async (id, allMedia) => {
             if (!id) return null;
             const found = allMedia.find(m => m.id === id);
-            return found ? `file://${found.path}` : null;
+            return found ? found.path : null;
         };
 
         const applySettings = async (settings) => {
@@ -136,7 +136,7 @@ function OutputView({ preview = false }) {
                     const resolve = (id) => {
                         if (!id) return null;
                         const found = allMedia.find(m => m.id === id);
-                        return found ? `file://${found.path}` : null;
+                        return found ? found.path : null;
                     };
                     setHomeLogoPath(resolve(homeId));
                     setGuestLogoPath(resolve(guestId));

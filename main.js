@@ -265,13 +265,14 @@ ipcMain.handle('load-media', async () => {
     saveMediaList(mediaList);
   }
 
+  const { pathToFileURL } = require('url');
   return mediaList
     .filter(item => !item.deleted)
     .map((item) => ({
       ...item,
-      path: path.join(mediaDir, item.storedName),
+      path: pathToFileURL(path.join(mediaDir, item.storedName)).href,
       thumbnailPath: item.thumbnailStoredName
-        ? path.join(mediaDir, 'thumbnails', item.thumbnailStoredName)
+        ? pathToFileURL(path.join(mediaDir, 'thumbnails', item.thumbnailStoredName)).href
         : null
     }))
     .sort((a, b) => a.fileName.localeCompare(b.fileName, 'de', { sensitivity: 'base' }));

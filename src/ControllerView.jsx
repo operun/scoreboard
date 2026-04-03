@@ -680,7 +680,7 @@ function ControllerView({ visibility = {} }) {
                   >
                     {img ? (
                       <>
-                        <img src={`file://${img.path}`} alt={img.fileName} style={{ maxHeight: 48, maxWidth: '100%', objectFit: 'contain' }} />
+                        <img src={img.path} alt={img.fileName} style={{ maxHeight: 48, maxWidth: '100%', objectFit: 'contain' }} />
                       </>
                     ) : (
                       <span className="text-muted">{label}</span>
@@ -873,7 +873,7 @@ function ControllerView({ visibility = {} }) {
                         setShowLogoModal(null);
                       }}
                     >
-                      <img src={`file://${img.path}`} alt={img.fileName} style={{ width: 32, height: 32, objectFit: 'contain' }} />
+                      <img src={img.path} alt={img.fileName} style={{ width: 32, height: 32, objectFit: 'contain' }} />
                       {img.fileName}
                     </button>
                   ))}

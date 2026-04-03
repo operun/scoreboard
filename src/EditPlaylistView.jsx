@@ -41,7 +41,7 @@ function SortableItem(props) {
         {/* Preview */}
         {(props.media?.type === 'image' && props.media?.path) || (props.media?.type === 'video' && props.media?.thumbnailPath) ? (
           <img
-            src={`file://${encodeURI(props.media.type === 'image' ? props.media.path : props.media.thumbnailPath)}`}
+            src={props.media.type === 'image' ? props.media.path : props.media.thumbnailPath}
             alt=""
             style={{ width: 40, height: 40, objectFit: 'cover', borderRadius: 4, flexShrink: 0, marginRight: 10 }}
           />
@@ -250,7 +250,7 @@ function EditPlaylistView({ playlistId, onBack }) {
                     {/* Preview */}
                     {(media.type === 'image' && media.path) || (media.type === 'video' && media.thumbnailPath) ? (
                       <img
-                        src={`file://${encodeURI(media.type === 'image' ? media.path : media.thumbnailPath)}`}
+                        src={media.type === 'image' ? media.path : media.thumbnailPath}
                         alt=""
                         style={{ width: 40, height: 40, objectFit: 'cover', borderRadius: 4, flexShrink: 0 }}
                       />
