@@ -5,6 +5,8 @@ import { BsClipboard, BsXCircle } from 'react-icons/bs';
 function SettingsView() {
   const [sshKeyInfo, setSshKeyInfo] = useState({ exists: false, publicKey: null, fingerprint: null });
   const [testingConnection, setTestingConnection] = useState(false);
+  const [syncHost, setSyncHost] = useState('sync.operun.de');
+  const [syncUser, setSyncUser] = useState('scoreboard');
   const [outputWidth, setOutputWidth] = useState(1280);
   const [outputHeight, setOutputHeight] = useState(720);
   const [showCropMarks, setShowCropMarks] = useState(true);
@@ -39,6 +41,8 @@ function SettingsView() {
         if (settings.scoreboardBgName) setScoreboardBgName(settings.scoreboardBgName);
         if (settings.scoreboardSponsorId) setScoreboardSponsorId(settings.scoreboardSponsorId);
         if (settings.scoreboardSponsorName) setScoreboardSponsorName(settings.scoreboardSponsorName);
+        if (settings.syncHost) setSyncHost(settings.syncHost);
+        if (settings.syncUser) setSyncUser(settings.syncUser);
       }
       // Load image list for pickers
       const allMedia = await window.electronAPI.loadMedia();
@@ -65,6 +69,8 @@ function SettingsView() {
       scoreboardBgName,
       scoreboardSponsorId,
       scoreboardSponsorName,
+      syncHost,
+      syncUser,
       ...overrides
     };
     Object.assign(settingsRef, newSettings);
@@ -297,84 +303,105 @@ function SettingsView() {
 
           {activeTab === 'connection' && (
             <>
+              <div className="mb-3">
+                <label className="form-label">Server</label>
+                <input
+                  type="text"
+                  className="form-control"
+                  value={syncHost}
+                  onChange={(e) => setSyncHost(e.target.value)}
+                  onBlur={() => saveAllSettings({ syncHost })}
+                  placeholder="sync.operun.de"
+                />
+              </div>
+              <div className="mb-3">
+                <label className="form-label">Benutzer</label>
+                <input
+                  type="text"
+                  className="form-control"
+                  value={syncUser}
+                  onChange={(e) => setSyncUser(e.target.value)}
+                  onBlur={() => saveAllSettings({ syncUser })}
+                  placeholder="scoreboard"
+                />
+              </div>
               <div className="mb-4">
-                <label className="form-label">Verbindungseinstellungen</label>
-                <table className="table table-sm" style={{ fontSize: '0.88rem' }}>
-                  <tbody>
-                    <tr>
-                      <td className="text-muted" style={{ width: 160 }}>Sync Server</td>
-                      <td className="font-monospace">sync.operun.de</td>
-                    </tr>
-                    <tr>
-                      <td className="text-muted">Benutzer</td>
-                      <td className="font-monospace">scoreboard</td>
-                    </tr>
-                    <tr>
-                      <td className="text-muted">SSH-Schlüssel</td>
-                      <td>
-                        {sshKeyInfo.exists ? (
-                          <span className="d-flex align-items-start gap-2">
-                            <span className="font-monospace" style={{ fontSize: '0.75rem', wordBreak: 'break-all' }}>
-                              {sshKeyInfo.publicKey}
-                            </span>
-                            <span
-                              style={{ cursor: 'pointer', flexShrink: 0 }}
-                              title="Schlüssel kopieren"
-                              onClick={() => {
-                                navigator.clipboard.writeText(sshKeyInfo.publicKey);
-                                toast.success('Schlüssel kopiert');
-                              }}
-                            >
-                              <BsClipboard className="text-muted" />
-                            </span>
-                          </span>
-                        ) : (
-                          <button className="btn btn-sm btn-outline-primary" onClick={async () => {
-                            const result = await window.electronAPI.generateSSHKey();
-                            if (result.status === 'ok') {
-                              setSshKeyInfo({ exists: true, publicKey: result.publicKey, fingerprint: result.fingerprint });
-                              toast.success('SSH-Schlüssel erzeugt');
-                            } else {
-                              toast.error(result.message);
-                            }
-                          }}>
-                            Schlüssel generieren
-                          </button>
-                        )}
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
-                {sshKeyInfo.exists && (
-                  <p className="text-muted small">Bitte senden Sie den Schlüssel an Ihren Administrator, um die Synchronisation zu aktivieren.</p>
-                )}
-                {sshKeyInfo.exists && (
-                  <div className="d-flex gap-2">
-                    <button
-                      className="btn btn-outline-primary btn-sm"
-                      onClick={handleTestConnection}
-                      disabled={testingConnection}
-                    >
-                      {testingConnection ? 'Verbinde...' : 'Verbindung testen'}
-                    </button>
-                    <button
-                      className="btn btn-outline-danger btn-sm"
-                      onClick={async () => {
-                        if (!confirm('Neuen SSH-Schlüssel erstellen? Der bisherige verliert den Zugang zum Server.')) return;
-                        const result = await window.electronAPI.regenerateSSHKey();
-                        if (result.status === 'ok') {
-                          setSshKeyInfo({ exists: true, publicKey: result.publicKey, fingerprint: result.fingerprint });
-                          toast.success('Neuer SSH-Schlüssel erstellt');
-                        } else {
-                          toast.error(result.message);
-                        }
-                      }}
-                    >
-                      Schlüssel erneuern
-                    </button>
-                  </div>
+                <label className="form-label">SSH-Schlüssel (öffentlich)</label>
+                {sshKeyInfo.exists ? (
+                  <>
+                    <div style={{ position: 'relative' }}>
+                      <textarea
+                        className="form-control font-monospace"
+                        style={{ fontSize: '0.75rem', resize: 'none', paddingRight: '2.5rem' }}
+                        rows={3}
+                        readOnly
+                        disabled
+                        value={sshKeyInfo.publicKey || ''}
+                      />
+                      <button
+                        className="btn btn-sm"
+                        title="Schlüssel kopieren"
+                        style={{ position: 'absolute', top: '0.35rem', right: '0.35rem', opacity: 0.6, lineHeight: 1 }}
+                        onClick={() => {
+                          navigator.clipboard.writeText(sshKeyInfo.publicKey);
+                          toast.success('Schlüssel kopiert');
+                        }}
+                      >
+                        <BsClipboard />
+                      </button>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <input type="text" className="form-control" disabled placeholder="Kein Schlüssel vorhanden" />
+                    <div className="form-text">Bitte zuerst einen Schlüssel generieren.</div>
+                  </>
                 )}
               </div>
+              <div className="d-flex gap-2 mb-4">
+                {!sshKeyInfo.exists && (
+                  <button className="btn btn-primary" onClick={async () => {
+                    const result = await window.electronAPI.generateSSHKey();
+                    if (result.status === 'ok') {
+                      setSshKeyInfo({ exists: true, publicKey: result.publicKey, fingerprint: result.fingerprint });
+                      toast.success('SSH-Schlüssel erzeugt');
+                    } else {
+                      toast.error(result.message);
+                    }
+                  }}>
+                    Schlüssel generieren
+                  </button>
+                )}
+                {sshKeyInfo.exists && (
+                  <button
+                    className="btn btn-outline-primary"
+                    onClick={handleTestConnection}
+                    disabled={testingConnection}
+                  >
+                    {testingConnection ? 'Verbinde...' : 'Verbindung testen'}
+                  </button>
+                )}
+                {sshKeyInfo.exists && (
+                  <button
+                    className="btn btn-outline-danger"
+                    onClick={async () => {
+                      if (!confirm('Neuen SSH-Schlüssel erstellen? Der bisherige verliert den Zugang zum Server.')) return;
+                      const result = await window.electronAPI.regenerateSSHKey();
+                      if (result.status === 'ok') {
+                        setSshKeyInfo({ exists: true, publicKey: result.publicKey, fingerprint: result.fingerprint });
+                        toast.success('Neuer SSH-Schlüssel erstellt');
+                      } else {
+                        toast.error(result.message);
+                      }
+                    }}
+                  >
+                    Schlüssel erneuern
+                  </button>
+                )}
+              </div>
+              {sshKeyInfo.exists && (
+                <p className="text-muted small">Bitte senden Sie den Schlüssel an Ihren Administrator, um die Synchronisation zu aktivieren.</p>
+              )}
             </>
           )}
 

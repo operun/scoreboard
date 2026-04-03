@@ -49,12 +49,19 @@ const mediaListPath = path.join(app.getPath('userData'), 'media.json');
 const playlistsPath = path.join(app.getPath('userData'), 'playlists.json');
 const presetsPath = path.join(app.getPath('userData'), 'presets.json');
 
-// --- Sync Configuration (hardcoded) ---
-const SYNC_HOST = 'sync.operun.de';
-const SYNC_USER = 'scoreboard';
+// --- Sync Configuration (from settings, with fallback defaults) ---
 const SYNC_REMOTE_BASE = 'scoreboard';
 const SSH_KEY_PATH = path.join(app.getPath('userData'), 'id_ed25519');
 const SSH_PUBKEY_PATH = SSH_KEY_PATH + '.pub';
+
+function getSyncConfig() {
+  const settingsPath = path.join(app.getPath('userData'), 'settings.json');
+  const settings = loadEncryptedSettings(settingsPath) || {};
+  return {
+    host: settings.syncHost || 'sync.operun.de',
+    user: settings.syncUser || 'scoreboard',
+  };
+}
 
 // --- SSH Key Management ---
 function uint32BE(n) {
@@ -208,9 +215,9 @@ ipcMain.handle('test-connection', async () => {
         resolve({ status: 'error', message: 'Verbindung fehlgeschlagen: ' + err.message });
       })
       .connect({
-        host: SYNC_HOST,
+        host: getSyncConfig().host,
         port: 22,
-        username: SYNC_USER,
+        username: getSyncConfig().user,
         privateKey: fs.readFileSync(SSH_KEY_PATH, 'utf8'),
         readyTimeout: 5000
       });
@@ -599,6 +606,7 @@ ipcMain.handle('sync-to-remote', async () => {
     return { status: 'error', message: 'SSH-Modul nicht verfügbar: ' + e.message };
   }
 
+  const { host: SYNC_HOST, user: SYNC_USER } = getSyncConfig();
   console.log(`[Sync] Connecting to ${SYNC_HOST} as ${SYNC_USER}...`);
 
   const remoteBase = SYNC_REMOTE_BASE;
@@ -779,9 +787,9 @@ ipcMain.handle('sync-to-remote', async () => {
     });
 
     conn.connect({
-      host: SYNC_HOST,
+      host: getSyncConfig().host,
       port: 22,
-      username: SYNC_USER,
+      username: getSyncConfig().user,
       privateKey: fs.readFileSync(SSH_KEY_PATH, 'utf8'),
       readyTimeout: 10000
     });
