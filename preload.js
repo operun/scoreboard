@@ -68,6 +68,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
 
   // Reset (wipes settings + presets, keeps media)
   resetApp: () => ipcRenderer.invoke('reset-app'),
+  resetSettings: () => ipcRenderer.invoke('reset-settings'),
+  resetMedia: () => ipcRenderer.invoke('reset-media'),
 
   // Versions
   getVersions: () => ipcRenderer.invoke('get-versions'),

@@ -805,20 +805,48 @@ ipcMain.handle('sync-to-remote', async () => {
   });
 });
 
-ipcMain.handle('reset-app', async () => {
+// --- Reset: Settings & Presets only ---
+ipcMain.handle('reset-settings', async () => {
   const filesToDelete = [
     path.join(app.getPath('userData'), 'settings.json'),
+    path.join(app.getPath('userData'), 'playlists.json'),
     path.join(app.getPath('userData'), 'presets.json'),
   ];
-
   for (const f of filesToDelete) {
-    try {
-      if (fs.existsSync(f)) fs.unlinkSync(f);
-    } catch (e) {
-      console.error('[Reset] Failed to delete:', f, e);
-    }
+    try { if (fs.existsSync(f)) fs.unlinkSync(f); } catch (e) { console.error('[Reset] Failed:', f, e); }
   }
+  app.relaunch();
+  app.quit();
+});
 
+// --- Reset: Media only ---
+ipcMain.handle('reset-media', async () => {
+  const mediaDir = path.join(app.getPath('userData'), 'media');
+  const mediaList = path.join(app.getPath('userData'), 'media.json');
+  try {
+    if (fs.existsSync(mediaDir)) fs.rmSync(mediaDir, { recursive: true, force: true });
+    if (fs.existsSync(mediaList)) fs.unlinkSync(mediaList);
+  } catch (e) { console.error('[Reset] Media reset failed:', e); }
+  app.relaunch();
+  app.quit();
+});
+
+// --- Reset: Everything ---
+ipcMain.handle('reset-app', async () => {
+  const userData = app.getPath('userData');
+  const filesToDelete = [
+    path.join(userData, 'settings.json'),
+    path.join(userData, 'playlists.json'),
+    path.join(userData, 'presets.json'),
+    path.join(userData, 'media.json'),
+  ];
+  for (const f of filesToDelete) {
+    try { if (fs.existsSync(f)) fs.unlinkSync(f); } catch (e) { console.error('[Reset] Failed:', f, e); }
+  }
+  const mediaDir = path.join(userData, 'media');
+  try {
+    if (fs.existsSync(mediaDir)) fs.rmSync(mediaDir, { recursive: true, force: true });
+  } catch (e) { console.error('[Reset] Media dir failed:', e); }
   app.relaunch();
   app.quit();
 });

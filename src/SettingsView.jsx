@@ -501,16 +501,53 @@ function SettingsView() {
 
           {activeTab === 'reset' && (
             <>
-              <p className="lead mb-4">Löscht alle Einstellungen und Presets. Mediendateien bleiben erhalten. Die App wird danach neu gestartet.</p>
-              <button
-                className="btn btn-danger"
-                onClick={async () => {
-                  if (!window.confirm('Alle Einstellungen und Presets wirklich zurücksetzen? Die App wird neu gestartet.')) return;
-                  await window.electronAPI.resetApp();
-                }}
-              >
-                App zurücksetzen
-              </button>
+              <div className="mb-4">
+                <label className="form-label">Einstellungen zurücksetzen</label>
+                <div className="mb-2">
+                  <button
+                    className="btn btn-outline-danger"
+                    onClick={async () => {
+                      if (!window.confirm('Alle Einstellungen, Playlists und Presets wirklich zurücksetzen? Medien bleiben erhalten. Die App wird neu gestartet.')) return;
+                      await window.electronAPI.resetSettings();
+                    }}
+                  >
+                    Einstellungen zurücksetzen
+                  </button>
+                </div>
+                <div className="form-text">Löscht alle Einstellungen, Playlists und Presets. Mediendateien bleiben erhalten.</div>
+              </div>
+
+              <div className="mb-4">
+                <label className="form-label">Medien zurücksetzen</label>
+                <div className="mb-2">
+                  <button
+                    className="btn btn-outline-danger"
+                    onClick={async () => {
+                      if (!window.confirm('Alle Mediendateien wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.')) return;
+                      await window.electronAPI.resetMedia();
+                    }}
+                  >
+                    Medien zurücksetzen
+                  </button>
+                </div>
+                <div className="form-text">Löscht alle hochgeladenen Medien (Bilder, Videos). Einstellungen und Playlists bleiben erhalten.</div>
+              </div>
+
+              <div className="mb-4">
+                <label className="form-label">App zurücksetzen</label>
+                <div className="mb-2">
+                  <button
+                    className="btn btn-danger"
+                    onClick={async () => {
+                      if (!window.confirm('App wirklich vollständig zurücksetzen? Alle Daten (Einstellungen, Medien, Playlists) werden unwiderruflich gelöscht. Die App wird neu gestartet.')) return;
+                      await window.electronAPI.resetApp();
+                    }}
+                  >
+                    App zurücksetzen
+                  </button>
+                </div>
+                <div className="form-text">Setzt die App vollständig zurück – löscht alle Einstellungen, Playlists, Presets und alle Mediendateien.</div>
+              </div>
             </>
           )}
 
