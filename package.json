@@ -11,9 +11,7 @@
     "build:renderer": "vite build",
     "build:electron": "electron-builder",
     "build": "npm run build:renderer && npm run build:electron",
-    "release:patch": "npm version patch && git push origin main --tags",
-    "release:minor": "npm version minor && git push origin main --tags",
-    "release:major": "npm version major && git push origin main --tags"
+    "release": "bash ./release.sh"
   },
   "keywords": [],
   "author": "operun Digital Solutions",
