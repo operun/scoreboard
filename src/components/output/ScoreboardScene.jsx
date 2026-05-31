@@ -60,38 +60,91 @@ function ScoreboardScene({ gameState, timerDisplay, homeLogoPath, guestLogoPath,
                     )}
                 </div>
 
-                {/* Row 2: Home Logo | Home Score | : | Away Score | Away Logo */}
-                <div style={{
-                    display: 'flex',
-                    justifyContent: 'center',
-                    alignItems: 'center',
-                    gap: '1cqw',
-                }}>
-                    {/* Home Logo */}
-                    <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }}>
-                        {homeLogoPath && (
-                            <img
-                                src={homeLogoPath}
-                                alt="Home"
-                                style={{ maxHeight: '50cqh', maxWidth: '40cqw', objectFit: 'contain' }}
-                            />
-                        )}
+                {/* Row 2: Home Logo | Score (fix zentriert) | Away Logo */}
+                <div style={{ position: 'relative' }}>
+                    {/* Logos – linke und rechte Hälfte */}
+                    <div style={{
+                        display: 'grid',
+                        gridTemplateColumns: '1fr 1fr',
+                        alignItems: 'center',
+                    }}>
+                        {/* Home Logo – nur linkes Drittel */}
+                        <div style={{
+                            position: 'absolute',
+                            left: 0,
+                            width: '30%',          // nur linkes Drittel
+                            top: 0,
+                            bottom: 0,
+                            display: 'flex',
+                            justifyContent: 'flex-end',
+                            alignItems: 'center',
+                            paddingRight: '1cqw',
+                            boxSizing: 'border-box',
+                        }}>
+                            {homeLogoPath && (
+                                <img
+                                    src={homeLogoPath}
+                                    alt="Home"
+                                    style={{ maxHeight: '90%', maxWidth: '100%', objectFit: 'contain' }}
+                                />
+                            )}
+                        </div>
+
+                        {/* Guest Logo – nur rechtes Drittel */}
+                        <div style={{
+                            position: 'absolute',
+                            right: 0,
+                            width: '30%',          // nur rechtes Drittel
+                            top: 0,
+                            bottom: 0,
+                            display: 'flex',
+                            justifyContent: 'flex-start',
+                            alignItems: 'center',
+                            paddingLeft: '1cqw',
+                            boxSizing: 'border-box',
+                        }}>
+                            {guestLogoPath && (
+                                <img
+                                    src={guestLogoPath}
+                                    alt="Away"
+                                    style={{ maxHeight: '90%', maxWidth: '100%', objectFit: 'contain' }}
+                                />
+                            )}
+                        </div>
                     </div>
 
-                    {/* Score */}
+                    {/* Score – : exakt auf Mittellinie, Ziffern symmetrisch links/rechts */}
                     <div style={{
+                        position: 'absolute',
+                        left: 0,
+                        right: 0,
+                        top: '50%',
+                        transform: 'translateY(-50%)',
                         display: 'flex',
+                        justifyContent: 'center',
                         alignItems: 'center',
-                        margin: '0 3cqw',
+                        pointerEvents: 'none',
+                        zIndex: 1,
                     }}>
-                        <span style={{
-                            color: '#fff',
-                            fontSize: '40cqh',
-                            fontWeight: 'bold',
-                            fontFamily: 'monospace',
-                            lineHeight: 1,
-                            textShadow: '0 2px 8px rgba(0,0,0,0.8)',
-                        }}>{gameState.homeScore}</span>
+                        {/* Home Score */}
+                        <div style={{
+                            position: 'absolute',
+                            right: '50%',
+                            marginRight: '2cqw',
+                            display: 'flex',
+                            justifyContent: 'flex-end',
+                        }}>
+                            <span style={{
+                                color: '#fff',
+                                fontSize: '40cqh',
+                                fontWeight: 'bold',
+                                fontFamily: 'monospace',
+                                lineHeight: 1,
+                                textShadow: '0 2px 8px rgba(0,0,0,0.8)',
+                            }}>{gameState.homeScore}</span>
+                        </div>
+
+                        {/* Doppelpunkt – exakt auf left: 50% */}
                         <span style={{
                             color: 'rgba(255,255,255,0.8)',
                             fontSize: '30cqh',
@@ -100,25 +153,24 @@ function ScoreboardScene({ gameState, timerDisplay, homeLogoPath, guestLogoPath,
                             lineHeight: 1,
                             textShadow: '0 2px 8px rgba(0,0,0,0.8)',
                         }}>:</span>
-                        <span style={{
-                            color: '#fff',
-                            fontSize: '40cqh',
-                            fontWeight: 'bold',
-                            fontFamily: 'monospace',
-                            lineHeight: 1,
-                            textShadow: '0 2px 8px rgba(0,0,0,0.8)',
-                        }}>{gameState.guestScore}</span>
-                    </div>
 
-                    {/* Away Logo */}
-                    <div style={{ display: 'flex', justifyContent: 'flex-start', alignItems: 'center' }}>
-                        {guestLogoPath && (
-                            <img
-                                src={guestLogoPath}
-                                alt="Away"
-                                style={{ maxHeight: '50cqh', maxWidth: '40cqw', objectFit: 'contain' }}
-                            />
-                        )}
+                        {/* Guest Score */}
+                        <div style={{
+                            position: 'absolute',
+                            left: '50%',
+                            marginLeft: '2cqw',
+                            display: 'flex',
+                            justifyContent: 'flex-start',
+                        }}>
+                            <span style={{
+                                color: '#fff',
+                                fontSize: '40cqh',
+                                fontWeight: 'bold',
+                                fontFamily: 'monospace',
+                                lineHeight: 1,
+                                textShadow: '0 2px 8px rgba(0,0,0,0.8)',
+                            }}>{gameState.guestScore}</span>
+                        </div>
                     </div>
                 </div>
 
