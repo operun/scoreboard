@@ -49,7 +49,6 @@
       "releaseType": "release"
     },
     "productName": "Scoreboard",
-    "afterPack": "./afterPack.js",
     "directories": {
       "output": "dist-electron"
     },

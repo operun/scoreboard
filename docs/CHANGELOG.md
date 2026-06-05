@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Settings are stored as plain JSON — encryption removed since no sensitive credentials are stored
 
 ### Fixed
+- Fehlende Tonausgabe bei Videos in der Windows-Version (der ffmpeg-Austausch beim Packen entfernte versehentlich die AAC-Audiodekodierung)
 - Image and video previews not rendering in output and controller views on Windows
 
 ## [1.1.3] - 2026-04-03
