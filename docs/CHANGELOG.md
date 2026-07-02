@@ -8,17 +8,42 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-- Automated SSH key submission via email from the settings UI
-- IPC broadcast events for real-time playlist and media synchronization across windows
-- Granular reset options: reset settings, reset media, reset app
+- Vollbildmodus für das Ausgabefenster: F11 schaltet um, Esc verlässt ihn; die Titelleiste wird im Vollbild automatisch ausgeblendet
+- Formatfüllende Skalierung des Scoreboard-Inhalts an die Fenster- bzw. Bildschirmgröße unter Beibehaltung des Seitenverhältnisses
+- Einstellungen-Tab „Hotkeys": frei belegbare Tastenkürzel für Anpfiff und Abpfiff der 1. und 2. Halbzeit sowie Tor Heim und Tor Gast (Aufnahme per Tastendruck, inklusive Strg/Alt/Shift; wirksam bei aktivem Programmfenster)
 
 ### Changed
-- Media file paths are now converted to valid `file://` URLs in the main process using `pathToFileURL`, fixing broken image display on Windows
-- Settings are stored as plain JSON — encryption removed since no sensitive credentials are stored
+- Hintergrund des Ausgabefensters ist nun durchgehend schwarz (auch die Letterbox-Bereiche), zuvor leicht gräulich
+
+### Fixed
+- Horizontale und vertikale Scrollbalken im Ausgabefenster (unter anderem unter Windows bei F11)
+
+## [1.3.1] - 2026-06-19
+
+### Fixed
+- Build-Konfiguration: `npmRebuild` auf `false` gesetzt, um fehlerhafte native Rebuilds beim Packen zu vermeiden
+
+## [1.3.0] - 2026-06-19
+
+### Added
+- Überarbeitetes Scoreboard-Layout mit dynamischer Schriftgröße für die Punktestände (bleiben bei mehrstelligen Ergebnissen kompakt und zentriert)
 
 ### Fixed
 - Fehlende Tonausgabe bei Videos in der Windows-Version (der ffmpeg-Austausch beim Packen entfernte versehentlich die AAC-Audiodekodierung)
-- Image and video previews not rendering in output and controller views on Windows
+
+## [1.2.0] - 2026-04-03
+
+### Added
+- Automatischer Versand des SSH-Schlüssels per E-Mail aus den Einstellungen
+- IPC-Broadcast-Events zur Echtzeit-Synchronisierung von Playlists und Medien über alle Fenster
+- Granulare Reset-Optionen: Einstellungen, Medien und komplette App getrennt zurücksetzen
+
+### Changed
+- Medienpfade werden im Hauptprozess über `pathToFileURL` in gültige `file://`-URLs umgewandelt (behebt nicht angezeigte Bilder unter Windows)
+- Einstellungen werden als reines JSON gespeichert — Verschlüsselung entfernt, da keine sensiblen Zugangsdaten gespeichert werden
+
+### Fixed
+- Bild- und Videovorschauen wurden im Ausgabe- und Controller-Fenster unter Windows nicht angezeigt
 
 ## [1.1.3] - 2026-04-03
 
