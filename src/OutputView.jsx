@@ -31,6 +31,27 @@ function OutputView({ preview = false }) {
     const [outputSize, setOutputSize] = useState({ width: 1280, height: 720 });
     const [showCropMarks, setShowCropMarks] = useState(true);
 
+    // -- FIT-TO-WINDOW SCALING (non-preview only) --
+    // The inner container stays at the fixed outputSize (px) so the scenes'
+    // cqw/cqh units keep a stable reference; we scale it uniformly to fill the
+    // available window/screen while preserving the aspect ratio.
+    const outerRef = useRef(null);
+    const [scale, setScale] = useState(1);
+    useEffect(() => {
+        if (preview) return;
+        const el = outerRef.current;
+        if (!el) return;
+        const update = () => {
+            const { width, height } = el.getBoundingClientRect();
+            if (!width || !height) return;
+            setScale(Math.min(width / outputSize.width, height / outputSize.height));
+        };
+        update();
+        const ro = new ResizeObserver(update);
+        ro.observe(el);
+        return () => ro.disconnect();
+    }, [preview, outputSize.width, outputSize.height]);
+
     // -- SCOREBOARD ASSETS --
     const [homeLogoPath, setHomeLogoPath] = useState(null);
     const [guestLogoPath, setGuestLogoPath] = useState(null);
@@ -459,10 +480,10 @@ function OutputView({ preview = false }) {
 
     // Outer container: Centers the output view in the window (Letterboxing)
     return (
-        <div style={{
-            backgroundColor: preview ? 'transparent' : '#111',
-            height: preview ? '100%' : '100vh',
-            width: preview ? '100%' : '100vw',
+        <div ref={outerRef} style={{
+            backgroundColor: preview ? 'transparent' : '#000',
+            height: '100%',
+            width: '100%',
             display: 'flex',
             justifyContent: 'center',
             alignItems: 'center',
@@ -473,11 +494,14 @@ function OutputView({ preview = false }) {
                 width: preview ? '100%' : outputSize.width,
                 height: preview ? '100%' : outputSize.height,
                 aspectRatio: preview ? `${outputSize.width} / ${outputSize.height}` : undefined,
+                transform: preview ? undefined : `scale(${scale})`,
+                transformOrigin: 'center',
+                flex: preview ? undefined : '0 0 auto',
                 position: 'relative',
                 overflow: 'hidden',
                 backgroundColor: 'black',
                 containerType: 'size', // Key for using cqw/cqh units
-                border: '1px solid #333'
+                border: preview ? '1px solid #333' : undefined
             }}>
 
                 {/* MEDIA LAYER */}

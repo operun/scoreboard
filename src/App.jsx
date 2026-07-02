@@ -19,6 +19,14 @@ function App() {
   // Check if we are running as the output window
   const isOutputWindow = window.location.hash === '#/output';
 
+  // Output window fullscreen state (driven by main via 'fullscreen-changed')
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  useEffect(() => {
+    if (!isOutputWindow) return;
+    const unsub = window.electronAPI.onFullscreenChanged((v) => setIsFullscreen(v));
+    return () => { if (unsub) unsub(); };
+  }, [isOutputWindow]);
+
   // --- Theme Logic ---
   // Default to system
   const [themeMode, setThemeMode] = useState('system');
@@ -91,10 +99,13 @@ function App() {
   };
 
   if (isOutputWindow) {
+    // Keep OutputView mounted at a stable tree position so toggling fullscreen
+    // never remounts it (that would reset all output state). In fullscreen we
+    // just drop the chrome so nothing is captured by the videowall.
     return (
       <>
-        <TitleBar title="Output" />
-        <div style={{ paddingTop: '30px', height: '100vh', boxSizing: 'border-box', backgroundColor: '#000', color: '#fff' }}>
+        {!isFullscreen && <TitleBar title="Output" />}
+        <div style={{ paddingTop: isFullscreen ? 0 : '35px', height: '100vh', boxSizing: 'border-box', backgroundColor: '#000', color: '#fff' }}>
           <OutputView />
         </div>
       </>

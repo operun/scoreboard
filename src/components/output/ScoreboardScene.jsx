@@ -19,7 +19,7 @@ function ScoreboardScene({ gameState, timerDisplay, homeLogoPath, guestLogoPath,
                     style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', zIndex: 0 }}
                 />
             ) : (
-                <div style={{ position: 'absolute', inset: 0, backgroundColor: '#111', zIndex: 0 }} />
+                <div style={{ position: 'absolute', inset: 0, backgroundColor: '#000', zIndex: 0 }} />
             )}
 
             {/* Grid overlay */}

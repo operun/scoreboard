@@ -888,6 +888,7 @@ function createOutputWindow() {
     },
     title: 'Output - Scoreboard',
     titleBarStyle: 'hidden',
+    fullscreenable: true,
     ...(process.platform === 'darwin' ? { trafficLightPosition: { x: 10, y: 10 } } : {}),
   });
 
@@ -896,6 +897,22 @@ function createOutputWindow() {
   } else {
     outputWindow.loadURL('http://localhost:5173/#/output');
   }
+
+  // F11 toggles fullscreen, Escape leaves it (frameless window has no native chrome).
+  outputWindow.webContents.on('before-input-event', (event, input) => {
+    if (input.type !== 'keyDown') return;
+    if (input.key === 'F11') {
+      outputWindow.setFullScreen(!outputWindow.isFullScreen());
+      event.preventDefault();
+    } else if (input.key === 'Escape' && outputWindow.isFullScreen()) {
+      outputWindow.setFullScreen(false);
+      event.preventDefault();
+    }
+  });
+
+  // Tell the renderer to hide/show its title bar in sync with fullscreen state.
+  outputWindow.on('enter-full-screen', () => outputWindow.webContents.send('fullscreen-changed', true));
+  outputWindow.on('leave-full-screen', () => outputWindow.webContents.send('fullscreen-changed', false));
 
   outputWindow.once('ready-to-show', () => {
     outputWindow.show();
@@ -992,8 +1009,6 @@ const menuTemplate = [
       { role: 'resetzoom' },
       { role: 'zoomin' },
       { role: 'zoomout' },
-      { type: 'separator' },
-      { role: 'togglefullscreen' },
     ],
   },
 ];
