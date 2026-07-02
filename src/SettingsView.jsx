@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { toast } from 'react-toastify';
 import { BsClipboard, BsXCircle } from 'react-icons/bs';
+import { HOTKEY_ACTIONS, eventToHotkey, formatHotkey } from './utils/hotkeys';
 
 const API_KEY = 'cfeb5dfb523416720d55c9b967d5d56e';
 
@@ -25,6 +26,9 @@ function SettingsView() {
     goalHome: true, goalGuest: true, sub: true, yellow: true, red: true, var: true, special: true, corner: true, overtime: true, announcement: true
   });
 
+  const [hotkeys, setHotkeys] = useState({}); // { actionId: "Ctrl+G", ... }
+  const [recordingAction, setRecordingAction] = useState(null);
+
   const [activeTab, setActiveTab] = useState('output');
   const [versions, setVersions] = useState(null);
   const settingsRef = useState({})[0];
@@ -40,6 +44,7 @@ function SettingsView() {
         if (settings.customTestImageName) setCustomTestImageName(settings.customTestImageName);
         if (settings.themeMode) setThemeMode(settings.themeMode);
         if (settings.controllerVisibility) setControllerVisibility(prev => ({ ...prev, ...settings.controllerVisibility }));
+        if (settings.hotkeys) setHotkeys(settings.hotkeys);
         if (settings.scoreboardBgId) setScoreboardBgId(settings.scoreboardBgId);
         if (settings.scoreboardBgName) setScoreboardBgName(settings.scoreboardBgName);
         if (settings.scoreboardSponsorId) setScoreboardSponsorId(settings.scoreboardSponsorId);
@@ -68,6 +73,7 @@ function SettingsView() {
       showCropMarks,
       themeMode,
       controllerVisibility,
+      hotkeys,
       scoreboardBgId,
       scoreboardBgName,
       scoreboardSponsorId,
@@ -101,6 +107,36 @@ function SettingsView() {
     saveAllSettings({ controllerVisibility: newVisibility });
   };
 
+  const handleHotkeyChange = (actionId, value) => {
+    const newHotkeys = { ...hotkeys };
+    if (value) newHotkeys[actionId] = value;
+    else delete newHotkeys[actionId];
+    setHotkeys(newHotkeys);
+    saveAllSettings({ hotkeys: newHotkeys });
+  };
+
+  // While recording, capture the next key combo and assign it to the action.
+  useEffect(() => {
+    if (!recordingAction) return;
+    const onKey = (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      if (e.key === 'Escape') { setRecordingAction(null); return; }
+      const combo = eventToHotkey(e);
+      if (!combo) return; // modifier only – keep waiting
+      const clash = Object.entries(hotkeys).find(([id, hk]) => hk === combo && id !== recordingAction);
+      if (clash) {
+        const clashLabel = HOTKEY_ACTIONS.find(a => a.id === clash[0])?.label || clash[0];
+        toast.error(`"${formatHotkey(combo)}" ist bereits mit "${clashLabel}" belegt.`);
+        return; // keep recording so a different key can be chosen
+      }
+      handleHotkeyChange(recordingAction, combo);
+      setRecordingAction(null);
+    };
+    window.addEventListener('keydown', onKey, true);
+    return () => window.removeEventListener('keydown', onKey, true);
+  }, [recordingAction, hotkeys]);
+
   const handleTestConnection = async () => {
     setTestingConnection(true);
     try {
@@ -133,6 +169,14 @@ function SettingsView() {
               onClick={() => setActiveTab('output')}
             >
               Ausgabe
+            </button>
+          </li>
+          <li className="nav-item">
+            <button
+              className={`nav-link ${activeTab === 'hotkeys' ? 'active' : ''}`}
+              onClick={() => setActiveTab('hotkeys')}
+            >
+              Hotkeys
             </button>
           </li>
           <li className="nav-item">
@@ -301,6 +345,40 @@ function SettingsView() {
                   </select>
                 )}
               </div>
+            </>
+          )}
+
+          {activeTab === 'hotkeys' && (
+            <>
+              <p className="text-muted">
+                Tastenkürzel für die wichtigsten Aktionen. Die Hotkeys wirken, solange das
+                Scoreboard-Fenster aktiv ist. Feld anklicken und gewünschte Taste(n) drücken
+                (auch mit Strg/Alt/Shift). Esc bricht die Aufnahme ab.
+              </p>
+
+              {HOTKEY_ACTIONS.map(action => (
+                <div key={action.id} className="d-flex align-items-center mb-2">
+                  <div style={{ width: '200px' }}>{action.label}</div>
+                  <button
+                    className={`btn btn-sm ${recordingAction === action.id ? 'btn-primary' : 'btn-outline-secondary'}`}
+                    style={{ minWidth: '170px' }}
+                    onClick={() => setRecordingAction(action.id)}
+                  >
+                    {recordingAction === action.id
+                      ? 'Taste drücken…'
+                      : (hotkeys[action.id] ? formatHotkey(hotkeys[action.id]) : 'Nicht belegt')}
+                  </button>
+                  {hotkeys[action.id] && recordingAction !== action.id && (
+                    <button
+                      className="btn btn-sm btn-link text-danger ms-1"
+                      title="Belegung entfernen"
+                      onClick={() => handleHotkeyChange(action.id, null)}
+                    >
+                      <BsXCircle />
+                    </button>
+                  )}
+                </div>
+              ))}
             </>
           )}
 

@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { toast } from 'react-toastify';
 import OutputView from './OutputView';
 import { BsFloppy } from "react-icons/bs";
+import { eventToHotkey } from './utils/hotkeys';
 
 // Helper Component defined outside to prevent re-mounting on parent re-renders
 const PlaylistSelect = ({ label, value, onChange, playlists, showStandard = false }) => (
@@ -25,6 +26,7 @@ function ControllerView({ visibility = {} }) {
   }, []);
 
   const [playlists, setPlaylists] = useState([]);
+  const [hotkeys, setHotkeys] = useState({}); // { actionId: "Ctrl+G", ... }
 
   const [presets, setPresets] = useState([]);
   const [currentPresetId, setCurrentPresetId] = useState('new');
@@ -144,6 +146,15 @@ function ControllerView({ visibility = {} }) {
       setMediaImages(allMedia.filter(m => m.type === 'image'));
     });
     return unsub;
+  }, []);
+
+  // Load hotkey bindings and keep them in sync with the settings view.
+  useEffect(() => {
+    window.electronAPI.loadSettings().then(s => { if (s && s.hotkeys) setHotkeys(s.hotkeys); });
+    const unsub = window.electronAPI.onSettingsUpdated((err, s) => {
+      if (!err && s) setHotkeys(s.hotkeys || {});
+    });
+    return () => { if (unsub) unsub(); };
   }, []);
 
   const loadPreset = (preset) => {
@@ -430,6 +441,50 @@ function ControllerView({ visibility = {} }) {
       toast.error("Playlist nicht gefunden");
     }
   };
+
+  const handleGoalHome = () => {
+    triggerScene(gameState.plGoalHome, 'Tor Heim');
+    setGameState(prev => ({ ...prev, homeScore: prev.homeScore + 1 }));
+  };
+
+  const handleGoalGuest = () => {
+    triggerScene(gameState.plGoalGuest, 'Tor Gast');
+    setGameState(prev => ({ ...prev, guestScore: prev.guestScore + 1 }));
+  };
+
+  // Latest-ref pattern so the (once-bound) key listener never uses stale state.
+  const hotkeysRef = useRef(hotkeys);
+  hotkeysRef.current = hotkeys;
+  const dispatchRef = useRef(() => {});
+  dispatchRef.current = (actionId) => {
+    switch (actionId) {
+      case 'startFirstHalf': startMatchState('FIRST_HALF'); break;
+      case 'endFirstHalf': startMatchState('HALF_TIME'); break;
+      case 'startSecondHalf': startMatchState('SECOND_HALF'); break;
+      case 'endSecondHalf': startMatchState('POST_GAME'); break;
+      case 'goalHome': handleGoalHome(); break;
+      case 'goalGuest': handleGoalGuest(); break;
+      default: break;
+    }
+  };
+
+  // Global (app-focused) hotkey listener. Ignores keystrokes while typing in a
+  // form field so text inputs and modals are unaffected.
+  useEffect(() => {
+    const onKey = (e) => {
+      const t = e.target;
+      if (t && (['INPUT', 'TEXTAREA', 'SELECT'].includes(t.tagName) || t.isContentEditable)) return;
+      const combo = eventToHotkey(e);
+      if (!combo) return;
+      const match = Object.entries(hotkeysRef.current).find(([, hk]) => hk === combo);
+      if (match) {
+        e.preventDefault();
+        dispatchRef.current(match[0]);
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
 
   const handleAnnouncement = () => {
     let bgPl = null;
@@ -759,17 +814,11 @@ function ControllerView({ visibility = {} }) {
             </div>
 
             {visibility.goalHome && (
-              <button className="btn btn-outline-primary" onClick={() => {
-                triggerScene(gameState.plGoalHome, 'Tor Heim');
-                setGameState(prev => ({ ...prev, homeScore: prev.homeScore + 1 }));
-              }}>Tor Heim</button>
+              <button className="btn btn-outline-primary" onClick={handleGoalHome}>Tor Heim</button>
             )}
 
             {visibility.goalGuest && (
-              <button className="btn btn-outline-primary" onClick={() => {
-                triggerScene(gameState.plGoalGuest, 'Tor Gast');
-                setGameState(prev => ({ ...prev, guestScore: prev.guestScore + 1 }));
-              }}>Tor Gast</button>
+              <button className="btn btn-outline-primary" onClick={handleGoalGuest}>Tor Gast</button>
             )}
 
             {visibility.sub && (
