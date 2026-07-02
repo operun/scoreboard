@@ -114,9 +114,49 @@ if [ "$(confirm "Continue?")" != "yes" ]; then
     exit 1
 fi
 
+# --- Changelog aktualisieren ---
+echo ""
+echo -e "${BOLD}--- Step 1: Update changelog ---${NC}"
+CHANGELOG_FILE="docs/CHANGELOG.md"
+RELEASE_DATE=$(date +%Y-%m-%d)
+
+if [ ! -f "$CHANGELOG_FILE" ]; then
+    echo -e "${YELLOW}⚠ $CHANGELOG_FILE not found — skipping changelog update.${NC}"
+elif ! grep -q '^## \[Unreleased\]' "$CHANGELOG_FILE"; then
+    echo -e "${YELLOW}⚠ No '## [Unreleased]' section found — skipping changelog update.${NC}"
+else
+    # Preview the entries that will be released
+    UNRELEASED_CONTENT=$(awk '/^## \[Unreleased\]/{f=1; next} /^## \[/{if(f) exit} f' "$CHANGELOG_FILE")
+    if [ -z "$(echo "$UNRELEASED_CONTENT" | tr -d '[:space:]')" ]; then
+        echo -e "${YELLOW}⚠ The [Unreleased] section is empty.${NC}"
+        if [ "$(confirm "Continue without changelog entries?" "N")" != "yes" ]; then
+            echo -e "${RED}Aborted. Add your changelog entries under [Unreleased] first.${NC}"
+            exit 1
+        fi
+    else
+        echo -e "These [Unreleased] entries will be released as ${BOLD}$NEW_VERSION${NC}:"
+        echo "$UNRELEASED_CONTENT"
+        echo ""
+    fi
+
+    # Stamp [Unreleased] with version + date, leave a fresh empty [Unreleased] on top
+    awk -v ver="$NEW_VERSION" -v date="$RELEASE_DATE" '
+        !done && $0 == "## [Unreleased]" {
+            print "## [Unreleased]"
+            print ""
+            print "## [" ver "] - " date
+            done=1
+            next
+        }
+        { print }
+    ' "$CHANGELOG_FILE" > "$CHANGELOG_FILE.tmp" && mv "$CHANGELOG_FILE.tmp" "$CHANGELOG_FILE"
+
+    echo -e "${GREEN}✔ Changelog updated: [Unreleased] → [$NEW_VERSION] - $RELEASE_DATE${NC}"
+fi
+
 # --- Version in package.json und package-lock.json setzen ---
 echo ""
-echo -e "${BOLD}--- Step 1: Update version in package.json ---${NC}"
+echo -e "${BOLD}--- Step 2: Update version in package.json ---${NC}"
 sed -i '' "s/\"version\": \"$CURRENT_VERSION\"/\"version\": \"$NEW_VERSION\"/" package.json
 echo "Updating package-lock.json..."
 npm install --package-lock-only --silent
@@ -124,14 +164,17 @@ echo -e "${GREEN}✔ Version updated to $NEW_VERSION${NC}"
 
 # --- Commit ---
 echo ""
-echo -e "${BOLD}--- Step 2: Commit release ---${NC}"
+echo -e "${BOLD}--- Step 3: Commit release ---${NC}"
 git add package.json package-lock.json
+if [ -f "$CHANGELOG_FILE" ]; then
+    git add "$CHANGELOG_FILE"
+fi
 git commit -m "chore: release v$NEW_VERSION"
 echo -e "${GREEN}✔ Committed: chore: release v$NEW_VERSION${NC}"
 
 # --- Tag erstellen ---
 echo ""
-echo -e "${BOLD}--- Step 3: Create & push tag ---${NC}"
+echo -e "${BOLD}--- Step 4: Create & push tag ---${NC}"
 git tag "v$NEW_VERSION"
 echo -e "${GREEN}✔ Tag v$NEW_VERSION created${NC}"
 
