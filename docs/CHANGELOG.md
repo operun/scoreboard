@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.4.0] - 2026-07-02
+
 ### Added
 - Vollbildmodus für das Ausgabefenster: F11 schaltet um, Esc verlässt ihn; die Titelleiste wird im Vollbild automatisch ausgeblendet
 - Formatfüllende Skalierung des Scoreboard-Inhalts an die Fenster- bzw. Bildschirmgröße unter Beibehaltung des Seitenverhältnisses
