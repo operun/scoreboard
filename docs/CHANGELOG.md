@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- Zeitanzeige im Scoreboard vergrößert (inklusive Nachspielzeit-Anzeige)
+
+### Fixed
+- Nachspielzeit wird beim Abpfiff der 1. und 2. Halbzeit automatisch zurückgesetzt
+- Vorschau im Controller zeigte nach dem Neuladen des Controller-Fensters einen veralteten Stand, da die Sync-Antwort des Ausgabefensters eingefrorene Werte lieferte
+- Ein während des Spiels neu geöffnetes Ausgabefenster startete mit leerem Zustand; es übernimmt jetzt Spielstand, Timer, Szene und Logos von der Controller-Vorschau
+
 ## [1.4.0] - 2026-07-02
 
 ### Added
