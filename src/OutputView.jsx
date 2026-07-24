@@ -7,6 +7,10 @@ import SubstitutionScene from './components/output/SubstitutionScene';
 import CardScene from './components/output/CardScene';
 
 function OutputView({ preview = false }) {
+    // 'preview' = controller-embedded preview, 'output' = real output window.
+    // Used to address sync requests/responses between the two instances.
+    const role = preview ? 'preview' : 'output';
+
     useEffect(() => {
         if (!preview) document.title = 'Output - Scoreboard';
     }, [preview]);
@@ -113,10 +117,9 @@ function OutputView({ preview = false }) {
         };
         loadSettings();
 
-        // If PREVIEW, request sync from the main output
-        if (preview) {
-            window.electronAPI.sendControlCommand('REQUEST_SYNC', {});
-        }
+        // Pull current state from the counterpart: the preview asks the
+        // output window, a (re)opened output window asks the preview.
+        window.electronAPI.sendControlCommand('REQUEST_SYNC', { from: role });
 
         // Listen for updates from SettingsView
         if (window.electronAPI.onSettingsUpdated) {
@@ -140,6 +143,25 @@ function OutputView({ preview = false }) {
             return () => remove();
         }
     }, []);
+
+    // Latest-ref so the (once-bound) command listener never reads stale state
+    // (it is registered once, but must answer REQUEST_SYNC with live values).
+    const liveStateRef = useRef(null);
+    liveStateRef.current = {
+        standardPlaylist,
+        standardMode,
+        scenePlaylist,
+        announcement,
+        announcementDuration,
+        showScoreboard,
+        currentPlaylist,
+        currentIndex,
+        gameState,
+        homeLogoPath,
+        guestLogoPath,
+        scoreboardBgPath,
+        scoreboardSponsorPath,
+    };
 
     // --- COMMAND LISTENER ---
     useEffect(() => {
@@ -203,7 +225,7 @@ function OutputView({ preview = false }) {
 
                     if (payload.backgroundPlaylist) {
                         // Save current scene if not already saved (to handle updates to text without losing origin)
-                        setSavedScene(prev => prev !== null ? prev : { playlist: scenePlaylist });
+                        setSavedScene(prev => prev !== null ? prev : { playlist: liveStateRef.current.scenePlaylist });
                         setScenePlaylist(payload.backgroundPlaylist);
                         setCurrentPlaylist(payload.backgroundPlaylist);
                         setCurrentIndex(0);
@@ -225,7 +247,7 @@ function OutputView({ preview = false }) {
                     setCard(null); // Clear card
 
                     if (payload.backgroundPlaylist) {
-                        setSavedScene(prev => prev !== null ? prev : { playlist: scenePlaylist });
+                        setSavedScene(prev => prev !== null ? prev : { playlist: liveStateRef.current.scenePlaylist });
                         setScenePlaylist(payload.backgroundPlaylist);
                         setCurrentPlaylist(payload.backgroundPlaylist);
                         setCurrentIndex(0);
@@ -247,7 +269,7 @@ function OutputView({ preview = false }) {
                     setSubstitution(null);
 
                     if (payload.backgroundPlaylist) {
-                        setSavedScene(prev => prev !== null ? prev : { playlist: scenePlaylist });
+                        setSavedScene(prev => prev !== null ? prev : { playlist: liveStateRef.current.scenePlaylist });
                         setScenePlaylist(payload.backgroundPlaylist);
                         setCurrentPlaylist(payload.backgroundPlaylist);
                         setCurrentIndex(0);
@@ -262,7 +284,7 @@ function OutputView({ preview = false }) {
                     setCard(null);
                     setSavedScene(null);
                     setStandardMode('BACKGROUND'); // ensure overlay condition is met
-                    setCurrentPlaylist(standardPlaylist);
+                    setCurrentPlaylist(liveStateRef.current.standardPlaylist);
                     setCurrentIndex(0);
                     setShowScoreboard(true);
                 }
@@ -282,27 +304,16 @@ function OutputView({ preview = false }) {
                 }
 
                 // --- SYNC MECHANISM ---
-                if (command === 'REQUEST_SYNC' && !preview) {
-                    // MAIN OUTPUT: Respond with current state
+                if (command === 'REQUEST_SYNC' && payload?.from && payload.from !== role) {
+                    // The counterpart instance asked for state: respond with a live snapshot
                     window.electronAPI.sendControlCommand('SYNC_STATUS', {
-                        standardPlaylist,
-                        standardMode,
-                        scenePlaylist,
-                        announcement,
-                        announcementDuration,
-                        showScoreboard,
-                        currentPlaylist,
-                        currentIndex,
-                        gameState,
-                        homeLogoPath,
-                        guestLogoPath,
-                        scoreboardBgPath,
-                        scoreboardSponsorPath,
+                        ...liveStateRef.current,
+                        to: payload.from,
                     });
                 }
 
-                if (command === 'SYNC_STATUS' && preview) {
-                    // PREVIEW: Adopt the state
+                if (command === 'SYNC_STATUS' && payload?.to === role) {
+                    // Adopt the counterpart's state
                     const s = payload;
                     setStandardPlaylist(s.standardPlaylist);
                     setStandardMode(s.standardMode);
@@ -321,7 +332,7 @@ function OutputView({ preview = false }) {
             });
             return () => remove();
         }
-    }, [standardPlaylist]); // Dependency added to ensure we have latest standardPlaylist
+    }, []); // register once; live values are read via liveStateRef
 
     // --- ANNOUNCEMENT TIMEOUT ---
     // If an announcement is set WITH a duration, clear it after that time
