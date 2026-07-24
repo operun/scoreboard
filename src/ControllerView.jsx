@@ -399,6 +399,7 @@ function ControllerView({ visibility = {} }) {
       updates.timerRunning = false;
       updates.timerOffset = 45 * 60;
       updates.timerStart = null;
+      updates.overtime = 0;
       if (gameState.plHalfTime) {
         const pl = playlists.find(p => p.id === gameState.plHalfTime);
         if (pl) window.electronAPI.sendControlCommand('PLAY_PLAYLIST', { playlist: pl, mode: 'FULL' });
@@ -411,6 +412,7 @@ function ControllerView({ visibility = {} }) {
       window.electronAPI.sendControlCommand('SHOW_SCOREBOARD');
     } else if (state === 'POST_GAME') {
       updates.timerRunning = false;
+      updates.overtime = 0;
       if (gameState.plEnd) {
         const pl = playlists.find(p => p.id === gameState.plEnd);
         if (pl) window.electronAPI.sendControlCommand('PLAY_PLAYLIST', { playlist: pl, mode: 'FULL' });
