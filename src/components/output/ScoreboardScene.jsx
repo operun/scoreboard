@@ -43,7 +43,7 @@ function ScoreboardScene({ gameState, timerDisplay, homeLogoPath, guestLogoPath,
                     <div style={{
                         backgroundColor: 'rgba(0,0,0,0.7)',
                         color: '#fff',
-                        fontSize: '8cqh',
+                        fontSize: '12cqh',
                         fontWeight: 'bold',
                         fontFamily: 'monospace',
                         letterSpacing: '0.05em',
@@ -58,10 +58,10 @@ function ScoreboardScene({ gameState, timerDisplay, homeLogoPath, guestLogoPath,
                         <div style={{
                             backgroundColor: '#e00',
                             color: '#fff',
-                            fontSize: '6cqh',
+                            fontSize: '9cqh',
                             fontWeight: 'bold',
                             fontFamily: 'monospace',
-                            padding: '0.15em 0.5em',
+                            padding: '0.1em 0.2em',
                             borderRadius: '0.2em',
                         }}>
                             +{gameState.overtime}
