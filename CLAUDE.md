@@ -68,6 +68,19 @@ These are authoritative project rules.
   - Code comments and variable names: **English**.
   - Documentation and commit messages: **English** (Conventional Commits).
   - **Changelog: German** (user-facing UI strings are German too).
+  - **GitHub issues: German** (see below).
+
+### GitHub issues
+Issues live in `operun/scoreboard`. Style rules:
+- **German**, title and body.
+- **Body max 300 characters.** One short paragraph, no headings, no lists.
+- **Describe the problem or the desired behavior — nothing else.** No references
+  to where the request came from (chat, email, phone), no dates, no deadlines, no
+  "customer reports" phrasing, no status notes.
+- Name the concrete code location (file, or file plus symbol) when it is known.
+- Labels: only the GitHub defaults. `bug` for defects, `enhancement` for
+  features, `question` when the report is too vague to act on and needs to be
+  narrowed down first.
 
 ### Critical feedback & decision making
 - **Do not always agree.** Critically question decisions, architectural drafts, and implementation plans.
