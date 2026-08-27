@@ -27,7 +27,6 @@ function CountdownScene({ display }) {
                     color: '#fff',
                     fontSize: '14cqw',
                     fontWeight: 'bold',
-                    fontFamily: 'monospace',
                     letterSpacing: '0.05em',
                     lineHeight: 1,
                     textShadow: '0 2px 8px rgba(0,0,0,0.8)',

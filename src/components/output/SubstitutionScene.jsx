@@ -22,7 +22,7 @@ function SubstitutionScene({ inNr, outNr }) {
                 {/* IN (Green) */}
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px' }}>
                     <FaArrowCircleUp style={{ color: '#28a745', fontSize: '12cqw' }} />
-                    <span style={{ color: '#fff', fontSize: '10cqw', fontWeight: 'bold', fontFamily: 'monospace' }}>
+                    <span style={{ color: '#fff', fontSize: '10cqw', fontWeight: 'bold' }}>
                         {inNr}
                     </span>
                     <span style={{ color: '#aaa', fontSize: '3cqw', textTransform: 'uppercase' }}>Rein</span>
@@ -31,7 +31,7 @@ function SubstitutionScene({ inNr, outNr }) {
                 {/* OUT (Red) */}
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px' }}>
                     <FaArrowCircleDown style={{ color: '#dc3545', fontSize: '12cqw' }} />
-                    <span style={{ color: '#fff', fontSize: '10cqw', fontWeight: 'bold', fontFamily: 'monospace' }}>
+                    <span style={{ color: '#fff', fontSize: '10cqw', fontWeight: 'bold' }}>
                         {outNr}
                     </span>
                     <span style={{ color: '#aaa', fontSize: '3cqw', textTransform: 'uppercase' }}>Raus</span>

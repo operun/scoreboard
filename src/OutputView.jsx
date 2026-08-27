@@ -531,7 +531,7 @@ function OutputView({ preview = false }) {
             overflow: 'hidden'
         }}>
             {/* Inner Container: Fixed resolution based on settings */}
-            <div style={{
+            <div className="output-canvas" style={{
                 width: preview ? '100%' : outputSize.width,
                 height: preview ? '100%' : outputSize.height,
                 aspectRatio: preview ? `${outputSize.width} / ${outputSize.height}` : undefined,

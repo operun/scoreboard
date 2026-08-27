@@ -10,6 +10,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Countdown bis zur Anpfiffzeit: Uhrzeit im Controller setzen und per Checkbox aktivieren; die Ausgabe zählt herunter und bleibt bei 00:00 stehen. Die Darstellung erfolgt wahlweise als Vollbild oder im Zeitfeld des Spielstands (Einstellungen -> Ausgabe)
 
+### Changed
+- Schriftart der Ausgabe auf IBM Plex Sans umgestellt (Spielstand, Zeit, Countdown, Auswechslung, Karten, Ansagen); die Schrift ist lokal eingebunden, die Ziffern laufen tabellarisch, sodass die Uhr beim Zählen nicht springt
+
 ## [1.5.0] - 2026-07-24
 
 ### Changed

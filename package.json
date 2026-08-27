@@ -64,7 +64,11 @@
       "node_modules/ffprobe-static/**/*"
     ],
     "extraResources": [
-      "src/assets/**/*"
+      "src/assets/**/*",
+      {
+        "from": "src/fonts/ibm-plex-sans/LICENSE.txt",
+        "to": "IBMPlexSans-LICENSE.txt"
+      }
     ],
     "mac": {
       "icon": "src/assets/icons/icon.icns",

@@ -45,7 +45,6 @@ function ScoreboardScene({ gameState, timerDisplay, countdownDisplay, homeLogoPa
                         color: '#fff',
                         fontSize: '12cqh',
                         fontWeight: 'bold',
-                        fontFamily: 'monospace',
                         letterSpacing: '0.05em',
                         padding: '0.15em 0.5em',
                         borderRadius: '0.2em',
@@ -60,7 +59,6 @@ function ScoreboardScene({ gameState, timerDisplay, countdownDisplay, homeLogoPa
                             color: '#fff',
                             fontSize: '9cqh',
                             fontWeight: 'bold',
-                            fontFamily: 'monospace',
                             padding: '0.1em 0.2em',
                             borderRadius: '0.2em',
                         }}>
@@ -105,17 +103,15 @@ function ScoreboardScene({ gameState, timerDisplay, countdownDisplay, homeLogoPa
                             color: '#fff',
                             fontSize: scoreFontSize,
                             fontWeight: 'bold',
-                            fontFamily: 'monospace',
                             lineHeight: 1,
                             textShadow: '0 2px 8px rgba(0,0,0,0.8)',
                         }}>{gameState.homeScore}</span>
 
                         {/* Doppelpunkt – auf der Mittellinie */}
                         <span style={{
-                            color: 'rgba(255,255,255,0.8)',
+                            color: '#fff',
                             fontSize: colonFontSize,
                             fontWeight: 'bold',
-                            fontFamily: 'monospace',
                             lineHeight: 1,
                             textShadow: '0 2px 8px rgba(0,0,0,0.8)',
                         }}>:</span>
@@ -126,7 +122,6 @@ function ScoreboardScene({ gameState, timerDisplay, countdownDisplay, homeLogoPa
                             color: '#fff',
                             fontSize: scoreFontSize,
                             fontWeight: 'bold',
-                            fontFamily: 'monospace',
                             lineHeight: 1,
                             textShadow: '0 2px 8px rgba(0,0,0,0.8)',
                         }}>{gameState.guestScore}</span>
