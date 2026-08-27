@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(gh issue *)",
+      "Bash(gh label *)",
+      "Bash(gh api repos/operun/scoreboard/*)",
+      "Bash(gh auth status)"
+    ],
+    "deny": [
+      "Bash(gh issue delete *)"
+    ]
+  }
+}
