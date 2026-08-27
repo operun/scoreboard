@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.6.0] - 2026-08-27
+
 ### Added
 - Countdown bis zur Anpfiffzeit: Uhrzeit im Controller setzen und per Checkbox aktivieren; die Ausgabe zählt herunter und bleibt bei 00:00 stehen. Die Darstellung erfolgt wahlweise als Vollbild oder im Zeitfeld des Spielstands (Einstellungen -> Ausgabe)
 
