@@ -34,7 +34,8 @@ function App() {
   const [controllerVisibility, setControllerVisibility] = useState({
     warmup: true, lineup: true, halftime: true, end: true,
     goalHome: true, goalGuest: true, sub: true, yellow: true, red: true,
-    var: true, special: true, corner: true, overtime: true, announcement: true
+    var: true, special: true, corner: true, overtime: true, announcement: true,
+    countdown: true
   });
 
   // Load theme setting on mount

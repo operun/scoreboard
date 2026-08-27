@@ -5,6 +5,7 @@ import ScoreboardScene from './components/output/ScoreboardScene';
 import AnnouncementScene from './components/output/AnnouncementScene';
 import SubstitutionScene from './components/output/SubstitutionScene';
 import CardScene from './components/output/CardScene';
+import CountdownScene from './components/output/CountdownScene';
 
 function OutputView({ preview = false }) {
     // 'preview' = controller-embedded preview, 'output' = real output window.
@@ -34,6 +35,7 @@ function OutputView({ preview = false }) {
     // -- OUTPUT SETTINGS --
     const [outputSize, setOutputSize] = useState({ width: 1280, height: 720 });
     const [showCropMarks, setShowCropMarks] = useState(true);
+    const [countdownFullscreen, setCountdownFullscreen] = useState(true);
 
     // -- FIT-TO-WINDOW SCALING (non-preview only) --
     // The inner container stays at the fixed outputSize (px) so the scenes'
@@ -70,10 +72,13 @@ function OutputView({ preview = false }) {
         timerStart: null,
         timerOffset: 0,
         timerRunning: false,
-        overtime: 0
+        overtime: 0,
+        countdownActive: false,
+        kickoffAt: null
     });
 
     const [timerDisplay, setTimerDisplay] = useState("00:00");
+    const [countdownDisplay, setCountdownDisplay] = useState("00:00");
     const mediaTimeoutRef = useRef(null);
     const timerIntervalRef = useRef(null);
 
@@ -94,6 +99,7 @@ function OutputView({ preview = false }) {
                 const h = parseInt(settings.outputHeight) || 720;
                 setOutputSize({ width: w, height: h });
                 setShowCropMarks(settings.showCropMarks !== false);
+                setCountdownFullscreen(settings.countdownFullscreen !== false);
 
                 if (settings.customTestImage) {
                     setCurrentTestImage(settings.customTestImage);
@@ -423,6 +429,25 @@ function OutputView({ preview = false }) {
         return () => clearInterval(timerIntervalRef.current);
     }, [gameState.timerRunning, gameState.timerStart, gameState.timerOffset]);
 
+    // --- COUNTDOWN LOGIC ---
+    useEffect(() => {
+        if (!gameState.countdownActive || !gameState.kickoffAt) return;
+
+        const update = () => {
+            const rest = Math.max(0, Math.ceil((gameState.kickoffAt - Date.now()) / 1000));
+            const h = Math.floor(rest / 3600);
+            const m = Math.floor((rest % 3600) / 60);
+            const s = rest % 60;
+            const mm = m.toString().padStart(2, '0');
+            const ss = s.toString().padStart(2, '0');
+            setCountdownDisplay(h > 0 ? `${h}:${mm}:${ss}` : `${mm}:${ss}`);
+        };
+        update();
+
+        const interval = setInterval(update, 1000);
+        return () => clearInterval(interval);
+    }, [gameState.countdownActive, gameState.kickoffAt]);
+
 
     // --- MEDIA PLAYBACK LOOP ---
     useEffect(() => {
@@ -483,11 +508,16 @@ function OutputView({ preview = false }) {
 
     // --- RENDER ---
     // Overlay is visible ONLY if:
-    // 1. showScoreboard is TRUE
+    // 1. showScoreboard is TRUE (or the inline countdown needs the scoreboard)
     // 2. No Scene is active AND
     // 3. Standard Mode is NOT 'FULL'
     // Note: We allow overlay without activeMedia (showing over test image)
-    const showOverlay = showScoreboard && !scenePlaylist && standardMode !== 'FULL';
+    // The fullscreen countdown bypasses this and also covers a 'FULL' playlist.
+    const countdownVisible = gameState.countdownActive && !!gameState.kickoffAt
+        && !scenePlaylist && !announcement && !substitution && !card;
+    const fullscreenCountdown = countdownVisible && countdownFullscreen;
+    const showOverlay = (showScoreboard || (countdownVisible && !countdownFullscreen))
+        && !scenePlaylist && standardMode !== 'FULL';
 
     // Outer container: Centers the output view in the window (Letterboxing)
     return (
@@ -534,7 +564,7 @@ function OutputView({ preview = false }) {
                     flexDirection: 'column',
                     justifyContent: 'center', // Centered vertically
                     alignItems: 'center',     // Centered horizontally
-                    opacity: (showOverlay || announcement || substitution || card) ? 1 : 0,
+                    opacity: (showOverlay || announcement || substitution || card || fullscreenCountdown) ? 1 : 0,
                 }}>
 
                     {card ? (
@@ -543,10 +573,13 @@ function OutputView({ preview = false }) {
                         <SubstitutionScene inNr={substitution.inNr} outNr={substitution.outNr} />
                     ) : announcement ? (
                         <AnnouncementScene message={announcement} />
+                    ) : fullscreenCountdown ? (
+                        <CountdownScene display={countdownDisplay} />
                     ) : (
                         <ScoreboardScene
                             gameState={gameState}
                             timerDisplay={timerDisplay}
+                            countdownDisplay={countdownVisible ? countdownDisplay : null}
                             homeLogoPath={homeLogoPath}
                             guestLogoPath={guestLogoPath}
                             bgPath={scoreboardBgPath}

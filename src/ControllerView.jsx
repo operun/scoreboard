@@ -49,6 +49,10 @@ function ControllerView({ visibility = {} }) {
     timerOffset: 0,   // Offset in seconds (e.g. 2700 for 2nd half)
     timerRunning: false,
 
+    // Countdown to kickoff
+    countdownActive: false,
+    kickoffAt: null,  // Timestamp of the kickoff time
+
     // Playlist Mappings (IDs)
     plWarmup: '',
     plLineup: '',
@@ -68,6 +72,9 @@ function ControllerView({ visibility = {} }) {
 
   // Local Score State (for editing before "Übernehmen")
   const [localScore, setLocalScore] = useState({ home: 0, guest: 0 });
+
+  // Kickoff time as "HH:MM" – kept out of gameState so preset autosave ignores it
+  const [kickoffTime, setKickoffTime] = useState("");
 
   // Sync local score when preset loaded or external update
   // Sync local score when preset loaded or external update
@@ -359,6 +366,23 @@ function ControllerView({ visibility = {} }) {
     toast.info("Spielstand aktualisiert");
   };
 
+  const kickoffTimestamp = (hhmm) => {
+    const [h, m] = (hhmm || '').split(':').map(Number);
+    if (!Number.isInteger(h) || !Number.isInteger(m)) return null;
+    const d = new Date();
+    d.setHours(h, m, 0, 0);
+    return d.getTime();
+  };
+
+  const applyCountdown = (time, active) => {
+    setKickoffTime(time);
+    setGameState(prev => ({
+      ...prev,
+      kickoffAt: kickoffTimestamp(time),
+      countdownActive: active && !!time
+    }));
+  };
+
   const handleStartTimer = () => {
     setGameState(prev => {
       if (prev.timerRunning) return prev;
@@ -393,6 +417,7 @@ function ControllerView({ visibility = {} }) {
       updates.timerRunning = true;
       updates.timerStart = Date.now();
       updates.timerOffset = 0;
+      updates.countdownActive = false;
       // Show static scoreboard (no playlist needed)
       window.electronAPI.sendControlCommand('SHOW_SCOREBOARD');
     } else if (state === 'HALF_TIME') {
@@ -635,6 +660,31 @@ function ControllerView({ visibility = {} }) {
 
         {/* SETUP COLUMN (Scrollable) */}
         <div className="col-md-3 pe-4 h-100" style={{ overflowY: 'auto', overflowX: 'hidden' }}>
+
+          {visibility.countdown && (
+            <div className="mb-4">
+              <label className="form-label text-muted small ms-1 mb-1">Anpfiffzeit</label>
+              <input
+                type="time"
+                className="form-control form-control-sm"
+                value={kickoffTime}
+                onChange={e => applyCountdown(e.target.value, gameState.countdownActive)}
+              />
+              <div className="form-check mt-2 ms-1">
+                <input
+                  className="form-check-input"
+                  type="checkbox"
+                  id="countdownCheck"
+                  checked={gameState.countdownActive}
+                  disabled={!kickoffTime}
+                  onChange={e => applyCountdown(kickoffTime, e.target.checked)}
+                />
+                <label className="form-check-label small" htmlFor="countdownCheck">
+                  Countdown anzeigen
+                </label>
+              </div>
+            </div>
+          )}
 
           <div className="mb-4">
             {visibility.warmup && <PlaylistSelect label="Warmup" value={gameState.plWarmup} onChange={v => updateState('plWarmup', v)} playlists={playlists} />}
@@ -896,7 +946,7 @@ function ControllerView({ visibility = {} }) {
               </button>
             )}
 
-            <button className="btn btn-outline-danger my-3" onClick={() => { window.electronAPI.sendControlCommand('STOP_OUTPUT', {}); }}>
+            <button className="btn btn-outline-danger my-3" onClick={() => { setGameState(prev => ({ ...prev, countdownActive: false })); window.electronAPI.sendControlCommand('STOP_OUTPUT', {}); }}>
               Ausgabe anhalten
             </button>
 

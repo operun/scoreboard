@@ -14,6 +14,7 @@ function SettingsView() {
   const [outputWidth, setOutputWidth] = useState(1280);
   const [outputHeight, setOutputHeight] = useState(720);
   const [showCropMarks, setShowCropMarks] = useState(true);
+  const [countdownFullscreen, setCountdownFullscreen] = useState(true);
   const [customTestImageName, setCustomTestImageName] = useState(null);
   const [themeMode, setThemeMode] = useState('system');
   const [scoreboardBgId, setScoreboardBgId] = useState(null);
@@ -23,7 +24,7 @@ function SettingsView() {
   const [mediaImages, setMediaImages] = useState([]); // for picker dropdowns
   const [controllerVisibility, setControllerVisibility] = useState({
     warmup: true, lineup: true, halftime: true, end: true,
-    goalHome: true, goalGuest: true, sub: true, yellow: true, red: true, var: true, special: true, corner: true, overtime: true, announcement: true
+    goalHome: true, goalGuest: true, sub: true, yellow: true, red: true, var: true, special: true, corner: true, overtime: true, announcement: true, countdown: true
   });
 
   const [hotkeys, setHotkeys] = useState({}); // { actionId: "Ctrl+G", ... }
@@ -41,6 +42,7 @@ function SettingsView() {
         if (settings.outputWidth) setOutputWidth(settings.outputWidth);
         if (settings.outputHeight) setOutputHeight(settings.outputHeight);
         setShowCropMarks(settings.showCropMarks !== false);
+        setCountdownFullscreen(settings.countdownFullscreen !== false);
         if (settings.customTestImageName) setCustomTestImageName(settings.customTestImageName);
         if (settings.themeMode) setThemeMode(settings.themeMode);
         if (settings.controllerVisibility) setControllerVisibility(prev => ({ ...prev, ...settings.controllerVisibility }));
@@ -71,6 +73,7 @@ function SettingsView() {
       outputWidth,
       outputHeight,
       showCropMarks,
+      countdownFullscreen,
       themeMode,
       controllerVisibility,
       hotkeys,
@@ -254,6 +257,20 @@ function SettingsView() {
                   onChange={(e) => handleOutputChange({ crop: e.target.checked })}
                 />
                 <label className="form-check-label" htmlFor="cropMarksCheck">Markierungen anzeigen</label>
+              </div>
+
+              <div className="mb-4 form-check">
+                <input
+                  type="checkbox"
+                  className="form-check-input"
+                  id="countdownFullscreenCheck"
+                  checked={countdownFullscreen}
+                  onChange={(e) => {
+                    setCountdownFullscreen(e.target.checked);
+                    saveAllSettings({ countdownFullscreen: e.target.checked });
+                  }}
+                />
+                <label className="form-check-label" htmlFor="countdownFullscreenCheck">Countdown als Vollbild anzeigen</label>
               </div>
 
               <div className="mb-4">
@@ -563,6 +580,7 @@ function SettingsView() {
                     { key: 'corner', label: 'Eckstoß' },
                     { key: 'overtime', label: 'Nachspielzeit' },
                     { key: 'announcement', label: 'Durchsage' },
+                    { key: 'countdown', label: 'Countdown' },
                   ].map(({ key, label }) => (
                     <div className="form-check" key={key}>
                       <input

@@ -1,4 +1,4 @@
-function ScoreboardScene({ gameState, timerDisplay, homeLogoPath, guestLogoPath, bgPath, sponsorPath }) {
+function ScoreboardScene({ gameState, timerDisplay, countdownDisplay, homeLogoPath, guestLogoPath, bgPath, sponsorPath }) {
     // Score-Schrift dynamisch verkleinern, wenn eine Seite mehrstellig wird –
     // so bleibt die Score-Gruppe schmal (Logos groß) und der Doppelpunkt zentriert.
     const maxDigits = Math.max(
@@ -50,10 +50,10 @@ function ScoreboardScene({ gameState, timerDisplay, homeLogoPath, guestLogoPath,
                         padding: '0.15em 0.5em',
                         borderRadius: '0.2em',
                     }}>
-                        {gameState.matchState === 'POST_GAME' ? 'Endstand' : timerDisplay}
+                        {countdownDisplay ? countdownDisplay : gameState.matchState === 'POST_GAME' ? 'Endstand' : timerDisplay}
                     </div>
 
-                    {gameState.matchState !== 'POST_GAME' && gameState.overtime > 0 && (
+                    {!countdownDisplay && gameState.matchState !== 'POST_GAME' && gameState.overtime > 0 && (
 
                         <div style={{
                             backgroundColor: '#e00',
