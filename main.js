@@ -884,7 +884,8 @@ function createOutputWindow() {
       contextIsolation: true,
       nodeIntegration: false,
       webSecurity: false,
-      autoplayPolicy: 'no-user-gesture-required'
+      autoplayPolicy: 'no-user-gesture-required',
+      backgroundThrottling: false
     },
     title: 'Output - Scoreboard',
     titleBarStyle: 'hidden',
@@ -938,7 +939,8 @@ function createWindow() {
       contextIsolation: true,
       nodeIntegration: false,
       webSecurity: false,
-      autoplayPolicy: 'no-user-gesture-required'
+      autoplayPolicy: 'no-user-gesture-required',
+      backgroundThrottling: false
     },
     title: 'Controller - Scoreboard',
     titleBarStyle: 'hidden',

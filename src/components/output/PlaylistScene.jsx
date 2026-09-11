@@ -1,24 +1,32 @@
-function PlaylistScene({ activeMedia, currentTestImage, showCropMarks, onMediaEnd, preview }) {
+function PlaylistScene({ activeMedia, currentTestImage, showCropMarks, onMediaEnd, onMediaError, preview }) {
+    const renderMedia = () => {
+        if (activeMedia.failed) return null;
+        if (activeMedia.type === 'video') {
+            return (
+                <video
+                    key={activeMedia.playbackKey}
+                    src={activeMedia.path}
+                    autoPlay
+                    muted={preview ? true : false}
+                    style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+                    onEnded={onMediaEnd}
+                    onError={onMediaError}
+                />
+            );
+        }
+        return (
+            <img
+                src={activeMedia.path}
+                alt="Content"
+                style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+                onError={onMediaError}
+            />
+        );
+    };
+
     return (
         <div style={{ width: '100%', height: '100%' }}>
-            {activeMedia ? (
-                activeMedia.type === 'video' ? (
-                    <video
-                        key={activeMedia.id}
-                        src={activeMedia.path}
-                        autoPlay
-                        muted={preview ? true : false}
-                        style={{ width: '100%', height: '100%', objectFit: 'contain' }}
-                        onEnded={onMediaEnd}
-                    />
-                ) : (
-                    <img
-                    src={activeMedia.path}
-                        alt="Content"
-                        style={{ width: '100%', height: '100%', objectFit: 'contain' }}
-                    />
-                )
-            ) : (
+            {activeMedia ? renderMedia() : (
                 <>
                     <img
                         src={currentTestImage}

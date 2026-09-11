@@ -30,6 +30,8 @@ function OutputView({ preview = false }) {
     // Current Playback State
     const [currentPlaylist, setCurrentPlaylist] = useState(null);
     const [currentIndex, setCurrentIndex] = useState(0);
+    const [playToken, setPlayToken] = useState(0);
+    const [resolved, setResolved] = useState(null);
     const [activeMedia, setActiveMedia] = useState(null);
 
     // -- OUTPUT SETTINGS --
@@ -79,7 +81,7 @@ function OutputView({ preview = false }) {
 
     const [timerDisplay, setTimerDisplay] = useState("00:00");
     const [countdownDisplay, setCountdownDisplay] = useState("00:00");
-    const mediaTimeoutRef = useRef(null);
+    const playbackCounterRef = useRef(0);
     const timerIntervalRef = useRef(null);
 
     // -- TEST IMAGE --
@@ -159,6 +161,8 @@ function OutputView({ preview = false }) {
         scenePlaylist,
         announcement,
         announcementDuration,
+        substitution,
+        card,
         showScoreboard,
         currentPlaylist,
         currentIndex,
@@ -168,6 +172,8 @@ function OutputView({ preview = false }) {
         scoreboardBgPath,
         scoreboardSponsorPath,
     };
+    const resolvedRef = useRef(null);
+    resolvedRef.current = resolved;
 
     // --- COMMAND LISTENER ---
     useEffect(() => {
@@ -450,61 +456,86 @@ function OutputView({ preview = false }) {
 
 
     // --- MEDIA PLAYBACK LOOP ---
+    const endScene = () => {
+        setScenePlaylist(null);
+        setCurrentPlaylist(liveStateRef.current.standardPlaylist);
+        setCurrentIndex(0);
+    };
+
+    // Reads live refs instead of closure state so a timer that fires after
+    // other state changed still acts on the current playlist.
+    const handleMediaEnd = () => {
+        const { currentPlaylist, currentIndex, scenePlaylist, announcement, substitution, card } = liveStateRef.current;
+        const current = resolvedRef.current;
+        if (!currentPlaylist || !current || current.playlist !== currentPlaylist) return;
+        const items = current.items;
+        if (items.length === 0) return;
+
+        if (currentIndex + 1 < items.length) {
+            setCurrentIndex(currentIndex + 1);
+            return;
+        }
+        // A scene plays once and hands back to the standard playlist, unless it
+        // is the background of an info overlay that is still showing.
+        if (scenePlaylist && !announcement && !substitution && !card) {
+            endScene();
+            return;
+        }
+        setCurrentIndex(0);
+        setPlayToken(t => t + 1);
+    };
+
+    const handleMediaError = () => {
+        setActiveMedia(prev => prev ? { ...prev, failed: true } : prev);
+    };
+
+    // The playlist is resolved against the media library once per playlist
+    // change; items whose media no longer exists are dropped so playback
+    // cannot stall on them.
     useEffect(() => {
         if (!currentPlaylist || !currentPlaylist.items || currentPlaylist.items.length === 0) {
+            setResolved(null);
             setActiveMedia(null);
             return;
         }
-        const item = currentPlaylist.items[currentIndex];
-        loadMediaDetails(item);
-    }, [currentPlaylist, currentIndex]);
+        let cancelled = false;
+        (async () => {
+            const allMedia = await window.electronAPI.loadMedia();
+            if (cancelled) return;
+            const items = currentPlaylist.items
+                .map(item => {
+                    const found = allMedia.find(m => m.id === item.id);
+                    return found ? { ...found, duration: item.duration || 5 } : null;
+                })
+                .filter(Boolean);
+            setResolved({ playlist: currentPlaylist, items });
+        })();
+        return () => { cancelled = true; };
+    }, [currentPlaylist]);
 
-    const loadMediaDetails = async (item) => {
-        if (!item) return;
-        const allMedia = await window.electronAPI.loadMedia();
-        const found = allMedia.find(m => m.id === item.id);
-        if (found) {
-            setActiveMedia({ ...found, duration: item.duration || 5 });
-        }
-    };
-
+    // playbackKey changes on every advance so a <video> remounts (and replays)
+    // even when the same media follows itself or a single-item playlist loops.
     useEffect(() => {
-        if (activeMedia && activeMedia.type === 'image') {
-            const duration = activeMedia.duration || 5;
-            mediaTimeoutRef.current = setTimeout(() => {
-                handleMediaEnd();
-            }, duration * 1000);
-            return () => clearTimeout(mediaTimeoutRef.current);
+        if (!resolved || resolved.playlist !== currentPlaylist) return;
+        if (resolved.items.length === 0) {
+            if (liveStateRef.current.scenePlaylist) endScene();
+            else setActiveMedia(null);
+            return;
         }
+        const item = resolved.items[Math.min(currentIndex, resolved.items.length - 1)];
+        playbackCounterRef.current += 1;
+        setActiveMedia({ ...item, playbackKey: playbackCounterRef.current });
+    }, [resolved, currentPlaylist, currentIndex, playToken]);
+
+    // Images advance on a timer, videos via onEnded. Media that failed to load
+    // is skipped after a short dwell instead of blocking the playlist.
+    useEffect(() => {
+        if (!activeMedia) return;
+        if (activeMedia.type !== 'image' && !activeMedia.failed) return;
+        const seconds = activeMedia.failed ? 1 : (activeMedia.duration || 5);
+        const timer = setTimeout(handleMediaEnd, seconds * 1000);
+        return () => clearTimeout(timer);
     }, [activeMedia]);
-
-    const handleMediaEnd = () => {
-        if (!currentPlaylist) return;
-        const nextIndex = currentIndex + 1;
-
-        if (nextIndex >= currentPlaylist.items.length) {
-            if (scenePlaylist) {
-                // ERROR-CHECK: If we are in announcement mode, we loop the scene!
-                if (announcement) {
-                    setCurrentIndex(0);
-                    return;
-                }
-
-                setScenePlaylist(null);
-                if (standardPlaylist) {
-                    setCurrentPlaylist(standardPlaylist);
-                    setCurrentIndex(0);
-                } else {
-                    setActiveMedia(null);
-                    setCurrentPlaylist(null);
-                }
-            } else {
-                setCurrentIndex(0);
-            }
-        } else {
-            setCurrentIndex(nextIndex);
-        }
-    };
 
     // --- RENDER ---
     // Overlay is visible ONLY if:
@@ -552,6 +583,7 @@ function OutputView({ preview = false }) {
                         currentTestImage={currentTestImage}
                         showCropMarks={showCropMarks}
                         onMediaEnd={handleMediaEnd}
+                        onMediaError={handleMediaError}
                         preview={preview}
                     />
                 </div>
