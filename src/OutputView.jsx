@@ -161,8 +161,6 @@ function OutputView({ preview = false }) {
         scenePlaylist,
         announcement,
         announcementDuration,
-        substitution,
-        card,
         showScoreboard,
         currentPlaylist,
         currentIndex,
@@ -174,6 +172,8 @@ function OutputView({ preview = false }) {
     };
     const resolvedRef = useRef(null);
     resolvedRef.current = resolved;
+    const activeMediaRef = useRef(null);
+    activeMediaRef.current = activeMedia;
 
     // --- COMMAND LISTENER ---
     useEffect(() => {
@@ -463,11 +463,15 @@ function OutputView({ preview = false }) {
     };
 
     // Reads live refs instead of closure state so a timer that fires after
-    // other state changed still acts on the current playlist.
-    const handleMediaEnd = () => {
-        const { currentPlaylist, currentIndex, scenePlaylist, announcement, substitution, card } = liveStateRef.current;
+    // other state changed still acts on the current playlist. Events carry the
+    // playbackKey of the media they belong to; anything else is ignored.
+    const handleMediaEnd = (playbackKey) => {
+        const media = activeMediaRef.current;
+        if (!media || media.playbackKey !== playbackKey) return;
+        const { currentPlaylist, currentIndex, scenePlaylist, announcement } = liveStateRef.current;
         const current = resolvedRef.current;
-        if (!currentPlaylist || !current || current.playlist !== currentPlaylist) return;
+        if (!currentPlaylist || media.playlist !== currentPlaylist) return;
+        if (!current || current.playlist !== currentPlaylist) return;
         const items = current.items;
         if (items.length === 0) return;
 
@@ -475,9 +479,9 @@ function OutputView({ preview = false }) {
             setCurrentIndex(currentIndex + 1);
             return;
         }
-        // A scene plays once and hands back to the standard playlist, unless it
-        // is the background of an info overlay that is still showing.
-        if (scenePlaylist && !announcement && !substitution && !card) {
+        // A scene plays once and hands back to the standard playlist; while an
+        // announcement is showing it loops instead.
+        if (scenePlaylist && !announcement) {
             endScene();
             return;
         }
@@ -485,30 +489,39 @@ function OutputView({ preview = false }) {
         setPlayToken(t => t + 1);
     };
 
-    const handleMediaError = () => {
-        setActiveMedia(prev => prev ? { ...prev, failed: true } : prev);
+    const handleMediaError = (playbackKey) => {
+        setActiveMedia(prev => prev && prev.playbackKey === playbackKey ? { ...prev, failed: true } : prev);
     };
 
     // The playlist is resolved against the media library once per playlist
     // change; items whose media no longer exists are dropped so playback
     // cannot stall on them.
     useEffect(() => {
-        if (!currentPlaylist || !currentPlaylist.items || currentPlaylist.items.length === 0) {
+        if (!currentPlaylist) {
             setResolved(null);
             setActiveMedia(null);
             return;
         }
+        const rawItems = currentPlaylist.items || [];
+        if (rawItems.length === 0) {
+            setResolved({ playlist: currentPlaylist, items: [] });
+            return;
+        }
         let cancelled = false;
         (async () => {
-            const allMedia = await window.electronAPI.loadMedia();
-            if (cancelled) return;
-            const items = currentPlaylist.items
-                .map(item => {
-                    const found = allMedia.find(m => m.id === item.id);
-                    return found ? { ...found, duration: item.duration || 5 } : null;
-                })
-                .filter(Boolean);
-            setResolved({ playlist: currentPlaylist, items });
+            let items = [];
+            try {
+                const allMedia = await window.electronAPI.loadMedia();
+                items = rawItems
+                    .map(item => {
+                        const found = allMedia.find(m => m.id === item.id);
+                        return found ? { ...found, duration: Math.max(1, Number(item.duration) || 5) } : null;
+                    })
+                    .filter(Boolean);
+            } catch (err) {
+                console.error('[OutputView] media library unavailable', err);
+            }
+            if (!cancelled) setResolved({ playlist: currentPlaylist, items });
         })();
         return () => { cancelled = true; };
     }, [currentPlaylist]);
@@ -524,16 +537,16 @@ function OutputView({ preview = false }) {
         }
         const item = resolved.items[Math.min(currentIndex, resolved.items.length - 1)];
         playbackCounterRef.current += 1;
-        setActiveMedia({ ...item, playbackKey: playbackCounterRef.current });
+        setActiveMedia({ ...item, playlist: resolved.playlist, playbackKey: playbackCounterRef.current });
     }, [resolved, currentPlaylist, currentIndex, playToken]);
 
-    // Images advance on a timer, videos via onEnded. Media that failed to load
-    // is skipped after a short dwell instead of blocking the playlist.
+    // Videos advance via onEnded, everything else on a timer. Media that failed
+    // to load is skipped after a short dwell instead of blocking the playlist.
     useEffect(() => {
         if (!activeMedia) return;
-        if (activeMedia.type !== 'image' && !activeMedia.failed) return;
+        if (activeMedia.type === 'video' && !activeMedia.failed) return;
         const seconds = activeMedia.failed ? 1 : (activeMedia.duration || 5);
-        const timer = setTimeout(handleMediaEnd, seconds * 1000);
+        const timer = setTimeout(() => handleMediaEnd(activeMedia.playbackKey), seconds * 1000);
         return () => clearTimeout(timer);
     }, [activeMedia]);
 

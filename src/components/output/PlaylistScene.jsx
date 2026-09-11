@@ -9,8 +9,8 @@ function PlaylistScene({ activeMedia, currentTestImage, showCropMarks, onMediaEn
                     autoPlay
                     muted={preview ? true : false}
                     style={{ width: '100%', height: '100%', objectFit: 'contain' }}
-                    onEnded={onMediaEnd}
-                    onError={onMediaError}
+                    onEnded={() => onMediaEnd(activeMedia.playbackKey)}
+                    onError={() => onMediaError(activeMedia.playbackKey)}
                 />
             );
         }
@@ -19,7 +19,7 @@ function PlaylistScene({ activeMedia, currentTestImage, showCropMarks, onMediaEn
                 src={activeMedia.path}
                 alt="Content"
                 style={{ width: '100%', height: '100%', objectFit: 'contain' }}
-                onError={onMediaError}
+                onError={() => onMediaError(activeMedia.playbackKey)}
             />
         );
     };

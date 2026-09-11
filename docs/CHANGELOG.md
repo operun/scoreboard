@@ -8,7 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Fixed
-- Szenenwiedergabe (Aufstellung, Special) blieb mitten in der Playlist stehen oder schaltete nach dem letzten Element nicht zurück: fehlende oder nicht abspielbare Medien werden übersprungen, Videos starten auch bei direkt aufeinanderfolgendem gleichen Medium und in Ein-Element-Playlists neu, und die Wiedergabe-Timer werden bei verdecktem Fenster nicht mehr gedrosselt
+- Szenenwiedergabe (Aufstellung, Special) blieb mitten in der Playlist stehen oder schaltete nach dem letzten Element nicht zurück: fehlende Medien werden übersprungen, nicht abspielbare Medien nach einer Sekunde, leere Playlists beenden die Szene sofort, Videos starten auch bei direkt aufeinanderfolgendem gleichen Medium und in Ein-Element-Playlists neu, und die Wiedergabe-Timer beider Fenster werden im Hintergrund nicht mehr gedrosselt
 
 ## [1.6.0] - 2026-08-27
 
