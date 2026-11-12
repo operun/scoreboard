@@ -1,6 +1,6 @@
 # Implementation Plan: Reliable Video Preview Thumbnails
 
-Status: Draft (analysis confirmed in code, implementation not started)
+Status: Implemented (see "Implementation notes" for deviations from this plan)
 Date: 2026-07-24
 
 ## Problem
@@ -90,3 +90,21 @@ not transferred by the SSH sync.
 - `npmRebuild` is `false`; `ffmpeg-static` downloads a prebuilt binary at
   install time and needs no native build step, so this stays compatible.
 - Add a German changelog entry under `[Unreleased]` once implemented.
+
+## Implementation notes
+
+Steps 1 and 2 are implemented with these deviations:
+
+- The thumbnail file is the source of truth. Thumbnails are always named
+  `media/thumbnails/<id>.jpg`, and `load-media` sets `thumbnailPath` only if
+  that file exists. `thumbnailStoredName` is no longer written or read, so the
+  backfill never touches `media.json`. It cannot race `add-media` or
+  `delete-media`, and it does not bump `updatedAt`, which would let a local
+  entry outvote a newer remote change (e.g. a deletion) in the sync merge.
+- The backfill runs in the background. `load-media` starts it without waiting
+  for it, and it sends `media-updated` once new thumbnails exist.
+  `MediaView.jsx` listens to that event, so backfilled thumbnails appear
+  without reopening the view.
+- Step 3 is dropped. Every machine regenerates missing thumbnails itself, so
+  the SSH sync does not need to transfer them. Broken image paths cannot occur
+  because only existing files are referenced.

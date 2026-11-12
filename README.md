@@ -83,7 +83,6 @@ Output: `dist-electron/Scoreboard Setup x.x.x.exe`
 main.js          Electron main process — IPC handlers, file I/O, SSH sync
 preload.js       Context bridge — exposes safe IPC API to renderer
 settingsStore.js Settings read/write (plain JSON)
-afterPack.js     Post-build hook — replaces bundled ffmpeg with H.264/AAC variant
 src/
   App.jsx              Router, layout, global state
   ControllerView.jsx   Live operator interface

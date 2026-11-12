@@ -30,6 +30,7 @@ function MediaView() {
       setMediaFiles(list);
     };
     loadMedia();
+    return window.electronAPI.onMediaUpdated(loadMedia);
   }, []);
 
   useEffect(() => {

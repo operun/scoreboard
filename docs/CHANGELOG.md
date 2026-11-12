@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - Der hinterlegte Hintergrund des Spielstands fehlte nach dem Programmstart, bis er in den Einstellungen neu ausgewählt wurde: Die Abstimmung zwischen Vorschau und Ausgabefenster überschrieb ihn beim Start mit einem leeren Wert
+- Vorschaubilder für Videos fehlten auf Rechnern ohne installiertes ffmpeg: ffmpeg wird jetzt mitgeliefert, und fehlende Vorschaubilder bereits importierter Videos werden nach dem Programmstart im Hintergrund nachgeneriert
 
 ## [1.6.1] - 2026-09-11
 

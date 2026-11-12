@@ -56,7 +56,7 @@ All state is local JSON in Electron's `userData` dir (`%APPDATA%\Scoreboard` on 
 `sync-to-remote` in `main.js` does a **bidirectional** merge with a remote host over SSH (`ssh2`): it reads remote `*.json`, merges with local, writes back, and transfers media files. Remote base dir is `scoreboard`. Host/user come from settings; the keypair is generated in-app (Settings → Sync).
 
 ### Media / ffmpeg
-`fluent-ffmpeg` + `ffprobe-static` generate video thumbnails and probe media. `afterPack.js` is an electron-builder hook that **swaps the bundled Electron libffmpeg for the Chromium-branded build** (matching the exact Electron version) so packaged builds have H.264/AAC support. `ffprobe-static` is `asarUnpack`ed so its binary is reachable at runtime.
+`fluent-ffmpeg` drives the bundled binaries from `ffmpeg-static` (video thumbnails) and `ffprobe-static` (durations). Both are `asarUnpack`ed so they are reachable at runtime. Thumbnails are `media/thumbnails/<id>.jpg`, looked up by file name and never stored in `media.json`; `load-media` regenerates missing ones in the background, so the SSH sync does not transfer them. Playback relies on Electron's bundled libffmpeg (H.264/AAC).
 
 ## Working Conventions
 

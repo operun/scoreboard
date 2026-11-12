@@ -35,6 +35,17 @@ try {
   console.error('[FFprobe] Failed to load ffprobe-static:', e.message);
 }
 
+// --- ffmpeg-static path (remapped for ASAR packaging) ---
+let ffmpegPath = null;
+try {
+  const ffmpegRaw = require('ffmpeg-static');
+  ffmpegPath = app.isPackaged
+    ? ffmpegRaw.replace('app.asar', 'app.asar.unpacked')
+    : ffmpegRaw;
+} catch (e) {
+  console.error('[FFmpeg] Failed to load ffmpeg-static:', e.message);
+}
+
 app.setName('Scoreboard');
 // Required on Windows for correct taskbar grouping, notifications and Start-Menu pinning
 if (process.platform === 'win32') {
@@ -118,6 +129,64 @@ function getMediaType(fileName) {
   if (['.mp4', '.mov', '.avi', '.mkv'].includes(ext)) return 'video';
   if (['.jpg', '.jpeg', '.png'].includes(ext)) return 'image';
   return 'unknown';
+}
+
+function getFfmpeg() {
+  const ffmpeg = require('fluent-ffmpeg');
+  if (ffprobePath) ffmpeg.setFfprobePath(ffprobePath);
+  if (ffmpegPath) ffmpeg.setFfmpegPath(ffmpegPath);
+  return ffmpeg;
+}
+
+function getThumbnailDir() {
+  return path.join(app.getPath('userData'), 'media', 'thumbnails');
+}
+
+function listThumbnails() {
+  const dir = getThumbnailDir();
+  return new Set(fs.existsSync(dir) ? fs.readdirSync(dir) : []);
+}
+
+function generateThumbnail(videoPath, id) {
+  const folder = getThumbnailDir();
+  if (!fs.existsSync(folder)) fs.mkdirSync(folder, { recursive: true });
+  const filename = `${id}.jpg`;
+  return new Promise((resolve) => {
+    getFfmpeg()(videoPath)
+      .on('end', () => resolve(fs.existsSync(path.join(folder, filename))))
+      .on('error', (err) => {
+        console.warn('[Media] Thumbnail generation failed:', err.message);
+        resolve(false);
+      })
+      .screenshots({ timestamps: ['00:00:01'], filename, folder, size: '160x90' });
+  });
+}
+
+// Thumbnails are found by file name and must never be recorded in media.json: the backfill would race add/delete-media and win sync merges.
+let thumbnailBackfill = null;
+const failedThumbnails = new Set();
+
+function backfillThumbnails(mediaList) {
+  if (thumbnailBackfill) return;
+  const mediaDir = path.join(app.getPath('userData'), 'media');
+  thumbnailBackfill = (async () => {
+    const existing = listThumbnails();
+    let created = 0;
+    for (const item of mediaList) {
+      if (item.type !== 'video' || item.deleted) continue;
+      if (existing.has(`${item.id}.jpg`) || failedThumbnails.has(item.id)) continue;
+      const videoPath = path.join(mediaDir, item.storedName);
+      if (!fs.existsSync(videoPath)) continue;
+      if (await generateThumbnail(videoPath, item.id)) created++;
+      else failedThumbnails.add(item.id);
+    }
+    if (created > 0) {
+      console.log(`[Media] Backfilled ${created} thumbnail(s)`);
+      BrowserWindow.getAllWindows().forEach(w => { if (!w.isDestroyed()) w.webContents.send('media-updated'); });
+    }
+  })()
+    .catch((e) => console.warn('[Media] Thumbnail backfill failed:', e.message))
+    .finally(() => { thumbnailBackfill = null; });
 }
 
 ipcMain.handle('get-versions', () => ({
@@ -233,8 +302,7 @@ ipcMain.handle('load-media', async () => {
 
   // Check for missing durations and enrich (Migration logic)
   // We process this sequentially to avoid spawning 100 ffmpeg processes at boot
-  const ffmpeg = require('fluent-ffmpeg');
-  ffmpeg.setFfprobePath(ffprobePath);
+  const ffmpeg = getFfmpeg();
 
   for (const item of mediaList) {
     if (item.type === 'video' && !item.duration) {
@@ -267,14 +335,17 @@ ipcMain.handle('load-media', async () => {
     saveMediaList(mediaList);
   }
 
+  backfillThumbnails(mediaList);
+
+  const thumbnails = listThumbnails();
   const { pathToFileURL } = require('url');
   return mediaList
     .filter(item => !item.deleted)
     .map((item) => ({
       ...item,
       path: pathToFileURL(path.join(mediaDir, item.storedName)).href,
-      thumbnailPath: item.thumbnailStoredName
-        ? pathToFileURL(path.join(mediaDir, 'thumbnails', item.thumbnailStoredName)).href
+      thumbnailPath: thumbnails.has(`${item.id}.jpg`)
+        ? pathToFileURL(path.join(getThumbnailDir(), `${item.id}.jpg`)).href
         : null
     }))
     .sort((a, b) => a.fileName.localeCompare(b.fileName, 'de', { sensitivity: 'base' }));
@@ -324,8 +395,7 @@ ipcMain.handle('add-media', async (event, filePath) => {
 
   // Extract duration + generate thumbnail for videos
   if (mediaType === 'video') {
-    const ffmpeg = require('fluent-ffmpeg');
-    ffmpeg.setFfprobePath(ffprobePath);
+    const ffmpeg = getFfmpeg();
 
     // Duration
     try {
@@ -343,30 +413,8 @@ ipcMain.handle('add-media', async (event, filePath) => {
 
     // Thumbnail
     try {
-      const thumbDir = path.join(mediaDir, 'thumbnails');
-      if (!fs.existsSync(thumbDir)) fs.mkdirSync(thumbDir, { recursive: true });
-
-      const thumbName = `${id}.jpg`;
-      const thumbPath = path.join(thumbDir, thumbName);
-
-      await new Promise((resolve) => {
-        ffmpeg(targetPath)
-          .on('end', resolve)
-          .on('error', (err) => {
-            console.warn('[Media] Thumbnail generation failed:', err.message);
-            resolve();
-          })
-          .screenshots({
-            timestamps: ['00:00:01'],
-            filename: thumbName,
-            folder: thumbDir,
-            size: '160x90'
-          });
-      });
-
-      if (fs.existsSync(thumbPath)) {
-        newEntry.thumbnailStoredName = thumbName;
-        console.log(`[Media] Thumbnail generated: ${thumbName}`);
+      if (await generateThumbnail(targetPath, id)) {
+        console.log(`[Media] Thumbnail generated: ${id}.jpg`);
       }
     } catch (e) {
       console.warn('[Media] Thumbnail error:', e);
