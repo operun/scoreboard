@@ -425,10 +425,6 @@ function ControllerView({ visibility = {} }) {
       updates.timerOffset = 45 * 60;
       updates.timerStart = null;
       updates.overtime = 0;
-      if (gameState.plHalfTime) {
-        const pl = playlists.find(p => p.id === gameState.plHalfTime);
-        if (pl) window.electronAPI.sendControlCommand('PLAY_PLAYLIST', { playlist: pl, mode: 'FULL' });
-      }
     } else if (state === 'SECOND_HALF') {
       updates.timerRunning = true;
       updates.timerStart = Date.now();
@@ -438,10 +434,6 @@ function ControllerView({ visibility = {} }) {
     } else if (state === 'POST_GAME') {
       updates.timerRunning = false;
       updates.overtime = 0;
-      if (gameState.plEnd) {
-        const pl = playlists.find(p => p.id === gameState.plEnd);
-        if (pl) window.electronAPI.sendControlCommand('PLAY_PLAYLIST', { playlist: pl, mode: 'FULL' });
-      }
     }
 
     setGameState(prev => ({ ...prev, ...updates }));
@@ -469,6 +461,19 @@ function ControllerView({ visibility = {} }) {
     }
   };
 
+  const playMatchPlaylist = (plId) => {
+    if (!plId) {
+      toast.warn("Keine Playlist für diese Szene ausgewählt!");
+      return;
+    }
+    const pl = playlists.find(p => p.id === plId);
+    if (pl) {
+      window.electronAPI.sendControlCommand('PLAY_PLAYLIST', { playlist: pl, mode: 'FULL' });
+    } else {
+      toast.error("Playlist nicht gefunden");
+    }
+  };
+
   const handleGoalHome = () => {
     triggerScene(gameState.plGoalHome, 'Tor Heim');
     setGameState(prev => ({ ...prev, homeScore: prev.homeScore + 1 }));
@@ -487,8 +492,10 @@ function ControllerView({ visibility = {} }) {
     switch (actionId) {
       case 'startFirstHalf': startMatchState('FIRST_HALF'); break;
       case 'endFirstHalf': startMatchState('HALF_TIME'); break;
+      case 'halfTime': playMatchPlaylist(gameState.plHalfTime); break;
       case 'startSecondHalf': startMatchState('SECOND_HALF'); break;
       case 'endSecondHalf': startMatchState('POST_GAME'); break;
+      case 'fullTime': playMatchPlaylist(gameState.plEnd); break;
       case 'goalHome': handleGoalHome(); break;
       case 'goalGuest': handleGoalGuest(); break;
       default: break;
@@ -849,12 +856,22 @@ function ControllerView({ visibility = {} }) {
               <button className="btn btn-outline-primary w-100" onClick={() => startMatchState('HALF_TIME')}>
                 Abpfiff 1. Halbzeit
               </button>
+              {visibility.halftime && (
+                <button className="btn btn-outline-primary w-100" onClick={() => playMatchPlaylist(gameState.plHalfTime)}>
+                  Halbzeit
+                </button>
+              )}
               <button className="btn btn-outline-primary w-100" onClick={() => startMatchState('SECOND_HALF')}>
                 Anpfiff 2. Halbzeit
               </button>
               <button className="btn btn-outline-primary w-100" onClick={() => startMatchState('POST_GAME')}>
                 Abpfiff 2. Halbzeit
               </button>
+              {visibility.end && (
+                <button className="btn btn-outline-primary w-100" onClick={() => playMatchPlaylist(gameState.plEnd)}>
+                  Abpfiff
+                </button>
+              )}
               {visibility.overtime && (
                 <button className="btn btn-outline-primary" onClick={() => {
                   setOvertimeInput("");

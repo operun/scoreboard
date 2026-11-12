@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- Abpfiff der 1. und 2. Halbzeit hält nur noch die Uhr an, der Spielstand bleibt sichtbar (nach Spielende mit „Endstand"); Halbzeit- und Abpfiff-Playlist starten über die neuen Buttons „Halbzeit" und „Abpfiff", die sich auch per Hotkey belegen lassen
+
 ### Fixed
 - Der hinterlegte Hintergrund des Spielstands fehlte nach dem Programmstart, bis er in den Einstellungen neu ausgewählt wurde: Die Abstimmung zwischen Vorschau und Ausgabefenster überschrieb ihn beim Start mit einem leeren Wert
 

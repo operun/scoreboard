@@ -1,11 +1,13 @@
 // Shared helpers for the controller action hotkeys (app-focused shortcuts).
 
-// The six controller actions that can be bound to a hotkey.
+// The controller actions that can be bound to a hotkey.
 export const HOTKEY_ACTIONS = [
   { id: 'startFirstHalf', label: 'Anpfiff 1. Halbzeit' },
   { id: 'endFirstHalf', label: 'Abpfiff 1. Halbzeit' },
+  { id: 'halfTime', label: 'Halbzeit' },
   { id: 'startSecondHalf', label: 'Anpfiff 2. Halbzeit' },
   { id: 'endSecondHalf', label: 'Abpfiff 2. Halbzeit' },
+  { id: 'fullTime', label: 'Abpfiff' },
   { id: 'goalHome', label: 'Tor Heim' },
   { id: 'goalGuest', label: 'Tor Gast' },
 ];
