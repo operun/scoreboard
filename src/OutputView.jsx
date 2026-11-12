@@ -167,8 +167,6 @@ function OutputView({ preview = false }) {
         gameState,
         homeLogoPath,
         guestLogoPath,
-        scoreboardBgPath,
-        scoreboardSponsorPath,
     };
     const resolvedRef = useRef(null);
     resolvedRef.current = resolved;
@@ -336,10 +334,9 @@ function OutputView({ preview = false }) {
                     setCurrentPlaylist(s.currentPlaylist);
                     setCurrentIndex(s.currentIndex);
                     setGameState(s.gameState);
-                    if (s.homeLogoPath !== undefined) setHomeLogoPath(s.homeLogoPath);
-                    if (s.guestLogoPath !== undefined) setGuestLogoPath(s.guestLogoPath);
-                    if (s.scoreboardBgPath !== undefined) setScoreboardBgPath(s.scoreboardBgPath);
-                    if (s.scoreboardSponsorPath !== undefined) setScoreboardSponsorPath(s.scoreboardSponsorPath);
+                    // Adopt only resolved logos; background and sponsor come from each instance's own settings (the counterpart may still hold null).
+                    if (s.homeLogoPath) setHomeLogoPath(s.homeLogoPath);
+                    if (s.guestLogoPath) setGuestLogoPath(s.guestLogoPath);
                 }
             });
             return () => remove();

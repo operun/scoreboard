@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- Der hinterlegte Hintergrund des Spielstands fehlte nach dem Programmstart, bis er in den Einstellungen neu ausgewählt wurde: Die Abstimmung zwischen Vorschau und Ausgabefenster überschrieb ihn beim Start mit einem leeren Wert
+
 ## [1.6.1] - 2026-09-11
 
 ### Fixed
