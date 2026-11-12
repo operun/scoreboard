@@ -42,7 +42,7 @@ ControllerView ──electronAPI.sendControlCommand(CMD, payload)──► main.
 Commands are string constants such as `UPDATE_GAME_STATE`, `SET_TEAM_LOGOS`, `PLAY_PLAYLIST`, `SHOW_SCENE`, `SHOW_SCOREBOARD`, `SHOW_ANNOUNCEMENT`, `SHOW_SUBSTITUTION`, `SHOW_CARD`, `STOP_OUTPUT`. To add a behavior: emit it from `ControllerView.jsx` and handle it in `OutputView.jsx`. Because the broadcast also reaches the Controller, the Controller can render a live **preview** of Output (`<OutputView preview />`). `REQUEST_SYNC`/`SYNC_STATUS` let a newly opened window pull current state.
 
 ### Output scenes
-`OutputView.jsx` holds all output state (game state, timer, active media, logos, current scene) and composes scene components from `src/components/output/`: `PlaylistScene`, `ScoreboardScene`, `AnnouncementScene`, `SubstitutionScene`, `CardScene`. Scenes are presentational; OutputView decides which is visible and feeds props.
+`OutputView.jsx` holds all output state (game state, timer, active media, logos, current scene) and composes scene components from `src/components/output/`: `PlaylistScene`, `ScoreboardScene`, `AnnouncementScene`, `SubstitutionScene`, `CardScene`, `CountdownScene` (fullscreen), `CountdownOverlay` (corner). Scenes are presentational; OutputView decides which is visible and feeds props.
 
 ### Data & persistence
 All state is local JSON in Electron's `userData` dir (`%APPDATA%\Scoreboard` on Windows, `~/Library/Application Support/Scoreboard` on macOS):

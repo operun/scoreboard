@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Countdown wahlweise als Overlay in einer wählbaren Ecke der Ausgabe, z. B. über der laufenden Warmup-Playlist (Einstellungen -> Ausgabe -> Countdown-Darstellung); bestehende Einstellungen bleiben erhalten
+
 ### Changed
 - Abpfiff der 1. und 2. Halbzeit hält nur noch die Uhr an, der Spielstand bleibt sichtbar (nach Spielende mit „Endstand"); Halbzeit- und Abpfiff-Playlist starten über die neuen Buttons „Halbzeit" und „Abpfiff", die sich auch per Hotkey belegen lassen
 

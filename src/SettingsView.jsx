@@ -14,7 +14,7 @@ function SettingsView() {
   const [outputWidth, setOutputWidth] = useState(1280);
   const [outputHeight, setOutputHeight] = useState(720);
   const [showCropMarks, setShowCropMarks] = useState(true);
-  const [countdownFullscreen, setCountdownFullscreen] = useState(true);
+  const [countdownMode, setCountdownMode] = useState('fullscreen');
   const [customTestImageName, setCustomTestImageName] = useState(null);
   const [themeMode, setThemeMode] = useState('system');
   const [scoreboardBgId, setScoreboardBgId] = useState(null);
@@ -42,7 +42,7 @@ function SettingsView() {
         if (settings.outputWidth) setOutputWidth(settings.outputWidth);
         if (settings.outputHeight) setOutputHeight(settings.outputHeight);
         setShowCropMarks(settings.showCropMarks !== false);
-        setCountdownFullscreen(settings.countdownFullscreen !== false);
+        setCountdownMode(settings.countdownMode || (settings.countdownFullscreen === false ? 'scoreboard' : 'fullscreen'));
         if (settings.customTestImageName) setCustomTestImageName(settings.customTestImageName);
         if (settings.themeMode) setThemeMode(settings.themeMode);
         if (settings.controllerVisibility) setControllerVisibility(prev => ({ ...prev, ...settings.controllerVisibility }));
@@ -73,7 +73,7 @@ function SettingsView() {
       outputWidth,
       outputHeight,
       showCropMarks,
-      countdownFullscreen,
+      countdownMode,
       themeMode,
       controllerVisibility,
       hotkeys,
@@ -259,18 +259,23 @@ function SettingsView() {
                 <label className="form-check-label" htmlFor="cropMarksCheck">Markierungen anzeigen</label>
               </div>
 
-              <div className="mb-4 form-check">
-                <input
-                  type="checkbox"
-                  className="form-check-input"
-                  id="countdownFullscreenCheck"
-                  checked={countdownFullscreen}
+              <div className="mb-4">
+                <label className="form-label">Countdown-Darstellung</label>
+                <select
+                  className="form-select"
+                  value={countdownMode}
                   onChange={(e) => {
-                    setCountdownFullscreen(e.target.checked);
-                    saveAllSettings({ countdownFullscreen: e.target.checked });
+                    setCountdownMode(e.target.value);
+                    saveAllSettings({ countdownMode: e.target.value });
                   }}
-                />
-                <label className="form-check-label" htmlFor="countdownFullscreenCheck">Countdown als Vollbild anzeigen</label>
+                >
+                  <option value="fullscreen">Vollbild</option>
+                  <option value="scoreboard">Im Zeitfeld des Spielstands</option>
+                  <option value="top-left">Overlay oben links</option>
+                  <option value="top-right">Overlay oben rechts</option>
+                  <option value="bottom-left">Overlay unten links</option>
+                  <option value="bottom-right">Overlay unten rechts</option>
+                </select>
               </div>
 
               <div className="mb-4">
