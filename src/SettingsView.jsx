@@ -27,7 +27,7 @@ function SettingsView() {
   const [scoreboardInsertDuration, setScoreboardInsertDuration] = useState(15);
   const [mediaImages, setMediaImages] = useState([]); // for picker dropdowns
   const [controllerVisibility, setControllerVisibility] = useState({
-    warmup: true, lineup: true, halftime: true, end: true,
+    warmup: true, lineup: true, ads: true,
     goalHome: true, goalGuest: true, sub: true, yellow: true, red: true, var: true, special: true, corner: true, overtime: true, announcement: true, countdown: true
   });
 
@@ -658,8 +658,7 @@ function SettingsView() {
                   {[
                     { key: 'warmup', label: 'Warmup' },
                     { key: 'lineup', label: 'Aufstellung' },
-                    { key: 'halftime', label: 'Halbzeit' },
-                    { key: 'end', label: 'Abpfiff' },
+                    { key: 'ads', label: 'Werbung' },
                     { key: 'goalHome', label: 'Tor Heim' },
                     { key: 'goalGuest', label: 'Tor Gast' },
                     { key: 'sub', label: 'Wechsel' },

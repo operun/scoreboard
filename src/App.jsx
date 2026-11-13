@@ -32,7 +32,7 @@ function App() {
   const [themeMode, setThemeMode] = useState('system');
   const [effectiveTheme, setEffectiveTheme] = useState('light');
   const [controllerVisibility, setControllerVisibility] = useState({
-    warmup: true, lineup: true, halftime: true, end: true,
+    warmup: true, lineup: true, ads: true,
     goalHome: true, goalGuest: true, sub: true, yellow: true, red: true,
     var: true, special: true, corner: true, overtime: true, announcement: true,
     countdown: true

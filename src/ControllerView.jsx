@@ -56,8 +56,7 @@ function ControllerView({ visibility = {} }) {
     // Playlist Mappings (IDs)
     plWarmup: '',
     plLineup: '',
-    plHalfTime: '',
-    plEnd: '',
+    plAds: '',
     plGoalHome: '',
     plGoalGuest: '',
     plSub: '',
@@ -118,7 +117,7 @@ function ControllerView({ visibility = {} }) {
         defaultPreset = {
           id: 'default',
           name: 'Standard',
-          plWarmup: '', plLineup: '', plHalfTime: '', plEnd: '',
+          plWarmup: '', plLineup: '', plAds: '',
           plGoalHome: '', plGoalGuest: '', plSub: '', plYellow: '', plRed: '', plVar: '', plSpecial: '', plCorner: '', plOvertime: '', plAnnouncement: '',
           logoHomeId: '', logoGuestId: ''
         };
@@ -171,8 +170,7 @@ function ControllerView({ visibility = {} }) {
       ...prev,
       plWarmup: preset.plWarmup || '',
       plLineup: preset.plLineup || '',
-      plHalfTime: preset.plHalfTime || '',
-      plEnd: preset.plEnd || '',
+      plAds: preset.plAds || '',
       plGoalHome: preset.plGoalHome || '',
       plGoalGuest: preset.plGoalGuest || '',
       plSub: preset.plSub || '',
@@ -318,8 +316,7 @@ function ControllerView({ visibility = {} }) {
       name,
       plWarmup: stateToUse.plWarmup,
       plLineup: stateToUse.plLineup,
-      plHalfTime: stateToUse.plHalfTime,
-      plEnd: stateToUse.plEnd,
+      plAds: stateToUse.plAds,
       plGoalHome: stateToUse.plGoalHome,
       plGoalGuest: stateToUse.plGoalGuest,
       plSub: stateToUse.plSub,
@@ -418,8 +415,6 @@ function ControllerView({ visibility = {} }) {
       updates.timerStart = Date.now();
       updates.timerOffset = 0;
       updates.countdownActive = false;
-      // Show static scoreboard (no playlist needed)
-      window.electronAPI.sendControlCommand('SHOW_SCOREBOARD');
     } else if (state === 'HALF_TIME') {
       updates.timerRunning = false;
       updates.timerOffset = 45 * 60;
@@ -429,13 +424,12 @@ function ControllerView({ visibility = {} }) {
       updates.timerRunning = true;
       updates.timerStart = Date.now();
       updates.timerOffset = 45 * 60;
-      // Show static scoreboard (no playlist needed)
-      window.electronAPI.sendControlCommand('SHOW_SCOREBOARD');
     } else if (state === 'POST_GAME') {
       updates.timerRunning = false;
       updates.overtime = 0;
     }
 
+    window.electronAPI.sendControlCommand('SHOW_SCOREBOARD');
     setGameState(prev => ({ ...prev, ...updates }));
   };
 
@@ -461,7 +455,7 @@ function ControllerView({ visibility = {} }) {
     }
   };
 
-  const playMatchPlaylist = (plId) => {
+  const playPlaylist = (plId) => {
     if (!plId) {
       toast.warn("Keine Playlist für diese Szene ausgewählt!");
       return;
@@ -492,10 +486,8 @@ function ControllerView({ visibility = {} }) {
     switch (actionId) {
       case 'startFirstHalf': startMatchState('FIRST_HALF'); break;
       case 'endFirstHalf': startMatchState('HALF_TIME'); break;
-      case 'halfTime': playMatchPlaylist(gameState.plHalfTime); break;
       case 'startSecondHalf': startMatchState('SECOND_HALF'); break;
       case 'endSecondHalf': startMatchState('POST_GAME'); break;
-      case 'fullTime': playMatchPlaylist(gameState.plEnd); break;
       case 'goalHome': handleGoalHome(); break;
       case 'goalGuest': handleGoalGuest(); break;
       default: break;
@@ -696,8 +688,7 @@ function ControllerView({ visibility = {} }) {
           <div className="mb-4">
             {visibility.warmup && <PlaylistSelect label="Warmup" value={gameState.plWarmup} onChange={v => updateState('plWarmup', v)} playlists={playlists} />}
             {visibility.lineup && <PlaylistSelect label="Aufstellung" value={gameState.plLineup} onChange={v => updateState('plLineup', v)} playlists={playlists} />}
-            {visibility.halftime && <PlaylistSelect label="Halbzeit" value={gameState.plHalfTime} onChange={v => updateState('plHalfTime', v)} playlists={playlists} />}
-            {visibility.end && <PlaylistSelect label="Abpfiff" value={gameState.plEnd} onChange={v => updateState('plEnd', v)} playlists={playlists} />}
+            {visibility.ads && <PlaylistSelect label="Werbung" value={gameState.plAds} onChange={v => updateState('plAds', v)} playlists={playlists} />}
           </div>
 
           <div className="mb-4">
@@ -732,7 +723,7 @@ function ControllerView({ visibility = {} }) {
               <button className="btn btn-sm btn-link text-muted p-0" style={{ fontSize: '0.85rem' }} onClick={() => {
                 setGameState(prev => ({
                   ...prev,
-                  plWarmup: '', plLineup: '', plHalfTime: '', plEnd: '',
+                  plWarmup: '', plLineup: '', plAds: '',
                   plGoalHome: '', plGoalGuest: '', plSub: '', plYellow: '', plRed: '', plVar: '', plSpecial: '', plCorner: '', plOvertime: '', plAnnouncement: ''
                 }));
                 toast.info("Playlists zurückgesetzt");
@@ -854,24 +845,14 @@ function ControllerView({ visibility = {} }) {
                 Anpfiff 1. Halbzeit
               </button>
               <button className="btn btn-outline-primary w-100" onClick={() => startMatchState('HALF_TIME')}>
-                Abpfiff 1. Halbzeit
+                Halbzeit
               </button>
-              {visibility.halftime && (
-                <button className="btn btn-outline-primary w-100" onClick={() => playMatchPlaylist(gameState.plHalfTime)}>
-                  Halbzeit
-                </button>
-              )}
               <button className="btn btn-outline-primary w-100" onClick={() => startMatchState('SECOND_HALF')}>
                 Anpfiff 2. Halbzeit
               </button>
               <button className="btn btn-outline-primary w-100" onClick={() => startMatchState('POST_GAME')}>
-                Abpfiff 2. Halbzeit
+                Abpfiff
               </button>
-              {visibility.end && (
-                <button className="btn btn-outline-primary w-100" onClick={() => playMatchPlaylist(gameState.plEnd)}>
-                  Abpfiff
-                </button>
-              )}
               {visibility.overtime && (
                 <button className="btn btn-outline-primary" onClick={() => {
                   setOvertimeInput("");
@@ -948,6 +929,12 @@ function ControllerView({ visibility = {} }) {
             <button className="btn btn-outline-primary" onClick={() => window.electronAPI.sendControlCommand('SHOW_SCOREBOARD')}>
               Spielstand
             </button>
+
+            {visibility.ads && (
+              <button className="btn btn-outline-primary" onClick={() => playPlaylist(gameState.plAds)}>
+                Werbung
+              </button>
+            )}
 
             {visibility.announcement && (
               <button className="btn btn-outline-primary" onClick={() => {
