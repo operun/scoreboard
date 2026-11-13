@@ -301,8 +301,10 @@ function OutputView({ preview = false }) {
                     setSubstitution(null);
                     setCard(null);
                     setSavedScene(null);
+                    // ScoreboardScene is opaque, so nothing may keep playing behind it.
+                    setStandardPlaylist(null);
                     setStandardMode('BACKGROUND'); // ensure overlay condition is met
-                    setCurrentPlaylist(liveStateRef.current.standardPlaylist);
+                    setCurrentPlaylist(null);
                     setCurrentIndex(0);
                     setShowScoreboard(true);
                 }
