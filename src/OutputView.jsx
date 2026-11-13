@@ -7,6 +7,7 @@ import SubstitutionScene from './components/output/SubstitutionScene';
 import CardScene from './components/output/CardScene';
 import CountdownScene from './components/output/CountdownScene';
 import CountdownOverlay from './components/output/CountdownOverlay';
+import InsertScene from './components/output/InsertScene';
 
 function OutputView({ preview = false }) {
     // 'preview' = controller-embedded preview, 'output' = real output window.
@@ -66,6 +67,9 @@ function OutputView({ preview = false }) {
     const [guestLogoPath, setGuestLogoPath] = useState(null);
     const [scoreboardBgPath, setScoreboardBgPath] = useState(null);
     const [scoreboardSponsorPath, setScoreboardSponsorPath] = useState(null);
+    const [insertPath, setInsertPath] = useState(null);
+    const [insertIntervalMin, setInsertIntervalMin] = useState(10);
+    const [insertDurationSec, setInsertDurationSec] = useState(15);
 
     // -- GAME STATE --
     const [gameState, setGameState] = useState({
@@ -82,6 +86,7 @@ function OutputView({ preview = false }) {
 
     const [timerDisplay, setTimerDisplay] = useState("00:00");
     const [countdownDisplay, setCountdownDisplay] = useState("00:00");
+    const [matchSeconds, setMatchSeconds] = useState(0);
     const playbackCounterRef = useRef(0);
     const timerIntervalRef = useRef(null);
 
@@ -108,15 +113,17 @@ function OutputView({ preview = false }) {
                     setCurrentTestImage(settings.customTestImage);
                 }
 
-                // Resolve scoreboard bg + sponsor from media IDs
-                if (settings.scoreboardBgId || settings.scoreboardSponsorId) {
-                    const allMedia = await window.electronAPI.loadMedia();
-                    setScoreboardBgPath(await resolveMediaId(settings.scoreboardBgId, allMedia));
-                    setScoreboardSponsorPath(await resolveMediaId(settings.scoreboardSponsorId, allMedia));
-                } else {
-                    if (!settings.scoreboardBgId) setScoreboardBgPath(null);
-                    if (!settings.scoreboardSponsorId) setScoreboardSponsorPath(null);
-                }
+                setInsertIntervalMin(Math.max(1, parseInt(settings.scoreboardInsertInterval, 10) || 10));
+                setInsertDurationSec(Math.max(1, parseInt(settings.scoreboardInsertDuration, 10) || 15));
+
+                // Resolve scoreboard bg, sponsor and insert from media IDs
+                const { scoreboardBgId, scoreboardSponsorId, scoreboardInsertId } = settings;
+                const allMedia = (scoreboardBgId || scoreboardSponsorId || scoreboardInsertId)
+                    ? await window.electronAPI.loadMedia()
+                    : [];
+                setScoreboardBgPath(await resolveMediaId(scoreboardBgId, allMedia));
+                setScoreboardSponsorPath(await resolveMediaId(scoreboardSponsorId, allMedia));
+                setInsertPath(await resolveMediaId(scoreboardInsertId, allMedia));
             }
         };
 
@@ -422,12 +429,14 @@ function OutputView({ preview = false }) {
                 const m = Math.floor(totalSec / 60);
                 const s = totalSec % 60;
                 setTimerDisplay(`${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`);
+                setMatchSeconds(totalSec);
             }, 1000);
         } else {
             const totalSec = gameState.timerOffset;
             const m = Math.floor(totalSec / 60);
             const s = totalSec % 60;
             setTimerDisplay(`${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`);
+            setMatchSeconds(totalSec);
         }
 
         return () => clearInterval(timerIntervalRef.current);
@@ -563,6 +572,12 @@ function OutputView({ preview = false }) {
     const showOverlay = (showScoreboard || inlineCountdown)
         && !scenePlaylist && standardMode !== 'FULL';
 
+    // Insert slots count from the start of each half, so an interval that divides 45 minutes does not fire at the second-half kickoff.
+    const insertSeconds = matchSeconds - (gameState.matchState === 'SECOND_HALF' ? 45 * 60 : 0);
+    const insertIntervalSec = insertIntervalMin * 60;
+    const showInsert = showOverlay && !!insertPath && gameState.timerRunning
+        && insertSeconds >= insertIntervalSec && insertSeconds % insertIntervalSec < insertDurationSec;
+
     // Outer container: Centers the output view in the window (Letterboxing)
     return (
         <div ref={outerRef} style={{
@@ -620,6 +635,8 @@ function OutputView({ preview = false }) {
                         <AnnouncementScene message={announcement} />
                     ) : fullscreenCountdown ? (
                         <CountdownScene display={countdownDisplay} />
+                    ) : showInsert ? (
+                        <InsertScene path={insertPath} />
                     ) : (
                         <ScoreboardScene
                             gameState={gameState}

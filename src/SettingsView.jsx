@@ -21,6 +21,10 @@ function SettingsView() {
   const [scoreboardBgName, setScoreboardBgName] = useState(null);
   const [scoreboardSponsorId, setScoreboardSponsorId] = useState(null);
   const [scoreboardSponsorName, setScoreboardSponsorName] = useState(null);
+  const [scoreboardInsertId, setScoreboardInsertId] = useState(null);
+  const [scoreboardInsertName, setScoreboardInsertName] = useState(null);
+  const [scoreboardInsertInterval, setScoreboardInsertInterval] = useState(10);
+  const [scoreboardInsertDuration, setScoreboardInsertDuration] = useState(15);
   const [mediaImages, setMediaImages] = useState([]); // for picker dropdowns
   const [controllerVisibility, setControllerVisibility] = useState({
     warmup: true, lineup: true, halftime: true, end: true,
@@ -51,6 +55,10 @@ function SettingsView() {
         if (settings.scoreboardBgName) setScoreboardBgName(settings.scoreboardBgName);
         if (settings.scoreboardSponsorId) setScoreboardSponsorId(settings.scoreboardSponsorId);
         if (settings.scoreboardSponsorName) setScoreboardSponsorName(settings.scoreboardSponsorName);
+        if (settings.scoreboardInsertId) setScoreboardInsertId(settings.scoreboardInsertId);
+        if (settings.scoreboardInsertName) setScoreboardInsertName(settings.scoreboardInsertName);
+        if (settings.scoreboardInsertInterval) setScoreboardInsertInterval(settings.scoreboardInsertInterval);
+        if (settings.scoreboardInsertDuration) setScoreboardInsertDuration(settings.scoreboardInsertDuration);
         if (settings.syncHost) setSyncHost(settings.syncHost);
         if (settings.syncUser) setSyncUser(settings.syncUser);
       }
@@ -81,6 +89,10 @@ function SettingsView() {
       scoreboardBgName,
       scoreboardSponsorId,
       scoreboardSponsorName,
+      scoreboardInsertId,
+      scoreboardInsertName,
+      scoreboardInsertInterval,
+      scoreboardInsertDuration,
       syncHost,
       syncUser,
       ...overrides
@@ -366,6 +378,79 @@ function SettingsView() {
                     {mediaImages.map(m => <option key={m.id} value={m.id}>{m.fileName}</option>)}
                   </select>
                 )}
+              </div>
+
+              {/* Insert */}
+              <div className="mb-4">
+                <label className="form-label">Einblendung (Spielstand)</label>
+                {scoreboardInsertId ? (
+                  <div className="d-flex align-items-center gap-3">
+                    <span className="text-success fw-bold">{scoreboardInsertName || scoreboardInsertId}</span>
+                    <button className="btn btn-link text-danger p-0" onClick={() => {
+                      setScoreboardInsertId(null);
+                      setScoreboardInsertName(null);
+                      saveAllSettings({ scoreboardInsertId: null, scoreboardInsertName: null });
+                      toast.info("Einblendung entfernt");
+                    }}><BsXCircle /></button>
+                  </div>
+                ) : (
+                  <select
+                    className="form-select"
+                    value=""
+                    onChange={(e) => {
+                      const img = mediaImages.find(m => m.id === e.target.value);
+                      if (!img) return;
+                      setScoreboardInsertId(img.id);
+                      setScoreboardInsertName(img.fileName);
+                      saveAllSettings({ scoreboardInsertId: img.id, scoreboardInsertName: img.fileName });
+                      toast.success('Einblendung gespeichert');
+                    }}
+                  >
+                    <option value="">-- Bild auswählen --</option>
+                    {mediaImages.map(m => <option key={m.id} value={m.id}>{m.fileName}</option>)}
+                  </select>
+                )}
+                <div className="row g-2 mt-1">
+                  <div className="col-6">
+                    <div className="input-group">
+                      <span className="input-group-text">alle</span>
+                      <input
+                        type="number"
+                        min="1"
+                        className="form-control"
+                        value={scoreboardInsertInterval}
+                        onChange={(e) => setScoreboardInsertInterval(e.target.value)}
+                        onBlur={() => {
+                          const minutes = Math.max(1, parseInt(scoreboardInsertInterval, 10) || 10);
+                          setScoreboardInsertInterval(minutes);
+                          saveAllSettings({ scoreboardInsertInterval: minutes });
+                        }}
+                      />
+                      <span className="input-group-text">Min.</span>
+                    </div>
+                  </div>
+                  <div className="col-6">
+                    <div className="input-group">
+                      <span className="input-group-text">für</span>
+                      <input
+                        type="number"
+                        min="1"
+                        className="form-control"
+                        value={scoreboardInsertDuration}
+                        onChange={(e) => setScoreboardInsertDuration(e.target.value)}
+                        onBlur={() => {
+                          const seconds = Math.max(1, parseInt(scoreboardInsertDuration, 10) || 15);
+                          setScoreboardInsertDuration(seconds);
+                          saveAllSettings({ scoreboardInsertDuration: seconds });
+                        }}
+                      />
+                      <span className="input-group-text">Sek.</span>
+                    </div>
+                  </div>
+                </div>
+                <div className="form-text">
+                  Erscheint bei laufender Spieluhr regelmäßig anstelle des Spielstands, z. B. die Aufstellung. Die Abstände zählen ab Beginn jeder Halbzeit.
+                </div>
               </div>
             </>
           )}
