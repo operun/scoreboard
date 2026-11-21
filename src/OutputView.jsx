@@ -117,11 +117,11 @@ function OutputView({ preview = false }) {
                 setInsertDurationSec(Math.max(1, parseInt(settings.scoreboardInsertDuration, 10) || 15));
 
                 // Resolve scoreboard bg, sponsor and insert from media IDs
-                const { scoreboardBgId, scoreboardSponsorId, scoreboardInsertId } = settings;
+                const { scoreboardBgId, scoreboardBgEnabled, scoreboardSponsorId, scoreboardInsertId } = settings;
                 const allMedia = (scoreboardBgId || scoreboardSponsorId || scoreboardInsertId)
                     ? await window.electronAPI.loadMedia()
                     : [];
-                setScoreboardBgPath(await resolveMediaId(scoreboardBgId, allMedia));
+                setScoreboardBgPath(scoreboardBgEnabled !== false ? await resolveMediaId(scoreboardBgId, allMedia) : null);
                 setScoreboardSponsorPath(await resolveMediaId(scoreboardSponsorId, allMedia));
                 setInsertPath(await resolveMediaId(scoreboardInsertId, allMedia));
             }

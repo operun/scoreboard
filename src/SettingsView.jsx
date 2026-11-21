@@ -19,6 +19,7 @@ function SettingsView() {
   const [themeMode, setThemeMode] = useState('system');
   const [scoreboardBgId, setScoreboardBgId] = useState(null);
   const [scoreboardBgName, setScoreboardBgName] = useState(null);
+  const [scoreboardBgEnabled, setScoreboardBgEnabled] = useState(true);
   const [scoreboardSponsorId, setScoreboardSponsorId] = useState(null);
   const [scoreboardSponsorName, setScoreboardSponsorName] = useState(null);
   const [scoreboardInsertId, setScoreboardInsertId] = useState(null);
@@ -53,6 +54,7 @@ function SettingsView() {
         if (settings.hotkeys) setHotkeys(settings.hotkeys);
         if (settings.scoreboardBgId) setScoreboardBgId(settings.scoreboardBgId);
         if (settings.scoreboardBgName) setScoreboardBgName(settings.scoreboardBgName);
+        setScoreboardBgEnabled(settings.scoreboardBgEnabled !== false);
         if (settings.scoreboardSponsorId) setScoreboardSponsorId(settings.scoreboardSponsorId);
         if (settings.scoreboardSponsorName) setScoreboardSponsorName(settings.scoreboardSponsorName);
         if (settings.scoreboardInsertId) setScoreboardInsertId(settings.scoreboardInsertId);
@@ -87,6 +89,7 @@ function SettingsView() {
       hotkeys,
       scoreboardBgId,
       scoreboardBgName,
+      scoreboardBgEnabled,
       scoreboardSponsorId,
       scoreboardSponsorName,
       scoreboardInsertId,
@@ -346,6 +349,20 @@ function SettingsView() {
                     {mediaImages.map(m => <option key={m.id} value={m.id}>{m.fileName}</option>)}
                   </select>
                 )}
+                <div className="form-check mt-2">
+                  <input
+                    type="checkbox"
+                    className="form-check-input"
+                    id="scoreboardBgCheck"
+                    checked={scoreboardBgEnabled}
+                    disabled={!scoreboardBgId}
+                    onChange={(e) => {
+                      setScoreboardBgEnabled(e.target.checked);
+                      saveAllSettings({ scoreboardBgEnabled: e.target.checked });
+                    }}
+                  />
+                  <label className="form-check-label" htmlFor="scoreboardBgCheck">Hintergrund anzeigen</label>
+                </div>
               </div>
 
               {/* Sponsor */}

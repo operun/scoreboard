@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Countdown wahlweise als Overlay in einer wählbaren Ecke der Ausgabe, z. B. über der laufenden Warmup-Playlist (Einstellungen -> Ausgabe -> Countdown-Darstellung); bestehende Einstellungen bleiben erhalten
 - Einblendung im Spielstand: Ein frei wählbares Bild, z. B. die Aufstellung, erscheint bei laufender Spieluhr in einstellbaren Abständen kurz anstelle des Spielstands; die Abstände zählen ab Beginn jeder Halbzeit (Einstellungen -> Ausgabe -> Einblendung (Spielstand))
 - Slot „Werbung": Die Playlist startet über den Button „Werbung" unter „Spielstand" und läuft im Vollbild in Schleife, bis wieder der Spielstand eingeblendet wird
+- Hintergrund des Spielstands per Checkbox ein- und ausschalten, ohne das gewählte Bild zu entfernen; ausgeschaltet erscheint der Spielstand auf schwarzem Grund (Einstellungen -> Ausgabe -> Hintergrund (Spielstand))
 
 ### Changed
 - Spielsteuerung vereinfacht: „Abpfiff 1. Halbzeit" und „Abpfiff 2. Halbzeit" heißen jetzt „Halbzeit" und „Abpfiff", halten nur noch die Uhr an und zeigen den Spielstand (nach Spielende mit „Endstand"); belegte Hotkeys bleiben erhalten. Die Slots „Halbzeit" und „Abpfiff" entfallen, ihre Playlists starten nicht mehr automatisch
