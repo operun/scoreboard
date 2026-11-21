@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.7.0] - 2026-11-21
+
 ### Added
 - Countdown wahlweise als Overlay in einer wählbaren Ecke der Ausgabe oder oben bzw. unten mittig, z. B. über der laufenden Warmup-Playlist (Einstellungen -> Ausgabe -> Countdown-Darstellung); bestehende Einstellungen bleiben erhalten
 - Einblendung im Spielstand: Ein frei wählbares Bild, z. B. die Aufstellung, erscheint bei laufender Spieluhr in einstellbaren Abständen kurz anstelle des Spielstands; die Abstände zählen ab Beginn jeder Halbzeit (Einstellungen -> Ausgabe -> Einblendung (Spielstand))
