@@ -86,6 +86,7 @@ function OutputView({ preview = false }) {
 
     const [timerDisplay, setTimerDisplay] = useState("00:00");
     const [countdownDisplay, setCountdownDisplay] = useState("00:00");
+    const [countdownExpired, setCountdownExpired] = useState(false);
     const [matchSeconds, setMatchSeconds] = useState(0);
     const playbackCounterRef = useRef(0);
     const timerIntervalRef = useRef(null);
@@ -456,6 +457,7 @@ function OutputView({ preview = false }) {
             const mm = m.toString().padStart(2, '0');
             const ss = s.toString().padStart(2, '0');
             setCountdownDisplay(h > 0 ? `${h}:${mm}:${ss}` : `${mm}:${ss}`);
+            setCountdownExpired(rest === 0);
         };
         update();
 
@@ -565,12 +567,13 @@ function OutputView({ preview = false }) {
     // 2. No Scene is active AND
     // 3. Standard Mode is NOT 'FULL'
     // Note: We allow overlay without activeMedia (showing over test image)
-    // The fullscreen and corner countdowns bypass this and also cover a 'FULL' playlist.
+    // The fullscreen and overlay countdowns bypass this and also cover a 'FULL' playlist.
     const countdownVisible = gameState.countdownActive && !!gameState.kickoffAt
         && !scenePlaylist && !announcement && !substitution && !card;
-    const fullscreenCountdown = countdownVisible && countdownMode === 'fullscreen';
+    const fullscreenCountdown = countdownVisible && !countdownExpired && countdownMode === 'fullscreen';
+    // Stays after expiry: it may be the only thing keeping the scoreboard visible (see showOverlay).
     const inlineCountdown = countdownVisible && countdownMode === 'scoreboard';
-    const cornerCountdown = countdownVisible && !fullscreenCountdown && !inlineCountdown;
+    const overlayCountdown = countdownVisible && !countdownExpired && !fullscreenCountdown && !inlineCountdown;
     const showOverlay = (showScoreboard || inlineCountdown)
         && !scenePlaylist && standardMode !== 'FULL';
 
@@ -653,7 +656,7 @@ function OutputView({ preview = false }) {
 
                 </div>
 
-                {cornerCountdown && <CountdownOverlay display={countdownDisplay} corner={countdownMode} />}
+                {overlayCountdown && <CountdownOverlay display={countdownDisplay} position={countdownMode} />}
 
             </div>
         </div>

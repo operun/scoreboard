@@ -287,8 +287,10 @@ function SettingsView() {
                   <option value="fullscreen">Vollbild</option>
                   <option value="scoreboard">Im Zeitfeld des Spielstands</option>
                   <option value="top-left">Overlay oben links</option>
+                  <option value="top-center">Overlay oben mittig</option>
                   <option value="top-right">Overlay oben rechts</option>
                   <option value="bottom-left">Overlay unten links</option>
+                  <option value="bottom-center">Overlay unten mittig</option>
                   <option value="bottom-right">Overlay unten rechts</option>
                 </select>
               </div>

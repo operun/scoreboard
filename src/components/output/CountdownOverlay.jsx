@@ -1,8 +1,10 @@
-function CountdownOverlay({ display, corner }) {
+function CountdownOverlay({ display, position }) {
     if (!display) return null;
 
-    const vertical = corner.startsWith('top') ? { top: '4cqh' } : { bottom: '4cqh' };
-    const horizontal = corner.endsWith('left') ? { left: '3cqw' } : { right: '3cqw' };
+    const vertical = position.startsWith('top') ? { top: '4cqh' } : { bottom: '4cqh' };
+    const horizontal = position.endsWith('left') ? { left: '3cqw' }
+        : position.endsWith('right') ? { right: '3cqw' }
+        : { left: '50%', transform: 'translateX(-50%)' };
 
     return (
         <div style={{
